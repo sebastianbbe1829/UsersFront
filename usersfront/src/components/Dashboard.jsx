@@ -3,11 +3,11 @@ function Dashboard({ usuarios }) {
   const totalUsuarios = usuarios.length
 
   const usuariosActivos = usuarios.filter(
-    (usuario) => usuario.status === true
+    (usuario) => usuario.status === 1
   ).length
 
   const usuariosInactivos = usuarios.filter(
-    (usuario) => usuario.status === false
+    (usuario) => usuario.status === 0
   ).length
 
 

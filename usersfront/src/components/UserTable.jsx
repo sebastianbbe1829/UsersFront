@@ -82,11 +82,11 @@ function UserTable({
             estadoFiltro === 'todos' ||
             (
               estadoFiltro === 'activos' &&
-              usuario.status === true
+              usuario.status === 1
             ) ||
             (
               estadoFiltro === 'inactivos' &&
-              usuario.status === false
+              usuario.status === 0
             )
 
 
@@ -952,7 +952,7 @@ function UserTable({
             {
               usuarios.filter(
                 (usuario) =>
-                  usuario.status === true
+                  usuario.status === 1
               ).length
             }
           </strong>
@@ -965,7 +965,7 @@ function UserTable({
             {
               usuarios.filter(
                 (usuario) =>
-                  usuario.status === false
+                  usuario.status === 0
               ).length
             }
           </strong>
