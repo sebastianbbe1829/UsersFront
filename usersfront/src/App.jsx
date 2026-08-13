@@ -1,122 +1,731 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import {
+  useEffect,
+  useState,
+  useCallback,
+} from 'react'
+
+import Login from './components/Login'
+import UserTable from './components/UserTable'
+import UserForm from './components/UserForm'
+import EditUserForm from './components/EditUserForm'
+import DeleteUserModal from './components/DeleteUserModal'
+import Dashboard from './components/Dashboard'
+import SessionManager from './components/SessionManager'
+
+import {
+  obtenerUsuarios,
+  obtenerPayloadToken,
+} from './services/api'
+
 
 function App() {
-  const [count, setCount] = useState(0)
+
+  // ==========================
+  // SESIÓN
+  // ==========================
+
+  const [logueado, setLogueado] =
+    useState(false)
+
+  const [token, setToken] =
+    useState('')
+
+  const [usuarioLogueado, setUsuarioLogueado] =
+    useState(null)
+
+  const [cargando, setCargando] =
+    useState(true)
+
+  const [mensajeSesion, setMensajeSesion] =
+    useState('')
+
+
+  // ==========================
+  // USUARIOS
+  // ==========================
+
+  const [usuarios, setUsuarios] =
+    useState([])
+
+
+  // ==========================
+  // FORMULARIOS
+  // ==========================
+
+  const [mostrarFormulario, setMostrarFormulario] =
+    useState(false)
+
+  const [usuarioEditando, setUsuarioEditando] =
+    useState(null)
+
+  const [usuarioEliminando, setUsuarioEliminando] =
+    useState(null)
+
+
+  // ==========================
+  // MODO OSCURO
+  // ==========================
+
+  const [modoOscuro, setModoOscuro] =
+    useState(() => {
+
+      return (
+        localStorage.getItem(
+          'modo_oscuro'
+        ) === 'true'
+      )
+
+    })
+
+
+  // ==========================
+  // APLICAR MODO OSCURO
+  // ==========================
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      'modo_oscuro',
+      modoOscuro
+    )
+
+  }, [
+    modoOscuro,
+  ])
+
+
+  // ==========================
+  // CERRAR SESIÓN
+  // ==========================
+
+  const cerrarSesion = useCallback(() => {
+
+    localStorage.removeItem(
+      'access_token'
+    )
+
+    setLogueado(false)
+
+    setUsuarios([])
+
+    setToken('')
+
+    setUsuarioLogueado(null)
+
+    setMostrarFormulario(false)
+
+    setUsuarioEditando(null)
+
+    setUsuarioEliminando(null)
+
+  }, [])
+
+
+  // ==========================
+  // SESIÓN EXPIRADA
+  // ==========================
+
+  const manejarSesionExpirada =
+    useCallback(() => {
+
+      console.log(
+        'Sesión expirada.'
+      )
+
+      localStorage.removeItem(
+        'access_token'
+      )
+
+      setLogueado(false)
+
+      setUsuarios([])
+
+      setToken('')
+
+      setUsuarioLogueado(null)
+
+      setMostrarFormulario(false)
+
+      setUsuarioEditando(null)
+
+      setUsuarioEliminando(null)
+
+      setMensajeSesion(
+        'Tu sesión ha expirado. Inicia sesión nuevamente.'
+      )
+
+    }, [])
+
+
+  // ==========================
+  // VALIDAR SESIÓN AL ABRIR
+  // ==========================
+
+  useEffect(() => {
+
+    const tokenGuardado =
+      localStorage.getItem(
+        'access_token'
+      )
+
+
+    if (!tokenGuardado) {
+
+      setCargando(false)
+
+      return
+    }
+
+
+    const cargarSesion = async () => {
+
+      try {
+
+        const resultado =
+          await obtenerUsuarios(
+            tokenGuardado
+          )
+
+        setToken(tokenGuardado)
+
+        setUsuarios(resultado)
+
+
+        // ==========================
+        // OBTENER USUARIO LOGUEADO
+        // ==========================
+
+        const payload =
+          obtenerPayloadToken(
+            tokenGuardado
+          )
+
+        const usuarioActual =
+          resultado.find(
+            (usuario) =>
+              usuario.dni === payload?.sub
+          )
+
+        setUsuarioLogueado(
+          usuarioActual || null
+        )
+
+
+        setLogueado(true)
+
+      } catch (error) {
+
+        console.error(
+          'Error validando sesión:',
+          error
+        )
+
+
+        localStorage.removeItem(
+          'access_token'
+        )
+
+        setLogueado(false)
+
+        setUsuarioLogueado(null)
+
+        if (error.status === 401) {
+
+          setMensajeSesion(
+            'Tu sesión ha expirado. Inicia sesión nuevamente.'
+          )
+
+        }
+
+      } finally {
+
+        setCargando(false)
+
+      }
+
+    }
+
+
+    cargarSesion()
+
+  }, [])
+
+
+  // ==========================
+  // LOGIN
+  // ==========================
+
+  const iniciarAplicacion = async (
+    accessToken
+  ) => {
+
+    try {
+
+      const resultado =
+        await obtenerUsuarios(
+          accessToken
+        )
+
+
+      setToken(accessToken)
+
+      setUsuarios(resultado)
+
+
+      // ==========================
+      // OBTENER USUARIO LOGUEADO
+      // ==========================
+
+      const payload =
+        obtenerPayloadToken(
+          accessToken
+        )
+
+      const usuarioActual =
+        resultado.find(
+          (usuario) =>
+            usuario.dni === payload?.sub
+        )
+
+      setUsuarioLogueado(
+        usuarioActual || null
+      )
+
+
+      setLogueado(true)
+
+      setMensajeSesion('')
+
+    } catch (error) {
+
+      console.error(
+        'Error obteniendo usuarios:',
+        error
+      )
+
+
+      if (error.status === 401) {
+
+        localStorage.removeItem(
+          'access_token'
+        )
+
+        setMensajeSesion(
+          'La sesión no pudo ser validada.'
+        )
+
+      }
+
+      throw error
+
+    }
+
+  }
+
+
+  // ==========================
+  // CREAR
+  // ==========================
+
+  const abrirFormulario = () => {
+
+    setMostrarFormulario(true)
+
+  }
+
+
+  const cerrarFormulario = () => {
+
+    setMostrarFormulario(false)
+
+  }
+
+
+  const usuarioCreado = (
+    nuevoUsuario
+  ) => {
+
+    setUsuarios(
+      (usuariosActuales) => [
+        ...usuariosActuales,
+        nuevoUsuario,
+      ]
+    )
+
+    setMostrarFormulario(false)
+
+  }
+
+
+  // ==========================
+  // EDITAR
+  // ==========================
+
+  const editarUsuario = (
+    usuario
+  ) => {
+
+    setUsuarioEditando(usuario)
+
+  }
+
+
+  const cerrarEdicion = () => {
+
+    setUsuarioEditando(null)
+
+  }
+
+
+  const usuarioActualizado = (
+    usuarioActualizado
+  ) => {
+
+    setUsuarios(
+      (usuariosActuales) =>
+        usuariosActuales.map(
+          (usuario) =>
+            usuario.dni ===
+            usuarioActualizado.dni
+              ? usuarioActualizado
+              : usuario
+        )
+    )
+
+    // Si el usuario editado es
+    // el usuario actualmente logueado,
+    // actualizar también la información
+    // mostrada arriba.
+
+    if (
+      usuarioLogueado?.dni ===
+      usuarioActualizado.dni
+    ) {
+
+      setUsuarioLogueado(
+        usuarioActualizado
+      )
+
+    }
+
+    setUsuarioEditando(null)
+
+  }
+
+
+  // ==========================
+  // ELIMINAR
+  // ==========================
+
+  const eliminarUsuario = (
+    usuario
+  ) => {
+
+    setUsuarioEliminando(usuario)
+
+  }
+
+
+  const cerrarEliminacion = () => {
+
+    setUsuarioEliminando(null)
+
+  }
+
+
+  const usuarioEliminado = (
+    dni
+  ) => {
+
+    setUsuarios(
+      (usuariosActuales) =>
+        usuariosActuales.filter(
+          (usuario) =>
+            usuario.dni !== dni
+        )
+    )
+
+    setUsuarioEliminando(null)
+
+  }
+
+
+  // ==========================
+  // CARGANDO
+  // ==========================
+
+  if (cargando) {
+
+    return (
+
+      <div
+        className="vh-100 d-flex justify-content-center align-items-center"
+      >
+
+        <div className="text-center">
+
+          <div
+            className="spinner-border text-primary mb-3"
+            role="status"
+          />
+
+          <div>
+            Validando sesión...
+          </div>
+
+        </div>
+
+      </div>
+
+    )
+
+  }
+
+
+  // ==========================
+  // LOGIN
+  // ==========================
+
+  if (!logueado) {
+
+    return (
+
+      <Login
+        onLogin={
+          iniciarAplicacion
+        }
+        mensajeSesion={
+          mensajeSesion
+        }
+      />
+
+    )
+
+  }
+
+
+  // ==========================
+  // APLICACIÓN
+  // ==========================
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
 
-      <div className="ticks"></div>
+    <div
+      className={
+        modoOscuro
+          ? 'bg-dark text-light min-vh-100'
+          : 'bg-light min-vh-100'
+      }
+    >
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {/* ========================== */}
+      {/* VIGILAR SESIÓN */}
+      {/* ========================== */}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <SessionManager
+        token={token}
+        onSesionExpirada={
+          manejarSesionExpirada
+        }
+      />
+
+
+      {/* ========================== */}
+      {/* NAVBAR */}
+      {/* ========================== */}
+
+      <nav
+        className={
+          modoOscuro
+            ? 'navbar navbar-dark bg-black shadow'
+            : 'navbar navbar-dark bg-dark shadow'
+        }
+      >
+
+        <div className="container">
+
+          {/* ========================== */}
+          {/* TÍTULO */}
+          {/* ========================== */}
+
+          <span className="navbar-brand mb-0 h1">
+            👥 Gestión de Usuarios
+          </span>
+
+
+          {/* ========================== */}
+          {/* USUARIO + BOTONES */}
+          {/* ========================== */}
+
+          <div className="d-flex align-items-center gap-3">
+
+            {/* ========================== */}
+            {/* USUARIO LOGUEADO */}
+            {/* ========================== */}
+
+            {usuarioLogueado && (
+
+              <div className="text-end text-white">
+
+                <div className="fw-bold">
+                  👤 {usuarioLogueado.name}
+                </div>
+
+                <small className="opacity-75">
+                  DNI: {usuarioLogueado.dni}
+                </small>
+
+              </div>
+
+            )}
+
+
+            {/* ========================== */}
+            {/* MODO OSCURO */}
+            {/* ========================== */}
+
+            <button
+              className="btn btn-outline-light"
+              onClick={() =>
+                setModoOscuro(
+                  (valor) => !valor
+                )
+              }
+              title={
+                modoOscuro
+                  ? 'Cambiar a modo claro'
+                  : 'Cambiar a modo oscuro'
+              }
+            >
+
+              {modoOscuro
+                ? '☀️'
+                : '🌙'}
+
+            </button>
+
+
+            {/* ========================== */}
+            {/* CERRAR SESIÓN */}
+            {/* ========================== */}
+
+            <button
+              className="btn btn-outline-light"
+              onClick={
+                cerrarSesion
+              }
+            >
+              Cerrar sesión
+            </button>
+
+          </div>
+
+        </div>
+
+      </nav>
+
+
+      {/* ========================== */}
+      {/* DASHBOARD */}
+      {/* ========================== */}
+
+      <div className="pt-4">
+
+        <Dashboard
+          usuarios={
+            usuarios
+          }
+        />
+
+      </div>
+
+
+      {/* ========================== */}
+      {/* TABLA */}
+      {/* ========================== */}
+
+      <UserTable
+        usuarios={
+          usuarios
+        }
+        onNuevoUsuario={
+          abrirFormulario
+        }
+        onEditarUsuario={
+          editarUsuario
+        }
+        onEliminarUsuario={
+          eliminarUsuario
+        }
+      />
+
+
+      {/* ========================== */}
+      {/* NUEVO USUARIO */}
+      {/* ========================== */}
+
+      {mostrarFormulario && (
+
+        <UserForm
+          token={token}
+          onUsuarioCreado={
+            usuarioCreado
+          }
+          onCancelar={
+            cerrarFormulario
+          }
+        />
+
+      )}
+
+
+      {/* ========================== */}
+      {/* EDITAR */}
+      {/* ========================== */}
+
+      {usuarioEditando && (
+
+        <EditUserForm
+          usuario={
+            usuarioEditando
+          }
+          token={token}
+          onUsuarioActualizado={
+            usuarioActualizado
+          }
+          onCancelar={
+            cerrarEdicion
+          }
+        />
+
+      )}
+
+
+      {/* ========================== */}
+      {/* ELIMINAR */}
+      {/* ========================== */}
+
+      {usuarioEliminando && (
+
+        <DeleteUserModal
+          usuario={
+            usuarioEliminando
+          }
+          token={token}
+          onUsuarioEliminado={
+            usuarioEliminado
+          }
+          onCancelar={
+            cerrarEliminacion
+          }
+        />
+
+      )}
+
+    </div>
+
   )
 }
+
 
 export default App
