@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8000'
+const API_URL = `http://${window.location.hostname}:8000`
 
 
 // ==========================
@@ -53,9 +53,11 @@ const procesarRespuesta = async (response) => {
       detail: resultado?.detail,
     })
 
-    const error = new Error(
-      obtenerMensajeError(response.status)
-    )
+    // Si el servidor devuelve un mensaje detallado, úsalo
+    // De lo contrario, usa el mensaje genérico
+    const mensajeError = resultado?.detail || obtenerMensajeError(response.status)
+
+    const error = new Error(mensajeError)
 
     error.status = response.status
 
@@ -79,6 +81,12 @@ export const login = async (
 
   datos.append('username', username)
   datos.append('password', password)
+
+  console.log(
+    'Intentando login contra:',
+    `${API_URL}/auth/login`
+  )
+
 
   const response = await fetch(
     `${API_URL}/auth/login`,

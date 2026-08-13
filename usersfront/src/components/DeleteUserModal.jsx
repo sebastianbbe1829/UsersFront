@@ -95,7 +95,7 @@ function DeleteUserModal({
                 <div className="row">
 
                   <div className="col-4 fw-bold">
-                    DNI:
+                    Número de identificación:
                   </div>
 
                   <div className="col-8">

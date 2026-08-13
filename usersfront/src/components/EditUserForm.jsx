@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { actualizarUsuario } from '../services/api'
+import { validaciones } from '../utils/validaciones'
 
 function EditUserForm({
   usuario,
@@ -15,11 +16,51 @@ function EditUserForm({
 
   const [error, setError] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [erroresValidacion, setErroresValidacion] = useState({})
+
+  // ==========================
+  // VALIDAR FORMULARIO
+  // ==========================
+
+  const validarFormulario = () => {
+    const errores = {}
+
+    const validacionNombre = validaciones.nombre(name)
+    if (!validacionNombre.valido) {
+      errores.name = validacionNombre.error
+    }
+
+    const validacionEmail = validaciones.email(email)
+    if (!validacionEmail.valido) {
+      errores.email = validacionEmail.error
+    }
+
+    const validacionTelefono = validaciones.telefono(phone)
+    if (!validacionTelefono.valido) {
+      errores.phone = validacionTelefono.error
+    }
+
+    const validacionPassword = validaciones.contrasenaNueva(password)
+    if (!validacionPassword.valido) {
+      errores.password = validacionPassword.error
+    }
+
+    return errores
+  }
 
   const guardarCambios = async (event) => {
     event.preventDefault()
 
     setError('')
+    setErroresValidacion({})
+
+    // Validar formulario
+    const errores = validarFormulario()
+    if (Object.keys(errores).length > 0) {
+      setErroresValidacion(errores)
+      return
+    }
+
     setGuardando(true)
 
     const datosActualizados = {
@@ -94,16 +135,16 @@ function EditUserForm({
 
               {error && (
                 <div className="alert alert-danger">
-                  {error}
+                  ❌ {error}
                 </div>
               )}
 
-              {/* DNI */}
+              {/* Numero de identificacion */}
 
               <div className="mb-3">
 
                 <label className="form-label">
-                  DNI
+                  Número de identificación
                 </label>
 
                 <input
@@ -114,7 +155,7 @@ function EditUserForm({
                 />
 
                 <div className="form-text">
-                  El DNI no puede ser modificado.
+                  El número de identificación no puede ser modificado.
                 </div>
 
               </div>
@@ -129,13 +170,21 @@ function EditUserForm({
 
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${
+                    erroresValidacion.name ? 'is-invalid' : ''
+                  }`}
                   value={name}
                   onChange={(event) =>
                     setName(event.target.value)
                   }
-                  required
+                  disabled={guardando}
                 />
+
+                {erroresValidacion.name && (
+                  <div className="invalid-feedback d-block">
+                    {erroresValidacion.name}
+                  </div>
+                )}
 
               </div>
 
@@ -149,13 +198,21 @@ function EditUserForm({
 
                 <input
                   type="email"
-                  className="form-control"
+                  className={`form-control ${
+                    erroresValidacion.email ? 'is-invalid' : ''
+                  }`}
                   value={email}
                   onChange={(event) =>
                     setEmail(event.target.value)
                   }
-                  required
+                  disabled={guardando}
                 />
+
+                {erroresValidacion.email && (
+                  <div className="invalid-feedback d-block">
+                    {erroresValidacion.email}
+                  </div>
+                )}
 
               </div>
 
@@ -169,13 +226,21 @@ function EditUserForm({
 
                 <input
                   type="text"
-                  className="form-control"
+                  className={`form-control ${
+                    erroresValidacion.phone ? 'is-invalid' : ''
+                  }`}
                   value={phone}
                   onChange={(event) =>
                     setPhone(event.target.value)
                   }
-                  required
+                  disabled={guardando}
                 />
+
+                {erroresValidacion.phone && (
+                  <div className="invalid-feedback d-block">
+                    {erroresValidacion.phone}
+                  </div>
+                )}
 
               </div>
 
@@ -193,6 +258,7 @@ function EditUserForm({
                   onChange={(event) =>
                     setStatus(event.target.value === 'true')
                   }
+                  disabled={guardando}
                 >
 
                   <option value="true">
@@ -217,19 +283,28 @@ function EditUserForm({
 
                 <input
                   type="password"
-                  className="form-control"
+                  className={`form-control ${
+                    erroresValidacion.password ? 'is-invalid' : ''
+                  }`}
                   value={password}
                   onChange={(event) =>
                     setPassword(event.target.value)
                   }
                   placeholder="Nueva contraseña"
                   autoComplete="new-password"
+                  disabled={guardando}
                 />
 
                 <div className="form-text">
                   Déjala vacía si no deseas cambiar la
                   contraseña actual.
                 </div>
+
+                {erroresValidacion.password && (
+                  <div className="invalid-feedback d-block">
+                    {erroresValidacion.password}
+                  </div>
+                )}
 
               </div>
 
@@ -253,9 +328,18 @@ function EditUserForm({
                 className="btn btn-primary"
                 disabled={guardando}
               >
-                {guardando
-                  ? 'Guardando...'
-                  : 'Guardar cambios'}
+                {guardando ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                    Guardando...
+                  </>
+                ) : (
+                  'Guardar cambios'
+                )}
               </button>
 
             </div>

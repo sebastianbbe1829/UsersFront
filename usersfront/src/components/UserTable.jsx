@@ -1,4 +1,8 @@
-import { useState, useEffect } from 'react'
+import {
+  useMemo,
+  useState,
+} from 'react'
+
 
 function UserTable({
   usuarios,
@@ -6,72 +10,121 @@ function UserTable({
   onEditarUsuario,
   onEliminarUsuario,
 }) {
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroEstado, setFiltroEstado] = useState('todos')
 
-  // Cantidad de usuarios por página
-  const [usuariosPorPagina, setUsuariosPorPagina] = useState(10)
+  // ==========================
+  // ESTADOS
+  // ==========================
 
-  // Página actual
-  const [paginaActual, setPaginaActual] = useState(1)
+  const [busqueda, setBusqueda] =
+    useState('')
+
+  const [estadoFiltro, setEstadoFiltro] =
+    useState('todos')
+
+  const [usuariosPorPagina, setUsuariosPorPagina] =
+    useState(10)
+
+  const [paginaActual, setPaginaActual] =
+    useState(1)
+
 
   // ==========================
   // FILTRAR USUARIOS
   // ==========================
 
-  const usuariosFiltrados = usuarios.filter((usuario) => {
-    const textoBusqueda = busqueda
-      .toLowerCase()
-      .trim()
+  const usuariosFiltrados =
+    useMemo(() => {
 
-    const dni = String(usuario.dni || '').toLowerCase()
-    const nombre = String(usuario.name || '').toLowerCase()
-    const email = String(usuario.email || '').toLowerCase()
-    const telefono = String(usuario.phone || '').toLowerCase()
+      const texto =
+        busqueda
+          .toLowerCase()
+          .trim()
 
-    const coincideBusqueda =
-      textoBusqueda === '' ||
-      dni.includes(textoBusqueda) ||
-      nombre.includes(textoBusqueda) ||
-      email.includes(textoBusqueda) ||
-      telefono.includes(textoBusqueda)
+      return usuarios.filter(
+        (usuario) => {
 
-    const coincideEstado =
-      filtroEstado === 'todos' ||
-      (filtroEstado === 'activos' && usuario.status === true) ||
-      (filtroEstado === 'inactivos' && usuario.status === false)
+          // --------------------------
+          // BUSQUEDA
+          // --------------------------
 
-    return coincideBusqueda && coincideEstado
-  })
+          const coincideBusqueda =
+            !texto ||
+            String(
+              usuario.dni ?? ''
+            )
+              .toLowerCase()
+              .includes(texto) ||
+
+            String(
+              usuario.name ?? ''
+            )
+              .toLowerCase()
+              .includes(texto) ||
+
+            String(
+              usuario.email ?? ''
+            )
+              .toLowerCase()
+              .includes(texto) ||
+
+            String(
+              usuario.phone ?? ''
+            )
+              .toLowerCase()
+              .includes(texto)
+
+
+          // --------------------------
+          // FILTRO ESTADO
+          // --------------------------
+
+          const coincideEstado =
+            estadoFiltro === 'todos' ||
+            (
+              estadoFiltro === 'activos' &&
+              usuario.status === true
+            ) ||
+            (
+              estadoFiltro === 'inactivos' &&
+              usuario.status === false
+            )
+
+
+          return (
+            coincideBusqueda &&
+            coincideEstado
+          )
+
+        }
+      )
+
+    }, [
+      usuarios,
+      busqueda,
+      estadoFiltro,
+    ])
+
 
   // ==========================
   // PAGINACIÓN
   // ==========================
 
-  const totalUsuarios = usuariosFiltrados.length
-
   const totalPaginas =
-    Math.ceil(totalUsuarios / usuariosPorPagina)
+    Math.ceil(
+      usuariosFiltrados.length /
+      usuariosPorPagina
+    )
 
-  // Si cambiamos los filtros y la página actual
-  // ya no existe, volvemos a la primera.
-  useEffect(() => {
-    if (
-      totalPaginas > 0 &&
-      paginaActual > totalPaginas
-    ) {
-      setPaginaActual(1)
-    }
-  }, [
-    totalPaginas,
-    paginaActual,
-  ])
 
   const indiceInicial =
-    (paginaActual - 1) * usuariosPorPagina
+    (paginaActual - 1) *
+    usuariosPorPagina
+
 
   const indiceFinal =
-    indiceInicial + usuariosPorPagina
+    indiceInicial +
+    usuariosPorPagina
+
 
   const usuariosPagina =
     usuariosFiltrados.slice(
@@ -79,11 +132,62 @@ function UserTable({
       indiceFinal
     )
 
+
+  // ==========================
+  // CAMBIAR BÚSQUEDA
+  // ==========================
+
+  const cambiarBusqueda = (
+    valor
+  ) => {
+
+    setBusqueda(valor)
+
+    setPaginaActual(1)
+
+  }
+
+
+  // ==========================
+  // CAMBIAR ESTADO
+  // ==========================
+
+  const cambiarEstado = (
+    valor
+  ) => {
+
+    setEstadoFiltro(valor)
+
+    setPaginaActual(1)
+
+  }
+
+
+  // ==========================
+  // CAMBIAR CANTIDAD
+  // ==========================
+
+  const cambiarCantidad = (
+    valor
+  ) => {
+
+    setUsuariosPorPagina(
+      Number(valor)
+    )
+
+    setPaginaActual(1)
+
+  }
+
+
   // ==========================
   // CAMBIAR PÁGINA
   // ==========================
 
-  const cambiarPagina = (pagina) => {
+  const cambiarPagina = (
+    pagina
+  ) => {
+
     if (
       pagina < 1 ||
       pagina > totalPaginas
@@ -92,54 +196,66 @@ function UserTable({
     }
 
     setPaginaActual(pagina)
+
   }
 
+
   // ==========================
-  // CAMBIAR CANTIDAD POR PÁGINA
+  // LIMPIAR FILTROS
   // ==========================
 
-  const cambiarUsuariosPorPagina = (event) => {
-    const cantidad = Number(event.target.value)
+  const limpiarFiltros = () => {
 
-    setUsuariosPorPagina(cantidad)
+    setBusqueda('')
 
-    // Cuando cambiamos la cantidad,
-    // volvemos a la primera página.
+    setEstadoFiltro('todos')
+
     setPaginaActual(1)
+
   }
 
+
   // ==========================
-  // GENERAR BOTONES DE PÁGINAS
+  // PÁGINAS A MOSTRAR
   // ==========================
 
   const paginas = []
 
-  for (let i = 1; i <= totalPaginas; i++) {
+  for (
+    let i = 1;
+    i <= totalPaginas;
+    i++
+  ) {
+
     paginas.push(i)
+
   }
+
 
   // ==========================
-  // RESET DE PÁGINA AL BUSCAR
+  // RENDER
   // ==========================
-
-  const cambiarBusqueda = (event) => {
-    setBusqueda(event.target.value)
-    setPaginaActual(1)
-  }
-
-  const cambiarFiltroEstado = (event) => {
-    setFiltroEstado(event.target.value)
-    setPaginaActual(1)
-  }
 
   return (
-    <div className="container py-4">
+
+    <div className="container pb-5">
+
 
       {/* ========================== */}
       {/* ENCABEZADO */}
       {/* ========================== */}
 
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div
+        className="
+          d-flex
+          flex-column
+          flex-md-row
+          justify-content-between
+          align-items-md-center
+          gap-3
+          mb-4
+        "
+      >
 
         <div>
 
@@ -153,7 +269,9 @@ function UserTable({
 
         </div>
 
+
         <button
+          type="button"
           className="btn btn-primary"
           onClick={onNuevoUsuario}
         >
@@ -167,66 +285,83 @@ function UserTable({
       {/* FILTROS */}
       {/* ========================== */}
 
-      <div className="card shadow-sm mb-3">
+      <div
+        className="
+          card
+          shadow-sm
+          mb-3
+        "
+      >
 
         <div className="card-body">
 
+
           <div className="row g-3">
 
+
+            {/* ========================== */}
             {/* BUSCAR */}
+            {/* ========================== */}
 
-            <div className="col-md-7">
+            <div className="col-12 col-md-7">
 
-              <label className="form-label fw-semibold">
+              <label
+                className="form-label fw-bold"
+              >
                 Buscar usuario
               </label>
 
+
               <div className="input-group">
 
-                <span className="input-group-text">
+                <span
+                  className="input-group-text"
+                >
                   🔎
                 </span>
+
 
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="DNI, nombre, email o teléfono..."
+                  placeholder="Número de identificación, nombre, email o teléfono..."
                   value={busqueda}
-                  onChange={cambiarBusqueda}
+                  onChange={(e) =>
+                    cambiarBusqueda(
+                      e.target.value
+                    )
+                  }
+                  style={{
+                    textAlign: 'left',
+                  }}
                 />
-
-                {busqueda && (
-
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={() => {
-                      setBusqueda('')
-                      setPaginaActual(1)
-                    }}
-                  >
-                    ✕
-                  </button>
-
-                )}
 
               </div>
 
             </div>
 
 
+            {/* ========================== */}
             {/* ESTADO */}
+            {/* ========================== */}
 
-            <div className="col-md-3">
+            <div className="col-12 col-md-3">
 
-              <label className="form-label fw-semibold">
+              <label
+                className="form-label fw-bold"
+              >
                 Estado
               </label>
 
+
               <select
                 className="form-select"
-                value={filtroEstado}
-                onChange={cambiarFiltroEstado}
+                value={estadoFiltro}
+                onChange={(e) =>
+                  cambiarEstado(
+                    e.target.value
+                  )
+                }
               >
 
                 <option value="todos">
@@ -246,18 +381,27 @@ function UserTable({
             </div>
 
 
-            {/* USUARIOS POR PÁGINA */}
+            {/* ========================== */}
+            {/* MOSTRAR */}
+            {/* ========================== */}
 
-            <div className="col-md-2">
+            <div className="col-12 col-md-2">
 
-              <label className="form-label fw-semibold">
+              <label
+                className="form-label fw-bold"
+              >
                 Mostrar
               </label>
+
 
               <select
                 className="form-select"
                 value={usuariosPorPagina}
-                onChange={cambiarUsuariosPorPagina}
+                onChange={(e) =>
+                  cambiarCantidad(
+                    e.target.value
+                  )
+                }
               >
 
                 <option value="5">
@@ -282,104 +426,162 @@ function UserTable({
 
           </div>
 
+
+          {/* ========================== */}
+          {/* LIMPIAR */}
+          {/* ========================== */}
+
+          {(busqueda ||
+            estadoFiltro !== 'todos') && (
+
+            <div className="mt-3">
+
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                onClick={limpiarFiltros}
+              >
+                ✕ Limpiar filtros
+              </button>
+
+            </div>
+
+          )}
+
         </div>
 
       </div>
 
 
       {/* ========================== */}
-      {/* TABLA */}
+      {/* TABLA DESKTOP */}
       {/* ========================== */}
 
-      <div className="card shadow-sm">
+      <div
+        className="
+          card
+          shadow-sm
+          d-none
+          d-md-block
+        "
+      >
 
-        <div className="card-body p-0">
+        <div className="table-responsive">
 
-          <div className="table-responsive">
+          <table
+            className="
+              table
+              table-hover
+              align-middle
+              mb-0
+            "
+          >
 
-            <table className="table table-hover align-middle mb-0">
+            <thead
+              className="table-dark"
+            >
 
-              <thead className="table-dark">
+              <tr>
+
+                <th>
+                  Número de identificación
+                </th>
+
+                <th>
+                  Nombre
+                </th>
+
+                <th>
+                  Email
+                </th>
+
+                <th>
+                  Teléfono
+                </th>
+
+                <th>
+                  Estado
+                </th>
+
+                <th className="text-center">
+                  Acciones
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {usuariosPagina.length === 0 ? (
 
                 <tr>
 
-                  <th>DNI</th>
-                  <th>Nombre</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
-                  <th>Estado</th>
-                  <th className="text-center">
-                    Acciones
-                  </th>
+                  <td
+                    colSpan="6"
+                    className="
+                      text-center
+                      py-5
+                      text-muted
+                    "
+                  >
+                    No se encontraron usuarios.
+
+                  </td>
 
                 </tr>
 
-              </thead>
+              ) : (
 
-              <tbody>
+                usuariosPagina.map(
+                  (usuario) => (
 
-                {usuariosPagina.length === 0 ? (
-
-                  <tr>
-
-                    <td
-                      colSpan="6"
-                      className="text-center py-5"
+                    <tr
+                      key={usuario.dni}
                     >
 
-                      <div
-                        style={{
-                          fontSize: '2.5rem',
-                        }}
-                      >
-                        🔍
-                      </div>
+                      <td>
+                        {usuario.dni}
+                      </td>
 
-                      <div className="mt-2 fw-semibold">
-                        No se encontraron usuarios
-                      </div>
-
-                      <div className="text-muted">
-                        Intenta cambiar los filtros de búsqueda.
-                      </div>
-
-                    </td>
-
-                  </tr>
-
-                ) : (
-
-                  usuariosPagina.map((user) => (
-
-                    <tr key={user.dni}>
 
                       <td>
-                        {user.dni}
+                        {usuario.name}
                       </td>
 
-                      <td className="fw-semibold">
-                        {user.name}
-                      </td>
 
                       <td>
-                        {user.email}
+                        {usuario.email}
                       </td>
 
+
                       <td>
-                        {user.phone}
+                        {usuario.phone}
                       </td>
+
 
                       <td>
 
-                        {user.status ? (
+                        {usuario.status ? (
 
-                          <span className="badge bg-success">
+                          <span
+                            className="
+                              badge
+                              bg-success
+                            "
+                          >
                             Activo
                           </span>
 
                         ) : (
 
-                          <span className="badge bg-secondary">
+                          <span
+                            className="
+                              badge
+                              bg-secondary
+                            "
+                          >
                             Inactivo
                           </span>
 
@@ -387,41 +589,307 @@ function UserTable({
 
                       </td>
 
-                      <td className="text-center">
 
-                        <button
-                          className="btn btn-sm btn-warning me-2"
-                          onClick={() =>
-                            onEditarUsuario(user)
-                          }
-                        >
-                          ✏️ Editar
-                        </button>
+                      <td>
 
-                        <button
-                          className="btn btn-sm btn-danger"
-                          onClick={() =>
-                            onEliminarUsuario(user)
-                          }
+                        <div
+                          className="
+                            d-flex
+                            justify-content-center
+                            gap-2
+                          "
                         >
-                          🗑️ Eliminar
-                        </button>
+
+                          <button
+                            type="button"
+                            className="
+                              btn
+                              btn-warning
+                              btn-sm
+                            "
+                            onClick={() =>
+                              onEditarUsuario(
+                                usuario
+                              )
+                            }
+                          >
+                            ✏️ Editar
+                          </button>
+
+
+                          <button
+                            type="button"
+                            className="
+                              btn
+                              btn-danger
+                              btn-sm
+                            "
+                            onClick={() =>
+                              onEliminarUsuario(
+                                usuario
+                              )
+                            }
+                          >
+                            🗑️ Eliminar
+                          </button>
+
+                        </div>
 
                       </td>
 
                     </tr>
 
-                  ))
+                  )
+                )
 
-                )}
+              )}
 
-              </tbody>
+            </tbody>
 
-            </table>
+          </table>
+
+        </div>
+
+      </div>
+
+
+      {/* ========================== */}
+      {/* TARJETAS MOBILE */}
+      {/* ========================== */}
+
+      <div
+        className="
+          d-md-none
+        "
+      >
+
+        {usuariosPagina.length === 0 ? (
+
+          <div
+            className="
+              card
+              shadow-sm
+              text-center
+              py-5
+            "
+          >
+
+            <div className="text-muted">
+
+              No se encontraron usuarios.
+
+            </div>
 
           </div>
 
-        </div>
+        ) : (
+
+          usuariosPagina.map(
+            (usuario) => (
+
+              <div
+                className="
+                  card
+                  shadow-sm
+                  mb-3
+                "
+                key={usuario.dni}
+              >
+
+                <div className="card-body">
+
+
+                  {/* ========================== */}
+                  {/* NOMBRE */}
+                  {/* ========================== */}
+
+                  <div className="mb-3">
+
+                    <div
+                      className="
+                        text-muted
+                        small
+                      "
+                    >
+                      Nombre
+                    </div>
+
+                    <div
+                      className="
+                        fw-bold
+                        fs-5
+                      "
+                    >
+                      {usuario.name}
+                    </div>
+
+                  </div>
+
+
+                  {/* ========================== */}
+                  {/* DNI */}
+                  {/* ========================== */}
+
+                  <div className="mb-3">
+
+                    <div
+                      className="
+                        text-muted
+                        small
+                      "
+                    >
+                      Número de identificación
+                    </div>
+
+                    <div>
+                      {usuario.dni}
+                    </div>
+
+                  </div>
+
+
+                  {/* ========================== */}
+                  {/* EMAIL */}
+                  {/* ========================== */}
+
+                  <div className="mb-3">
+
+                    <div
+                      className="
+                        text-muted
+                        small
+                      "
+                    >
+                      Email
+                    </div>
+
+                    <div
+                      className="text-break"
+                    >
+                      {usuario.email}
+                    </div>
+
+                  </div>
+
+
+                  {/* ========================== */}
+                  {/* TELÉFONO */}
+                  {/* ========================== */}
+
+                  <div className="mb-3">
+
+                    <div
+                      className="
+                        text-muted
+                        small
+                      "
+                    >
+                      Teléfono
+                    </div>
+
+                    <div>
+                      {usuario.phone}
+                    </div>
+
+                  </div>
+
+
+                  {/* ========================== */}
+                  {/* ESTADO */}
+                  {/* ========================== */}
+
+                  <div className="mb-3">
+
+                    <div
+                      className="
+                        text-muted
+                        small
+                        mb-1
+                      "
+                    >
+                      Estado
+                    </div>
+
+
+                    {usuario.status ? (
+
+                      <span
+                        className="
+                          badge
+                          bg-success
+                        "
+                      >
+                        Activo
+                      </span>
+
+                    ) : (
+
+                      <span
+                        className="
+                          badge
+                          bg-secondary
+                        "
+                      >
+                        Inactivo
+                      </span>
+
+                    )}
+
+                  </div>
+
+
+                  {/* ========================== */}
+                  {/* ACCIONES */}
+                  {/* ========================== */}
+
+                  <div
+                    className="
+                      d-grid
+                      gap-2
+                    "
+                  >
+
+                    <button
+                      type="button"
+                      className="
+                        btn
+                        btn-warning
+                      "
+                      onClick={() =>
+                        onEditarUsuario(
+                          usuario
+                        )
+                      }
+                    >
+                      ✏️ Editar
+                    </button>
+
+
+                    <button
+                      type="button"
+                      className="
+                        btn
+                        btn-danger
+                      "
+                      onClick={() =>
+                        onEliminarUsuario(
+                          usuario
+                        )
+                      }
+                    >
+                      🗑️ Eliminar
+                    </button>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            )
+          )
+
+        )}
 
       </div>
 
@@ -430,53 +898,57 @@ function UserTable({
       {/* INFORMACIÓN */}
       {/* ========================== */}
 
-      <div className="d-flex justify-content-between align-items-center mt-3">
+      <div
+        className="
+          d-flex
+          flex-column
+          flex-md-row
+          justify-content-between
+          align-items-md-center
+          gap-2
+          mt-3
+          text-muted
+        "
+      >
 
-        <div className="text-muted">
+        <div>
 
-          {totalUsuarios > 0 ? (
+          Mostrando{' '}
 
-            <>
-              Mostrando{' '}
-              <strong>
-                {indiceInicial + 1}
-              </strong>
-              {' - '}
-              <strong>
-                {Math.min(
-                  indiceFinal,
-                  totalUsuarios
-                )}
-              </strong>
-              {' '}de{' '}
-              <strong>
-                {totalUsuarios}
-              </strong>
-              {' '}usuarios
-            </>
+          {usuariosFiltrados.length === 0
+            ? 0
+            : indiceInicial + 1}
 
-          ) : (
+          {' - '}
 
-            'No hay usuarios'
-
+          {Math.min(
+            indiceFinal,
+            usuariosFiltrados.length
           )}
+
+          {' de '}
+
+          {usuariosFiltrados.length}
+
+          {' usuarios'}
 
         </div>
 
 
-        <div className="text-muted">
+        <div>
 
-          Total: {' '}
-
+          Total:{' '}
           <strong>
             {usuarios.length}
           </strong>
 
           {' | '}
 
-          Activos: {' '}
+          Activos:{' '}
 
-          <strong className="text-success">
+          <strong
+            className="text-success"
+          >
             {
               usuarios.filter(
                 (usuario) =>
@@ -487,7 +959,7 @@ function UserTable({
 
           {' | '}
 
-          Inactivos: {' '}
+          Inactivos:{' '}
 
           <strong>
             {
@@ -509,56 +981,73 @@ function UserTable({
 
       {totalPaginas > 1 && (
 
-        <div className="d-flex justify-content-center mt-4">
+        <nav
+          className="mt-4"
+          aria-label="Paginación de usuarios"
+        >
 
-          <nav>
+          <ul
+            className="
+              pagination
+              justify-content-center
+              flex-wrap
+              mb-0
+            "
+          >
 
-            <ul className="pagination">
+            {/* ANTERIOR */}
 
-              {/* ANTERIOR */}
-
-              <li
-                className={`page-item ${
+            <li
+              className={
+                `page-item ${
                   paginaActual === 1
                     ? 'disabled'
                     : ''
-                }`}
+                }`
+              }
+            >
+
+              <button
+                type="button"
+                className="page-link"
+                onClick={() =>
+                  cambiarPagina(
+                    paginaActual - 1
+                  )
+                }
+                disabled={
+                  paginaActual === 1
+                }
               >
+                Anterior
+              </button>
 
-                <button
-                  className="page-link"
-                  onClick={() =>
-                    cambiarPagina(
-                      paginaActual - 1
-                    )
-                  }
-                  disabled={
-                    paginaActual === 1
-                  }
-                >
-                  «
-                </button>
-
-              </li>
+            </li>
 
 
-              {/* PÁGINAS */}
+            {/* NÚMEROS */}
 
-              {paginas.map((pagina) => (
+            {paginas.map(
+              (pagina) => (
 
                 <li
                   key={pagina}
-                  className={`page-item ${
-                    paginaActual === pagina
-                      ? 'active'
-                      : ''
-                  }`}
+                  className={
+                    `page-item ${
+                      paginaActual === pagina
+                        ? 'active'
+                        : ''
+                    }`
+                  }
                 >
 
                   <button
+                    type="button"
                     className="page-link"
                     onClick={() =>
-                      cambiarPagina(pagina)
+                      cambiarPagina(
+                        pagina
+                      )
                     }
                   >
                     {pagina}
@@ -566,45 +1055,50 @@ function UserTable({
 
                 </li>
 
-              ))}
+              )
+            )}
 
 
-              {/* SIGUIENTE */}
+            {/* SIGUIENTE */}
 
-              <li
-                className={`page-item ${
+            <li
+              className={
+                `page-item ${
                   paginaActual === totalPaginas
                     ? 'disabled'
                     : ''
-                }`}
+                }`
+              }
+            >
+
+              <button
+                type="button"
+                className="page-link"
+                onClick={() =>
+                  cambiarPagina(
+                    paginaActual + 1
+                  )
+                }
+                disabled={
+                  paginaActual === totalPaginas
+                }
               >
+                Siguiente
+              </button>
 
-                <button
-                  className="page-link"
-                  onClick={() =>
-                    cambiarPagina(
-                      paginaActual + 1
-                    )
-                  }
-                  disabled={
-                    paginaActual === totalPaginas
-                  }
-                >
-                  »
-                </button>
+            </li>
 
-              </li>
+          </ul>
 
-            </ul>
-
-          </nav>
-
-        </div>
+        </nav>
 
       )}
 
     </div>
+
   )
+
 }
+
 
 export default UserTable

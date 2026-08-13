@@ -1,29 +1,68 @@
 import { useState } from 'react'
-import { login } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 
 function Login({
-  onLogin,
   mensajeSesion,
 }) {
+  const { iniciarSesion } = useAuth()
+
   const [usuario, setUsuario] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [erroresValidacion, setErroresValidacion] = useState({})
+  const [mostrarPassword, setMostrarPassword] = useState(false)
 
-  const iniciarSesion = async (event) => {
+  // ==========================
+  // VALIDACIONES
+  // ==========================
+
+  const validarFormulario = () => {
+    const errores = {}
+
+    if (!usuario.trim()) {
+      errores.usuario = 'El usuario es requerido'
+    } else if (usuario.trim().length < 3) {
+      errores.usuario =
+        'El usuario debe tener al menos 3 caracteres'
+    }
+
+    if (!password) {
+      errores.password = 'La contraseña es requerida'
+    } else if (password.length < 6) {
+      errores.password =
+        'La contraseña debe tener al menos 6 caracteres'
+    }
+
+    return errores
+  }
+
+  // ==========================
+  // LOGIN
+  // ==========================
+
+  const manejarLogin = async (event) => {
     event.preventDefault()
 
     setError('')
+    setErroresValidacion({})
+
+    const errores = validarFormulario()
+
+    if (Object.keys(errores).length > 0) {
+      setErroresValidacion(errores)
+      return
+    }
+
+    setCargando(true)
 
     try {
-      const resultado = await login(usuario, password)
-
-      localStorage.setItem('access_token', resultado.access_token)
-
-      onLogin(resultado.access_token)
-
+      await iniciarSesion(usuario, password)
     } catch (error) {
       console.error(error)
       setError(error.message)
+    } finally {
+      setCargando(false)
     }
   }
 
@@ -31,11 +70,23 @@ function Login({
     <div
       className="min-vh-100 d-flex align-items-center justify-content-center"
       style={{
-        background: 'linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%)',
+        background:
+          'linear-gradient(135deg, #0d6efd 0%, #6f42c1 100%)',
       }}
     >
-      <div className="card shadow-lg border-0" style={{ width: '400px' }}>
+      <div
+        className="card shadow-lg border-0"
+        style={{
+          width: '400px',
+          maxWidth: '90%',
+        }}
+      >
+
         <div className="card-body p-5">
+
+          {/* ========================== */}
+          {/* ENCABEZADO */}
+          {/* ========================== */}
 
           <div className="text-center mb-4">
 
@@ -52,7 +103,7 @@ function Login({
             </div>
 
             <h2 className="fw-bold">
-              Usuarios API
+              Gestión de Usuarios
             </h2>
 
             <p className="text-muted mb-0">
@@ -61,37 +112,117 @@ function Login({
 
           </div>
 
-          <form onSubmit={iniciarSesion}>
+
+          {/* ========================== */}
+          {/* FORMULARIO */}
+          {/* ========================== */}
+
+          <form onSubmit={manejarLogin}>
+
+            {/* ========================== */}
+            {/* USUARIO */}
+            {/* ========================== */}
 
             <div className="mb-3">
+
               <label className="form-label fw-semibold">
                 Usuario
               </label>
 
               <input
                 type="text"
-                className="form-control form-control-lg"
+                className={`form-control form-control-lg ${
+                  erroresValidacion.usuario
+                    ? 'is-invalid'
+                    : ''
+                }`}
                 placeholder="Ingresa tu usuario"
                 value={usuario}
-                onChange={(event) => setUsuario(event.target.value)}
-                required
+                onChange={(event) =>
+                  setUsuario(event.target.value)
+                }
+                disabled={cargando}
               />
+
+              {erroresValidacion.usuario && (
+                <div className="invalid-feedback d-block">
+                  {erroresValidacion.usuario}
+                </div>
+              )}
+
             </div>
 
+
+            {/* ========================== */}
+            {/* CONTRASEÑA */}
+            {/* ========================== */}
+
             <div className="mb-4">
+
               <label className="form-label fw-semibold">
                 Contraseña
               </label>
 
-              <input
-                type="password"
-                className="form-control form-control-lg"
-                placeholder="Ingresa tu contraseña"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
+              <div className="input-group">
+
+                <input
+                  type={
+                    mostrarPassword
+                      ? 'text'
+                      : 'password'
+                  }
+                  className={`form-control form-control-lg ${
+                    erroresValidacion.password
+                      ? 'is-invalid'
+                      : ''
+                  }`}
+                  placeholder="Ingresa tu contraseña"
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  disabled={cargando}
+                />
+
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() =>
+                    setMostrarPassword(
+                      (valor) => !valor
+                    )
+                  }
+                  disabled={cargando}
+                  title={
+                    mostrarPassword
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  }
+                  aria-label={
+                    mostrarPassword
+                      ? 'Ocultar contraseña'
+                      : 'Mostrar contraseña'
+                  }
+                >
+                  {mostrarPassword
+                    ? '🙈'
+                    : '👁️'}
+                </button>
+
+              </div>
+
+              {erroresValidacion.password && (
+                <div className="invalid-feedback d-block">
+                  {erroresValidacion.password}
+                </div>
+              )}
+
             </div>
+
+
+            {/* ========================== */}
+            {/* SESIÓN EXPIRADA */}
+            {/* ========================== */}
 
             {mensajeSesion && (
               <div className="alert alert-warning">
@@ -99,23 +230,50 @@ function Login({
               </div>
             )}
 
+
+            {/* ========================== */}
+            {/* ERROR LOGIN */}
+            {/* ========================== */}
+
             {error && (
               <div className="alert alert-danger">
-                {error}
+                ❌ {error}
               </div>
             )}
+
+
+            {/* ========================== */}
+            {/* BOTÓN INGRESAR */}
+            {/* ========================== */}
 
             <button
               type="submit"
               className="btn btn-primary btn-lg w-100"
+              disabled={cargando}
             >
-              Ingresar
+
+              {cargando ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm me-2"
+                    role="status"
+                    aria-hidden="true"
+                  />
+
+                  Ingresando...
+                </>
+              ) : (
+                'Ingresar'
+              )}
+
             </button>
 
           </form>
 
         </div>
+
       </div>
+
     </div>
   )
 }

@@ -1,8 +1,10 @@
 import {
-  useEffect,
   useState,
   useCallback,
+  useEffect,
 } from 'react'
+
+import { useAuth } from './contexts/AuthContext'
 
 import Login from './components/Login'
 import UserTable from './components/UserTable'
@@ -12,40 +14,25 @@ import DeleteUserModal from './components/DeleteUserModal'
 import Dashboard from './components/Dashboard'
 import SessionManager from './components/SessionManager'
 
-import {
-  obtenerUsuarios,
-  obtenerPayloadToken,
-} from './services/api'
-
 
 function App() {
 
   // ==========================
-  // SESIÓN
+  // CONTEXT
   // ==========================
 
-  const [logueado, setLogueado] =
-    useState(false)
-
-  const [token, setToken] =
-    useState('')
-
-  const [usuarioLogueado, setUsuarioLogueado] =
-    useState(null)
-
-  const [cargando, setCargando] =
-    useState(true)
-
-  const [mensajeSesion, setMensajeSesion] =
-    useState('')
-
-
-  // ==========================
-  // USUARIOS
-  // ==========================
-
-  const [usuarios, setUsuarios] =
-    useState([])
+  const {
+    logueado,
+    token,
+    usuarioLogueado,
+    cargando,
+    mensajeSesion,
+    usuarios,
+    setUsuarios,
+    cerrarSesion,
+    manejarSesionExpirada,
+    iniciarSesion,
+  } = useAuth()
 
 
   // ==========================
@@ -68,13 +55,11 @@ function App() {
 
   const [modoOscuro, setModoOscuro] =
     useState(() => {
-
       return (
         localStorage.getItem(
           'modo_oscuro'
         ) === 'true'
       )
-
     })
 
 
@@ -83,279 +68,35 @@ function App() {
   // ==========================
 
   useEffect(() => {
-
     localStorage.setItem(
       'modo_oscuro',
       modoOscuro
     )
-
-  }, [
-    modoOscuro,
-  ])
-
-
-  // ==========================
-  // CERRAR SESIÓN
-  // ==========================
-
-  const cerrarSesion = useCallback(() => {
-
-    localStorage.removeItem(
-      'access_token'
-    )
-
-    setLogueado(false)
-
-    setUsuarios([])
-
-    setToken('')
-
-    setUsuarioLogueado(null)
-
-    setMostrarFormulario(false)
-
-    setUsuarioEditando(null)
-
-    setUsuarioEliminando(null)
-
-  }, [])
-
-
-  // ==========================
-  // SESIÓN EXPIRADA
-  // ==========================
-
-  const manejarSesionExpirada =
-    useCallback(() => {
-
-      console.log(
-        'Sesión expirada.'
-      )
-
-      localStorage.removeItem(
-        'access_token'
-      )
-
-      setLogueado(false)
-
-      setUsuarios([])
-
-      setToken('')
-
-      setUsuarioLogueado(null)
-
-      setMostrarFormulario(false)
-
-      setUsuarioEditando(null)
-
-      setUsuarioEliminando(null)
-
-      setMensajeSesion(
-        'Tu sesión ha expirado. Inicia sesión nuevamente.'
-      )
-
-    }, [])
-
-
-  // ==========================
-  // VALIDAR SESIÓN AL ABRIR
-  // ==========================
-
-  useEffect(() => {
-
-    const tokenGuardado =
-      localStorage.getItem(
-        'access_token'
-      )
-
-
-    if (!tokenGuardado) {
-
-      setCargando(false)
-
-      return
-    }
-
-
-    const cargarSesion = async () => {
-
-      try {
-
-        const resultado =
-          await obtenerUsuarios(
-            tokenGuardado
-          )
-
-        setToken(tokenGuardado)
-
-        setUsuarios(resultado)
-
-
-        // ==========================
-        // OBTENER USUARIO LOGUEADO
-        // ==========================
-
-        const payload =
-          obtenerPayloadToken(
-            tokenGuardado
-          )
-
-        const usuarioActual =
-          resultado.find(
-            (usuario) =>
-              usuario.dni === payload?.sub
-          )
-
-        setUsuarioLogueado(
-          usuarioActual || null
-        )
-
-
-        setLogueado(true)
-
-      } catch (error) {
-
-        console.error(
-          'Error validando sesión:',
-          error
-        )
-
-
-        localStorage.removeItem(
-          'access_token'
-        )
-
-        setLogueado(false)
-
-        setUsuarioLogueado(null)
-
-        if (error.status === 401) {
-
-          setMensajeSesion(
-            'Tu sesión ha expirado. Inicia sesión nuevamente.'
-          )
-
-        }
-
-      } finally {
-
-        setCargando(false)
-
-      }
-
-    }
-
-
-    cargarSesion()
-
-  }, [])
-
-
-  // ==========================
-  // LOGIN
-  // ==========================
-
-  const iniciarAplicacion = async (
-    accessToken
-  ) => {
-
-    try {
-
-      const resultado =
-        await obtenerUsuarios(
-          accessToken
-        )
-
-
-      setToken(accessToken)
-
-      setUsuarios(resultado)
-
-
-      // ==========================
-      // OBTENER USUARIO LOGUEADO
-      // ==========================
-
-      const payload =
-        obtenerPayloadToken(
-          accessToken
-        )
-
-      const usuarioActual =
-        resultado.find(
-          (usuario) =>
-            usuario.dni === payload?.sub
-        )
-
-      setUsuarioLogueado(
-        usuarioActual || null
-      )
-
-
-      setLogueado(true)
-
-      setMensajeSesion('')
-
-    } catch (error) {
-
-      console.error(
-        'Error obteniendo usuarios:',
-        error
-      )
-
-
-      if (error.status === 401) {
-
-        localStorage.removeItem(
-          'access_token'
-        )
-
-        setMensajeSesion(
-          'La sesión no pudo ser validada.'
-        )
-
-      }
-
-      throw error
-
-    }
-
-  }
-
+  }, [modoOscuro])
 
   // ==========================
   // CREAR
   // ==========================
 
   const abrirFormulario = () => {
-
     setMostrarFormulario(true)
-
   }
-
 
   const cerrarFormulario = () => {
-
     setMostrarFormulario(false)
-
   }
-
 
   const usuarioCreado = (
     nuevoUsuario
   ) => {
-
     setUsuarios(
       (usuariosActuales) => [
         ...usuariosActuales,
         nuevoUsuario,
       ]
     )
-
     setMostrarFormulario(false)
-
   }
-
 
   // ==========================
   // EDITAR
@@ -364,23 +105,16 @@ function App() {
   const editarUsuario = (
     usuario
   ) => {
-
     setUsuarioEditando(usuario)
-
   }
-
 
   const cerrarEdicion = () => {
-
     setUsuarioEditando(null)
-
   }
-
 
   const usuarioActualizado = (
     usuarioActualizado
   ) => {
-
     setUsuarios(
       (usuariosActuales) =>
         usuariosActuales.map(
@@ -391,27 +125,8 @@ function App() {
               : usuario
         )
     )
-
-    // Si el usuario editado es
-    // el usuario actualmente logueado,
-    // actualizar también la información
-    // mostrada arriba.
-
-    if (
-      usuarioLogueado?.dni ===
-      usuarioActualizado.dni
-    ) {
-
-      setUsuarioLogueado(
-        usuarioActualizado
-      )
-
-    }
-
     setUsuarioEditando(null)
-
   }
-
 
   // ==========================
   // ELIMINAR
@@ -420,23 +135,16 @@ function App() {
   const eliminarUsuario = (
     usuario
   ) => {
-
     setUsuarioEliminando(usuario)
-
   }
-
 
   const cerrarEliminacion = () => {
-
     setUsuarioEliminando(null)
-
   }
-
 
   const usuarioEliminado = (
     dni
   ) => {
-
     setUsuarios(
       (usuariosActuales) =>
         usuariosActuales.filter(
@@ -444,63 +152,43 @@ function App() {
             usuario.dni !== dni
         )
     )
-
     setUsuarioEliminando(null)
-
   }
-
 
   // ==========================
   // CARGANDO
   // ==========================
 
   if (cargando) {
-
     return (
-
       <div
         className="vh-100 d-flex justify-content-center align-items-center"
       >
-
         <div className="text-center">
-
           <div
             className="spinner-border text-primary mb-3"
             role="status"
           />
-
           <div>
             Validando sesión...
           </div>
-
         </div>
-
       </div>
-
     )
-
   }
-
 
   // ==========================
   // LOGIN
   // ==========================
 
   if (!logueado) {
-
     return (
-
       <Login
-        onLogin={
-          iniciarAplicacion
-        }
         mensajeSesion={
           mensajeSesion
         }
       />
-
     )
-
   }
 
 
@@ -572,7 +260,7 @@ function App() {
                 </div>
 
                 <small className="opacity-75">
-                  DNI: {usuarioLogueado.dni}
+                  Número de identificación: {usuarioLogueado.dni}
                 </small>
 
               </div>
