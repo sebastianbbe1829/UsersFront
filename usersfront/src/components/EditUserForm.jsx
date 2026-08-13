@@ -255,20 +255,11 @@ function EditUserForm({
                 <select
                   className="form-select"
                   value={status}
-                  onChange={(event) =>
-                    setStatus(event.target.value === 'true')
-                  }
+                  onChange={(event) => setStatus(parseInt(event.target.value))}
                   disabled={guardando}
                 >
-
-                  <option value="true">
-                    Activo
-                  </option>
-
-                  <option value="false">
-                    Inactivo
-                  </option>
-
+                  <option value="1">Activo</option>
+                  <option value="0">Inactivo</option>
                 </select>
 
               </div>
