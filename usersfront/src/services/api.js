@@ -295,3 +295,22 @@ export const obtenerTiempoToken = (
     0
   )
 }
+
+// ==========================
+// ACTIVAR USUARIO
+// ==========================
+
+export const activarUsuario = async (
+  dni,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/users/activate/${dni}/${token}/`,
+    {
+      method: 'POST',
+    }
+  )
+
+  return procesarRespuesta(response)
+}
