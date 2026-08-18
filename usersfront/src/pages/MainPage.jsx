@@ -5,6 +5,10 @@ import {
 
 import { useAuth } from '../contexts/AuthContext'
 
+import {
+  exportarUsuariosExcel,
+} from '../services/api'
+
 import Login from '../components/Login'
 import UserTable from '../components/UserTable'
 import UserForm from '../components/UserForm'
@@ -48,6 +52,82 @@ function MainPage() {
 
 
   // ==========================
+  // EXPORTAR EXCEL
+  // ==========================
+
+  const [exportandoExcel, setExportandoExcel] =
+    useState(false)
+
+
+  const descargarExcel = async () => {
+
+    try {
+
+      setExportandoExcel(true)
+
+      // ==========================
+      // SOLICITAR ARCHIVO AL API
+      // ==========================
+
+      const blob =
+        await exportarUsuariosExcel(token)
+
+
+      // ==========================
+      // CREAR DESCARGA
+      // ==========================
+
+      const url =
+        window.URL.createObjectURL(blob)
+
+      const enlace =
+        document.createElement('a')
+
+      enlace.href = url
+
+      enlace.download =
+        'reporte_usuarios.xlsx'
+
+      document.body.appendChild(
+        enlace
+      )
+
+      enlace.click()
+
+      enlace.remove()
+
+      window.URL.revokeObjectURL(
+        url
+      )
+
+    } catch (error) {
+
+      console.error(
+        'Error exportando usuarios:',
+        error
+      )
+
+
+      // ==========================
+      // SESIÓN EXPIRADA
+      // ==========================
+
+      if (error.status === 401) {
+
+        manejarSesionExpirada()
+
+      }
+
+    } finally {
+
+      setExportandoExcel(false)
+
+    }
+
+  }
+
+
+  // ==========================
   // MODO OSCURO
   // ==========================
 
@@ -82,12 +162,16 @@ function MainPage() {
   // ==========================
 
   const abrirFormulario = () => {
+
     setMostrarFormulario(true)
+
   }
 
 
   const cerrarFormulario = () => {
+
     setMostrarFormulario(false)
+
   }
 
 
@@ -103,6 +187,7 @@ function MainPage() {
     )
 
     setMostrarFormulario(false)
+
   }
 
 
@@ -120,7 +205,9 @@ function MainPage() {
 
 
   const cerrarEdicion = () => {
+
     setUsuarioEditando(null)
+
   }
 
 
@@ -140,6 +227,7 @@ function MainPage() {
     )
 
     setUsuarioEditando(null)
+
   }
 
 
@@ -157,7 +245,9 @@ function MainPage() {
 
 
   const cerrarEliminacion = () => {
+
     setUsuarioEliminando(null)
+
   }
 
 
@@ -174,6 +264,7 @@ function MainPage() {
     )
 
     setUsuarioEliminando(null)
+
   }
 
 
@@ -362,6 +453,12 @@ function MainPage() {
         <Dashboard
           usuarios={
             usuarios
+          }
+          onExportarExcel={
+            descargarExcel
+          }
+          exportandoExcel={
+            exportandoExcel
           }
         />
 

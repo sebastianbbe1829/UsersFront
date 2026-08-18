@@ -66,6 +66,45 @@ const procesarRespuesta = async (response) => {
 
   return resultado
 }
+// ==========================
+// PROCESAR RESPUESTA DE ARCHIVO
+// ==========================
+
+const procesarRespuestaArchivo = async (
+  response
+) => {
+
+  if (!response.ok) {
+
+    let resultado = null
+
+    try {
+      resultado = await response.json()
+    } catch {
+      resultado = null
+    }
+
+    console.error('Error API:', {
+      status: response.status,
+      statusText: response.statusText,
+      detail: resultado?.detail,
+    })
+
+    const mensajeError =
+      resultado?.detail ||
+      obtenerMensajeError(response.status)
+
+    const error =
+      new Error(mensajeError)
+
+    error.status =
+      response.status
+
+    throw error
+  }
+
+  return await response.blob()
+}
 
 
 // ==========================
@@ -313,4 +352,28 @@ export const activarUsuario = async (
   )
 
   return procesarRespuesta(response)
+}
+
+// ==========================
+// EXPORTAR USUARIOS A EXCEL
+// ==========================
+
+export const exportarUsuariosExcel = async (
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/users/export`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuestaArchivo(
+    response
+  )
 }

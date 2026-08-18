@@ -1,4 +1,8 @@
-function Dashboard({ usuarios }) {
+function Dashboard({
+  usuarios,
+  onExportarExcel,
+  exportandoExcel,
+}) {
 
   const totalUsuarios = usuarios.length
 
@@ -12,11 +16,14 @@ function Dashboard({ usuarios }) {
 
 
   return (
+
     <div className="container mb-4">
 
       <div className="row g-3">
 
+        {/* ========================== */}
         {/* TOTAL */}
+        {/* ========================== */}
 
         <div className="col-12 col-md-4">
 
@@ -39,7 +46,14 @@ function Dashboard({ usuarios }) {
                 </div>
 
                 <div
-                  className="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                  className="
+                    rounded-circle
+                    bg-primary
+                    text-white
+                    d-flex
+                    align-items-center
+                    justify-content-center
+                  "
                   style={{
                     width: '55px',
                     height: '55px',
@@ -58,7 +72,9 @@ function Dashboard({ usuarios }) {
         </div>
 
 
+        {/* ========================== */}
         {/* ACTIVOS */}
+        {/* ========================== */}
 
         <div className="col-12 col-md-4">
 
@@ -81,7 +97,14 @@ function Dashboard({ usuarios }) {
                 </div>
 
                 <div
-                  className="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
+                  className="
+                    rounded-circle
+                    bg-success
+                    text-white
+                    d-flex
+                    align-items-center
+                    justify-content-center
+                  "
                   style={{
                     width: '55px',
                     height: '55px',
@@ -100,7 +123,9 @@ function Dashboard({ usuarios }) {
         </div>
 
 
-        {/* INACTIVOS */}
+        {/* ========================== */}
+        {/* INACTIVOS + EXPORTAR */}
+        {/* ========================== */}
 
         <div className="col-12 col-md-4">
 
@@ -109,6 +134,8 @@ function Dashboard({ usuarios }) {
             <div className="card-body">
 
               <div className="d-flex justify-content-between align-items-center">
+
+                {/* INFORMACIÓN */}
 
                 <div>
 
@@ -122,15 +149,65 @@ function Dashboard({ usuarios }) {
 
                 </div>
 
-                <div
-                  className="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center"
-                  style={{
-                    width: '55px',
-                    height: '55px',
-                    fontSize: '1.5rem',
-                  }}
-                >
-                  ○
+
+                {/* ACCIONES */}
+
+                <div className="d-flex align-items-center gap-2">
+
+                  {/* ICONO */}
+
+                  <div
+                    className="
+                      rounded-circle
+                      bg-secondary
+                      text-white
+                      d-flex
+                      align-items-center
+                      justify-content-center
+                    "
+                    style={{
+                      width: '55px',
+                      height: '55px',
+                      fontSize: '1.5rem',
+                    }}
+                  >
+                    ○
+                  </div>
+
+
+                  {/* EXPORTAR */}
+
+                  <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={
+                      onExportarExcel
+                    }
+                    disabled={
+                      exportandoExcel
+                    }
+                    title="Exportar usuarios a Excel"
+                  >
+
+                    {exportandoExcel ? (
+
+                      <span
+                        className="
+                          spinner-border
+                          spinner-border-sm
+                        "
+                        role="status"
+                        aria-hidden="true"
+                      />
+
+                    ) : (
+
+                      '📊'
+
+                    )}
+
+                  </button>
+
                 </div>
 
               </div>
@@ -144,7 +221,9 @@ function Dashboard({ usuarios }) {
       </div>
 
     </div>
+
   )
 }
+
 
 export default Dashboard
