@@ -12,23 +12,45 @@ import {
   login,
 } from '../services/api'
 
+import {
+  obtenerTenantDesdeUrl,
+} from '../utils/tenant'
 
-// ==========================
+
+// ============================================================
 // CREAR CONTEXT
-// ==========================
+// ============================================================
 
 const AuthContext = createContext(null)
 
 
-// ==========================
+// ============================================================
+// CONSTANTE LOCAL STORAGE
+// ============================================================
+
+const TENANT_SESSIONS_KEY =
+  'tenant_sessions'
+
+
+// ============================================================
 // PROVEEDOR
-// ==========================
+// ============================================================
 
 export function AuthProvider({ children }) {
 
-  // ==========================
+  // ==========================================================
+  // TENANT
+  // ==========================================================
+
+  const [tenant, setTenant] =
+    useState(() =>
+      obtenerTenantDesdeUrl()
+    )
+
+
+  // ==========================================================
   // SESIÓN
-  // ==========================
+  // ==========================================================
 
   const [logueado, setLogueado] =
     useState(false)
@@ -49,156 +71,948 @@ export function AuthProvider({ children }) {
     useState([])
 
 
-  // ==========================
-  // CERRAR SESIÓN
-  // ==========================
+  // ==========================================================
+  // OBTENER SESIONES DE TENANTS
+  // ==========================================================
 
-  const cerrarSesion = useCallback(() => {
-    localStorage.removeItem('access_token')
-    setLogueado(false)
-    setUsuarios([])
-    setToken('')
-    setUsuarioLogueado(null)
-    setMensajeSesion('')
+  const obtenerSesionesTenants = useCallback(() => {
+
+    try {
+
+      const sesiones =
+        localStorage.getItem(
+          TENANT_SESSIONS_KEY
+        )
+
+      if (!sesiones) {
+        return {}
+      }
+
+      const resultado =
+        JSON.parse(sesiones)
+
+      if (
+        !resultado ||
+        typeof resultado !== 'object'
+      ) {
+        return {}
+      }
+
+      return resultado
+
+    } catch (error) {
+
+      console.error(
+        'Error leyendo sesiones de tenants:',
+        error
+      )
+
+      return {}
+
+    }
+
   }, [])
 
 
-  // ==========================
+  // ==========================================================
+  // GUARDAR TOKEN DEL TENANT
+  // ==========================================================
+
+  const guardarSesionTenant =
+    useCallback(
+      (
+        tenantActual,
+        tokenNuevo
+      ) => {
+
+        if (!tenantActual || !tokenNuevo) {
+          return
+        }
+
+
+        const sesiones =
+          obtenerSesionesTenants()
+
+
+        sesiones[tenantActual] =
+          tokenNuevo
+
+
+        localStorage.setItem(
+          TENANT_SESSIONS_KEY,
+          JSON.stringify(sesiones)
+        )
+
+
+        // ----------------------------------------------------
+        // Compatibilidad temporal
+        // ----------------------------------------------------
+        // Dejamos también access_token porque algunos
+        // componentes antiguos todavía podrían utilizarlo.
+        // Posteriormente podremos eliminarlo.
+
+        localStorage.setItem(
+          'access_token',
+          tokenNuevo
+        )
+
+      },
+      [
+        obtenerSesionesTenants,
+      ]
+    )
+
+
+  // ==========================================================
+  // OBTENER TOKEN DEL TENANT
+  // ==========================================================
+
+  const obtenerSesionTenant =
+    useCallback(
+      (
+        tenantActual
+      ) => {
+
+        if (!tenantActual) {
+          return null
+        }
+
+
+        const sesiones =
+          obtenerSesionesTenants()
+
+
+        return (
+          sesiones[tenantActual] ||
+          null
+        )
+
+      },
+      [
+        obtenerSesionesTenants,
+      ]
+    )
+
+
+  // ==========================================================
+  // ELIMINAR SESIÓN DEL TENANT
+  // ==========================================================
+
+  const eliminarSesionTenant =
+    useCallback(
+      (
+        tenantActual
+      ) => {
+
+        if (!tenantActual) {
+          return
+        }
+
+
+        const sesiones =
+          obtenerSesionesTenants()
+
+
+        delete sesiones[tenantActual]
+
+
+        localStorage.setItem(
+          TENANT_SESSIONS_KEY,
+          JSON.stringify(sesiones)
+        )
+
+
+        // ----------------------------------------------------
+        // access_token temporal
+        // ----------------------------------------------------
+
+        localStorage.removeItem(
+          'access_token'
+        )
+
+      },
+      [
+        obtenerSesionesTenants,
+      ]
+    )
+
+
+  // ==========================================================
+  // VALIDAR TENANT DEL TOKEN
+  // ==========================================================
+
+  const validarTenantToken =
+    useCallback(
+      (
+        tokenGuardado,
+        tenantActual
+      ) => {
+
+        // ----------------------------------------------------
+        // Tenant obligatorio
+        // ----------------------------------------------------
+
+        if (!tenantActual) {
+
+          console.warn(
+            'No existe tenant en la URL.'
+          )
+
+          return false
+
+        }
+
+
+        // ----------------------------------------------------
+        // Obtener payload
+        // ----------------------------------------------------
+
+        const payload =
+          obtenerPayloadToken(
+            tokenGuardado
+          )
+
+
+        if (!payload) {
+
+          console.warn(
+            'No fue posible obtener el payload del JWT.'
+          )
+
+          return false
+
+        }
+
+
+        // ----------------------------------------------------
+        // Tenant del JWT
+        // ----------------------------------------------------
+
+        const tenantToken =
+          payload?.tenant_slug
+
+
+        if (!tenantToken) {
+
+          console.warn(
+            'El JWT no contiene tenant_slug.'
+          )
+
+          return false
+
+        }
+
+
+        // ----------------------------------------------------
+        // Comparación
+        // ----------------------------------------------------
+
+        const coincide =
+          tenantToken === tenantActual
+
+
+        console.log(
+          'Validación tenant:',
+          {
+            tenantUrl:
+              tenantActual,
+
+            tenantToken:
+              tenantToken,
+
+            coincide,
+          }
+        )
+
+
+        return coincide
+
+      },
+      []
+    )
+
+
+  // ==========================================================
+  // LIMPIAR ESTADO DE SESIÓN
+  // ==========================================================
+
+  const limpiarEstadoSesion =
+    useCallback(() => {
+
+      setLogueado(false)
+
+      setUsuarios([])
+
+      setToken('')
+
+      setUsuarioLogueado(null)
+
+    }, [])
+
+
+  // ==========================================================
+  // CERRAR SESIÓN
+  // ==========================================================
+
+  const cerrarSesion =
+    useCallback(() => {
+
+      const tenantActual =
+        obtenerTenantDesdeUrl()
+
+
+      console.log(
+        'Cerrando sesión del tenant:',
+        tenantActual
+      )
+
+
+      // ------------------------------------------------------
+      // Eliminar solamente la sesión actual
+      // ------------------------------------------------------
+
+      eliminarSesionTenant(
+        tenantActual
+      )
+
+
+      // ------------------------------------------------------
+      // Limpiar estado React
+      // ------------------------------------------------------
+
+      limpiarEstadoSesion()
+
+
+      // ------------------------------------------------------
+      // Limpiar mensaje
+      // ------------------------------------------------------
+
+      setMensajeSesion('')
+
+    }, [
+      eliminarSesionTenant,
+      limpiarEstadoSesion,
+    ])
+
+
+  // ==========================================================
   // SESIÓN EXPIRADA
-  // ==========================
+  // ==========================================================
 
   const manejarSesionExpirada =
     useCallback(() => {
-      console.log('Sesión expirada.')
-      cerrarSesion()
+
+      const tenantActual =
+        obtenerTenantDesdeUrl()
+
+
+      console.log(
+        'Sesión expirada para tenant:',
+        tenantActual
+      )
+
+
+      // ------------------------------------------------------
+      // Eliminar solamente la sesión de este tenant
+      // ------------------------------------------------------
+
+      eliminarSesionTenant(
+        tenantActual
+      )
+
+
+      // ------------------------------------------------------
+      // Limpiar estado
+      // ------------------------------------------------------
+
+      limpiarEstadoSesion()
+
+
+      // ------------------------------------------------------
+      // Mensaje
+      // ------------------------------------------------------
+
       setMensajeSesion(
         'Tu sesión ha expirado. Inicia sesión nuevamente.'
       )
-    }, [cerrarSesion])
+
+    }, [
+      eliminarSesionTenant,
+      limpiarEstadoSesion,
+    ])
 
 
-  // ==========================
-  // LOGIN
-  // ==========================
-
-  const iniciarSesion = useCallback(
-    async (username, password) => {
-      try {
-        const resultado = await login(username, password)
-        localStorage.setItem(
-          'access_token',
-          resultado.access_token
-        )
-        await cargarDatos(resultado.access_token)
-        return resultado
-      } catch (error) {
-        throw error
-      }
-    },
-    []
-  )
-
-
-  // ==========================
+  // ==========================================================
   // CARGAR DATOS
-  // ==========================
+  // ==========================================================
 
-  const cargarDatos = useCallback(
-    async (tokenGuardado) => {
-      try {
-        const resultado =
-          await obtenerUsuarios(tokenGuardado)
+  const cargarDatos =
+    useCallback(
+      async (
+        tokenGuardado
+      ) => {
 
-        setToken(tokenGuardado)
-        setUsuarios(resultado)
+        try {
 
-        const payload =
-          obtenerPayloadToken(tokenGuardado)
+          // ==================================================
+          // TENANT ACTUAL
+          // ==================================================
 
-        const usuarioActual = resultado.find(
-          (usuario) =>
-            usuario.dni === payload?.sub
-        )
+          const tenantActual =
+            obtenerTenantDesdeUrl()
 
-        setUsuarioLogueado(usuarioActual || null)
-        setLogueado(true)
-      } catch (error) {
-        console.error(
-          'Error validando sesión:',
-          error
-        )
 
-        localStorage.removeItem('access_token')
-        setLogueado(false)
-        setUsuarioLogueado(null)
+          setTenant(
+            tenantActual
+          )
 
-        if (error.status === 401) {
-          manejarSesionExpirada()
+
+          // ==================================================
+          // VALIDAR TENANT
+          // ==================================================
+
+          const tenantValido =
+            validarTenantToken(
+              tokenGuardado,
+              tenantActual
+            )
+
+
+          if (!tenantValido) {
+
+            console.warn(
+              'El token no pertenece al tenant de la URL.'
+            )
+
+
+            // ------------------------------------------------
+            // IMPORTANTE:
+            // NO borramos todas las sesiones.
+            //
+            // Solamente eliminamos la sesión del tenant
+            // actual si corresponde al token que estamos
+            // intentando utilizar.
+            // ------------------------------------------------
+
+            const sesiones =
+              obtenerSesionesTenants()
+
+
+            if (
+              tenantActual &&
+              sesiones[tenantActual] === tokenGuardado
+            ) {
+
+              eliminarSesionTenant(
+                tenantActual
+              )
+
+            }
+
+
+            limpiarEstadoSesion()
+
+
+            setMensajeSesion(
+              'La sesión no corresponde a la empresa seleccionada.'
+            )
+
+
+            return
+
+          }
+
+
+          // ==================================================
+          // OBTENER USUARIOS
+          // ==================================================
+
+          const resultado =
+            await obtenerUsuarios(
+              tokenGuardado
+            )
+
+
+          // ==================================================
+          // GUARDAR TOKEN EN ESTADO
+          // ==================================================
+
+          setToken(
+            tokenGuardado
+          )
+
+
+          // ==================================================
+          // GUARDAR USUARIOS
+          // ==================================================
+
+          setUsuarios(
+            resultado
+          )
+
+
+          // ==================================================
+          // OBTENER PAYLOAD
+          // ==================================================
+
+          const payload =
+            obtenerPayloadToken(
+              tokenGuardado
+            )
+
+
+          // ==================================================
+          // IDENTIFICAR USUARIO
+          // ==================================================
+
+          const usuarioActual =
+            resultado.find(
+              (usuario) =>
+                String(usuario.dni) ===
+                String(payload?.sub)
+            )
+
+
+          setUsuarioLogueado(
+            usuarioActual || null
+          )
+
+
+          // ==================================================
+          // SESIÓN VÁLIDA
+          // ==================================================
+
+          setLogueado(
+            true
+          )
+
+
+          // ==================================================
+          // LIMPIAR MENSAJE
+          // ==================================================
+
+          setMensajeSesion('')
+
+
+        } catch (error) {
+
+          console.error(
+            'Error validando sesión:',
+            error
+          )
+
+
+          const tenantActual =
+            obtenerTenantDesdeUrl()
+
+
+          // ==================================================
+          // ERROR 401
+          // ==================================================
+
+          if (
+            error.status === 401
+          ) {
+
+            manejarSesionExpirada()
+
+          } else {
+
+            // ----------------------------------------------
+            // Si el token almacenado pertenece al tenant
+            // actual, lo eliminamos.
+            // ----------------------------------------------
+
+            const sesiones =
+              obtenerSesionesTenants()
+
+
+            if (
+              tenantActual &&
+              sesiones[tenantActual] === tokenGuardado
+            ) {
+
+              eliminarSesionTenant(
+                tenantActual
+              )
+
+            }
+
+
+            limpiarEstadoSesion()
+
+
+            setMensajeSesion(
+              error.message ||
+              'No fue posible validar la sesión.'
+            )
+
+          }
+
+        } finally {
+
+          setCargando(
+            false
+          )
+
         }
-      } finally {
-        setCargando(false)
-      }
-    },
-    [manejarSesionExpirada]
-  )
+
+      },
+      [
+        validarTenantToken,
+        obtenerSesionesTenants,
+        eliminarSesionTenant,
+        limpiarEstadoSesion,
+        manejarSesionExpirada,
+      ]
+    )
 
 
-  // ==========================
-  // VALIDAR SESIÓN AL ABRIR
-  // ==========================
+  // ==========================================================
+  // LOGIN
+  // ==========================================================
+
+  const iniciarSesion =
+    useCallback(
+      async (
+        username,
+        password
+      ) => {
+
+        try {
+
+          // ==================================================
+          // TENANT DESDE URL
+          // ==================================================
+
+          const tenantActual =
+            obtenerTenantDesdeUrl()
+
+
+          // ==================================================
+          // VALIDAR TENANT
+          // ==================================================
+
+          if (!tenantActual) {
+
+            throw new Error(
+              'No se pudo determinar la empresa desde la URL.'
+            )
+
+          }
+
+
+          // ==================================================
+          // ACTUALIZAR TENANT
+          // ==================================================
+
+          setTenant(
+            tenantActual
+          )
+
+
+          console.log(
+            'Tenant para login:',
+            tenantActual
+          )
+
+
+          // ==================================================
+          // LIMPIAR MENSAJE
+          // ==================================================
+
+          setMensajeSesion('')
+
+
+          // ==================================================
+          // LOGIN MULTITENANT
+          // ==================================================
+
+          const resultado =
+            await login(
+              username,
+              password,
+              tenantActual
+            )
+
+
+          // ==================================================
+          // VALIDAR TOKEN
+          // ==================================================
+
+          if (
+            !resultado?.access_token
+          ) {
+
+            throw new Error(
+              'El servidor no devolvió un token de acceso.'
+            )
+
+          }
+
+
+          const nuevoToken =
+            resultado.access_token
+
+
+          // ==================================================
+          // VALIDAR TENANT DEL JWT
+          // ==================================================
+
+          const tenantTokenValido =
+            validarTenantToken(
+              nuevoToken,
+              tenantActual
+            )
+
+
+          if (!tenantTokenValido) {
+
+            console.error(
+              'El token recibido no corresponde al tenant solicitado.'
+            )
+
+
+            setLogueado(false)
+
+            setUsuarios([])
+
+            setToken('')
+
+            setUsuarioLogueado(null)
+
+
+            setMensajeSesion(
+              'La sesión recibida no corresponde a la empresa seleccionada.'
+            )
+
+
+            throw new Error(
+              'La sesión recibida no corresponde a la empresa seleccionada.'
+            )
+
+          }
+
+
+          // ==================================================
+          // GUARDAR SESIÓN POR TENANT
+          // ==================================================
+
+          guardarSesionTenant(
+            tenantActual,
+            nuevoToken
+          )
+
+
+          // ==================================================
+          // CARGAR DATOS
+          // ==================================================
+
+          await cargarDatos(
+            nuevoToken
+          )
+
+
+          return resultado
+
+        } catch (error) {
+
+          console.error(
+            'Error iniciando sesión:',
+            error
+          )
+
+          throw error
+
+        }
+
+      },
+      [
+        validarTenantToken,
+        guardarSesionTenant,
+        cargarDatos,
+      ]
+    )
+
+
+  // ==========================================================
+  // VALIDAR SESIÓN AL ABRIR / CAMBIAR TENANT
+  // ==========================================================
 
   useEffect(() => {
-    const tokenGuardado =
-      localStorage.getItem('access_token')
 
-    if (!tokenGuardado) {
+    // ========================================================
+    // TENANT ACTUAL
+    // ========================================================
+
+    const tenantActual =
+      obtenerTenantDesdeUrl()
+
+
+    setTenant(
+      tenantActual
+    )
+
+
+    // ========================================================
+    // SIN TENANT
+    // ========================================================
+
+    if (!tenantActual) {
+
+      limpiarEstadoSesion()
+
       setCargando(false)
+
       return
+
     }
 
-    cargarDatos(tokenGuardado)
-  }, [cargarDatos])
+
+    // ========================================================
+    // BUSCAR SESIÓN DEL TENANT ACTUAL
+    // ========================================================
+
+    const tokenTenant =
+      obtenerSesionTenant(
+        tenantActual
+      )
 
 
-  // ==========================
+    // ========================================================
+    // NO EXISTE SESIÓN PARA ESTE TENANT
+    // ========================================================
+
+    if (!tokenTenant) {
+
+      limpiarEstadoSesion()
+
+      setMensajeSesion('')
+
+      setCargando(false)
+
+      return
+
+    }
+
+
+    // ========================================================
+    // EXISTE SESIÓN
+    // ========================================================
+
+    setCargando(true)
+
+
+    cargarDatos(
+      tokenTenant
+    )
+
+  }, [
+    obtenerSesionTenant,
+    limpiarEstadoSesion,
+    cargarDatos,
+  ])
+
+
+  // ==========================================================
   // VALOR DEL CONTEXT
-  // ==========================
+  // ==========================================================
 
   const value = {
+
+    // --------------------------------------------------------
+    // TENANT
+    // --------------------------------------------------------
+
+    tenant,
+
+
+    // --------------------------------------------------------
+    // SESIÓN
+    // --------------------------------------------------------
+
     logueado,
+
     token,
+
     usuarioLogueado,
+
     cargando,
+
     mensajeSesion,
+
+
+    // --------------------------------------------------------
+    // DATOS
+    // --------------------------------------------------------
+
     usuarios,
+
     setUsuarios,
+
+
+    // --------------------------------------------------------
+    // ACCIONES
+    // --------------------------------------------------------
+
     iniciarSesion,
+
     cerrarSesion,
+
     manejarSesionExpirada,
+
     cargarDatos,
+
+
+    // --------------------------------------------------------
+    // MENSAJES
+    // --------------------------------------------------------
+
     setMensajeSesion,
+
   }
 
+
+  // ==========================================================
+  // PROVIDER
+  // ==========================================================
+
   return (
-    <AuthContext.Provider value={value}>
+
+    <AuthContext.Provider
+      value={value}
+    >
+
       {children}
+
     </AuthContext.Provider>
+
   )
+
 }
 
 
-// ==========================
+// ============================================================
 // HOOK PERSONALIZADO
-// ==========================
+// ============================================================
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+
+  const context =
+    useContext(
+      AuthContext
+    )
+
 
   if (!context) {
+
     throw new Error(
       'useAuth debe utilizarse dentro de AuthProvider'
     )
+
   }
 
+
   return context
+
 }

@@ -113,17 +113,18 @@ const procesarRespuestaArchivo = async (
 
 export const login = async (
   username,
-  password
+  password,
+  tenant
 ) => {
-
-  const datos = new URLSearchParams()
-
-  datos.append('username', username)
-  datos.append('password', password)
 
   console.log(
     'Intentando login contra:',
     `${API_URL}/auth/login`
+  )
+
+  console.log(
+    'Tenant seleccionado:',
+    tenant
   )
 
 
@@ -131,11 +132,17 @@ export const login = async (
     `${API_URL}/auth/login`,
     {
       method: 'POST',
+
       headers: {
         'Content-Type':
-          'application/x-www-form-urlencoded',
+          'application/json',
       },
-      body: datos,
+
+      body: JSON.stringify({
+        username,
+        password,
+        tenant,
+      }),
     }
   )
 

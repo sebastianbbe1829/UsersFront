@@ -5,9 +5,29 @@ import {
 
 import MainPage from '../pages/MainPage'
 import ActivateUser from '../components/ActivateUser'
+import TenantRequired from '../components/TenantRequired'
+
+import {
+  obtenerTenantDesdeUrl,
+} from '../utils/tenant'
 
 
 function AppRoutes() {
+
+  const tenant =
+    obtenerTenantDesdeUrl()
+
+
+  // ==========================
+  // URL SIN TENANT
+  // ==========================
+
+  if (!tenant) {
+
+    return <TenantRequired />
+
+  }
+
 
   return (
 
@@ -18,7 +38,7 @@ function AppRoutes() {
       {/* ========================== */}
 
       <Route
-        path="/users/activate/:dni/:token"
+        path="/:tenant/users/activate/:dni/:token"
         element={
           <ActivateUser />
         }
@@ -30,7 +50,7 @@ function AppRoutes() {
       {/* ========================== */}
 
       <Route
-        path="*"
+        path="/:tenant"
         element={
           <MainPage />
         }
