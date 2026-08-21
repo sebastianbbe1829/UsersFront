@@ -523,3 +523,108 @@ export const eliminarRol = async (
 
   return procesarRespuesta(response)
 }
+
+// ==========================
+// OBTENER PERMISOS GLOBALES
+// ==========================
+
+export const obtenerPermisos = async (
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/permission`,
+    {
+      method: 'GET',
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// OBTENER PERMISOS DEL ROL
+// ==========================
+
+export const obtenerPermisosRol = async (
+  roleId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/role-permissions/role/${roleId}`,
+    {
+      method: 'GET',
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ASIGNAR PERMISO A ROL
+// ==========================
+
+export const asignarPermisoRol = async (
+  roleId,
+  permissionId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/role-permissions`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify({
+        role_id: roleId,
+        permission_id: permissionId,
+      }),
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ELIMINAR PERMISO DEL ROL
+// ==========================
+
+export const eliminarPermisoRol = async (
+  rolePermissionId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/role-permissions/${rolePermissionId}`,
+    {
+      method: 'DELETE',
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}

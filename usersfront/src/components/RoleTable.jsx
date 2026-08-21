@@ -9,6 +9,7 @@ function RoleTable({
   onNuevoRol,
   onEditarRol,
   onEliminarRol,
+  onGestionarPermisos,
 }) {
 
   // ============================================================
@@ -253,7 +254,6 @@ function RoleTable({
             Roles
           </h4>
 
-
           <small className="text-muted">
             Gestión de roles del sistema
           </small>
@@ -301,10 +301,7 @@ function RoleTable({
 
           <div className="row g-2 align-items-end">
 
-
-            {/* ================================================= */}
-            {/* BUSCAR                                            */}
-            {/* ================================================= */}
+            {/* BUSCAR */}
 
             <div className="col-12 col-md-7">
 
@@ -319,26 +316,16 @@ function RoleTable({
                 Buscar rol
               </label>
 
-
               <div className="input-group input-group-sm">
 
-                <span
-                  className="
-                    input-group-text
-                  "
-                >
+                <span className="input-group-text">
                   🔎
                 </span>
 
-
                 <input
                   type="text"
-                  className="
-                    form-control
-                  "
-                  placeholder="
-                    Código, nombre o descripción...
-                  "
+                  className="form-control"
+                  placeholder="Código, nombre o descripción..."
                   value={busqueda}
                   onChange={(e) =>
                     cambiarBusqueda(
@@ -352,9 +339,7 @@ function RoleTable({
             </div>
 
 
-            {/* ================================================= */}
-            {/* ESTADO                                             */}
-            {/* ================================================= */}
+            {/* ESTADO */}
 
             <div className="col-6 col-md-3">
 
@@ -368,7 +353,6 @@ function RoleTable({
               >
                 Estado
               </label>
-
 
               <select
                 className="
@@ -400,9 +384,7 @@ function RoleTable({
             </div>
 
 
-            {/* ================================================= */}
-            {/* MOSTRAR                                            */}
-            {/* ================================================= */}
+            {/* MOSTRAR */}
 
             <div className="col-6 col-md-2">
 
@@ -416,7 +398,6 @@ function RoleTable({
               >
                 Mostrar
               </label>
-
 
               <select
                 className="
@@ -454,9 +435,7 @@ function RoleTable({
           </div>
 
 
-          {/* ================================================= */}
-          {/* LIMPIAR FILTROS                                   */}
-          {/* ================================================= */}
+          {/* LIMPIAR */}
 
           {(busqueda ||
             estadoFiltro !== 'todos') && (
@@ -513,11 +492,7 @@ function RoleTable({
             "
           >
 
-            <thead
-              className="
-                table-dark
-              "
-            >
+            <thead className="table-dark">
 
               <tr>
 
@@ -578,16 +553,13 @@ function RoleTable({
                         {rol.code}
                       </td>
 
-
                       <td>
                         {rol.name}
                       </td>
 
-
                       <td>
                         {rol.description || '—'}
                       </td>
-
 
                       <td>
 
@@ -625,8 +597,31 @@ function RoleTable({
                             d-flex
                             justify-content-center
                             gap-1
+                            flex-wrap
                           "
                         >
+
+                          {/* PERMISOS */}
+
+                          <button
+                            type="button"
+                            className="
+                              btn
+                              btn-primary
+                              btn-sm
+                              py-0
+                            "
+                            onClick={() =>
+                              onGestionarPermisos(
+                                rol
+                              )
+                            }
+                          >
+                            🔐 Permisos
+                          </button>
+
+
+                          {/* EDITAR */}
 
                           <button
                             type="button"
@@ -645,6 +640,8 @@ function RoleTable({
                             ✏️ Editar
                           </button>
 
+
+                          {/* ELIMINAR */}
 
                           <button
                             type="button"
@@ -722,41 +719,22 @@ function RoleTable({
 
                 <div className="card-body py-3">
 
-
-                  {/* CÓDIGO */}
-
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
+                    <div className="text-muted small">
                       Código
                     </div>
 
-                    <div
-                      className="
-                        fw-bold
-                      "
-                    >
+                    <div className="fw-bold">
                       {rol.code}
                     </div>
 
                   </div>
 
 
-                  {/* NOMBRE */}
-
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
+                    <div className="text-muted small">
                       Nombre
                     </div>
 
@@ -767,64 +745,34 @@ function RoleTable({
                   </div>
 
 
-                  {/* DESCRIPCIÓN */}
-
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
+                    <div className="text-muted small">
                       Descripción
                     </div>
 
-                    <div
-                      className="
-                        text-break
-                      "
-                    >
+                    <div className="text-break">
                       {rol.description || '—'}
                     </div>
 
                   </div>
 
 
-                  {/* ESTADO */}
-
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                        mb-1
-                      "
-                    >
+                    <div className="text-muted small mb-1">
                       Estado
                     </div>
 
-
                     {rol.status === 1 ? (
 
-                      <span
-                        className="
-                          badge
-                          bg-success
-                        "
-                      >
+                      <span className="badge bg-success">
                         Activo
                       </span>
 
                     ) : (
 
-                      <span
-                        className="
-                          badge
-                          bg-secondary
-                        "
-                      >
+                      <span className="badge bg-secondary">
                         Inactivo
                       </span>
 
@@ -835,12 +783,24 @@ function RoleTable({
 
                   {/* ACCIONES */}
 
-                  <div
-                    className="
-                      d-grid
-                      gap-1
-                    "
-                  >
+                  <div className="d-grid gap-1">
+
+                    <button
+                      type="button"
+                      className="
+                        btn
+                        btn-primary
+                        btn-sm
+                      "
+                      onClick={() =>
+                        onGestionarPermisos(
+                          rol
+                        )
+                      }
+                    >
+                      🔐 Gestionar permisos
+                    </button>
+
 
                     <button
                       type="button"
@@ -890,7 +850,7 @@ function RoleTable({
 
 
       {/* ====================================================== */}
-      {/* INFORMACIÓN                                          */}
+      {/* INFORMACIÓN                                           */}
       {/* ====================================================== */}
 
       <div
@@ -934,6 +894,7 @@ function RoleTable({
         <div>
 
           Total:{' '}
+
           <strong>
             {roles.length}
           </strong>
@@ -942,9 +903,7 @@ function RoleTable({
 
           Activos:{' '}
 
-          <strong
-            className="text-success"
-          >
+          <strong className="text-success">
             {
               roles.filter(
                 (rol) =>
@@ -992,8 +951,6 @@ function RoleTable({
             "
           >
 
-            {/* ANTERIOR */}
-
             <li
               className={
                 `page-item ${
@@ -1021,8 +978,6 @@ function RoleTable({
 
             </li>
 
-
-            {/* NÚMEROS */}
 
             {paginas.map(
               (pagina) => (
@@ -1055,8 +1010,6 @@ function RoleTable({
               )
             )}
 
-
-            {/* SIGUIENTE */}
 
             <li
               className={
