@@ -9,6 +9,7 @@ import MainLayout from '../layouts/MainLayout'
 import LoginPage from '../pages/LoginPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
+import RolesPage from '../pages/RolesPage'
 
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
@@ -203,27 +204,14 @@ function AppRoutes() {
         {/* ==================================================== */}
         {/* ROLES */}
         {/* ==================================================== */}
-
         <Route
           path="roles"
           element={
-
-            <div>
-
-              <h2 className="fw-bold">
-                Roles
-              </h2>
-
-              <p className="text-muted">
-                Módulo de roles próximamente.
-              </p>
-
-            </div>
-
+            <RolesPage />
           }
         />
 
-
+        
         {/* ==================================================== */}
         {/* PERMISOS */}
         {/* ==================================================== */}

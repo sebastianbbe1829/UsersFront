@@ -384,3 +384,26 @@ export const exportarUsuariosExcel = async (
     response
   )
 }
+
+// ==========================
+// OBTENER ROLES
+// ==========================
+
+export const obtenerRoles = async (
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/roles`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+
+}
