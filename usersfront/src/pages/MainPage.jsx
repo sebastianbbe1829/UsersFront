@@ -58,12 +58,22 @@ function MainPage() {
   const [exportandoExcel, setExportandoExcel] =
     useState(false)
 
+  const [mensajeExportacion, setMensajeExportacion] =
+    useState(null)
+
 
   const descargarExcel = async () => {
 
     try {
 
       setExportandoExcel(true)
+
+      // ==========================
+      // LIMPIAR MENSAJE ANTERIOR
+      // ==========================
+
+      setMensajeExportacion(null)
+
 
       // ==========================
       // SOLICITAR ARCHIVO AL API
@@ -100,6 +110,16 @@ function MainPage() {
         url
       )
 
+
+      // ==========================
+      // ÉXITO
+      // ==========================
+
+      setMensajeExportacion({
+        tipo: 'success',
+        texto: 'Excel generado correctamente.',
+      })
+
     } catch (error) {
 
       console.error(
@@ -116,7 +136,36 @@ function MainPage() {
 
         manejarSesionExpirada()
 
+        return
       }
+
+
+      // ==========================
+      // SIN PERMISOS
+      // ==========================
+
+      if (error.status === 403) {
+
+        setMensajeExportacion({
+          tipo: 'danger',
+          texto:
+            'No tienes permisos para exportar usuarios.',
+        })
+
+        return
+      }
+
+
+      // ==========================
+      // OTROS ERRORES
+      // ==========================
+
+      setMensajeExportacion({
+        tipo: 'danger',
+        texto:
+          error.message ||
+          'No fue posible generar el archivo Excel.',
+      })
 
     } finally {
 
@@ -442,6 +491,44 @@ function MainPage() {
         </div>
 
       </nav>
+
+
+      {/* ========================== */}
+      {/* MENSAJE EXPORTACIÓN */}
+      {/* ========================== */}
+
+      {mensajeExportacion && (
+
+        <div className="container pt-3">
+
+          <div
+            className={`
+              alert
+              alert-${mensajeExportacion.tipo}
+              alert-dismissible
+              fade
+              show
+              mb-0
+            `}
+            role="alert"
+          >
+
+            {mensajeExportacion.texto}
+
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Cerrar"
+              onClick={() =>
+                setMensajeExportacion(null)
+              }
+            />
+
+          </div>
+
+        </div>
+
+      )}
 
 
       {/* ========================== */}
