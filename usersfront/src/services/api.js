@@ -390,13 +390,130 @@ export const exportarUsuariosExcel = async (
 // ==========================
 
 export const obtenerRoles = async (
+  token,
+  statusFilter = null
+) => {
+
+  let url = `${API_URL}/roles`
+
+  if (
+    statusFilter !== null &&
+    statusFilter !== undefined
+  ) {
+    url += `?status_filter=${statusFilter}`
+  }
+
+  const response = await fetch(
+    url,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// OBTENER ROL
+// ==========================
+
+export const obtenerRol = async (
+  roleId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/roles/${roleId}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+// ==========================
+// CREAR ROL
+// ==========================
+
+export const crearRol = async (
+  rol,
   token
 ) => {
 
   const response = await fetch(
     `${API_URL}/roles`,
     {
-      method: 'GET',
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify(rol),
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ACTUALIZAR ROL
+// ==========================
+
+export const actualizarRol = async (
+  roleId,
+  rol,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/roles/${roleId}`,
+    {
+      method: 'PATCH',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify(rol),
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ELIMINAR ROL
+// ==========================
+
+export const eliminarRol = async (
+  roleId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/roles/${roleId}`,
+    {
+      method: 'DELETE',
+
       headers: {
         Authorization:
           `Bearer ${token}`,
@@ -405,5 +522,4 @@ export const obtenerRoles = async (
   )
 
   return procesarRespuesta(response)
-
 }

@@ -1,179 +1,571 @@
-// src/components/RoleForm.jsx
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from 'react'
 
-const backdropStyle = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: "rgba(0,0,0,0.45)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 2000,
-};
 
-const dialogStyle = {
-  width: "100%",
-  maxWidth: "640px",
-  background: "#fff",
-  borderRadius: "8px",
-  boxShadow: "0 6px 24px rgba(0,0,0,0.2)",
-  overflow: "hidden",
-};
+function RoleForm({
+  rol,
+  onGuardar,
+  onCancelar,
+  guardando = false,
+  error = '',
+}) {
 
-const headerStyle = {
-  padding: "16px 20px",
-  borderBottom: "1px solid #e9ecef",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-};
+  // ============================================================
+  // ESTADO DEL FORMULARIO
+  // ============================================================
 
-const bodyStyle = {
-  padding: "16px 20px",
-};
+  const [
+    formulario,
+    setFormulario,
+  ] = useState({
+    code: '',
+    name: '',
+    description: '',
+    status: 1,
+  })
 
-const footerStyle = {
-  padding: "12px 20px",
-  borderTop: "1px solid #e9ecef",
-  display: "flex",
-  justifyContent: "flex-end",
-  gap: "8px",
-};
 
-function RoleForm({ show = false, initial = null, onSubmit, onCancel }) {
-  const [code, setCode] = useState(initial?.code || "");
-  const [name, setName] = useState(initial?.name || "");
-  const [description, setDescription] = useState(initial?.description || "");
-  const [status, setStatus] = useState(initial?.status ?? 1);
-  const [submitting, setSubmitting] = useState(false);
+  // ============================================================
+  // CARGAR DATOS
+  // ============================================================
 
   useEffect(() => {
-    setCode(initial?.code || "");
-    setName(initial?.name || "");
-    setDescription(initial?.description || "");
-    setStatus(initial?.status ?? 1);
-  }, [initial, show]);
 
-  useEffect(() => {
-    // Evitar scroll del body mientras el modal está abierto
-    if (show) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
+    if (rol) {
+
+      setFormulario({
+        code:
+          rol.code ?? '',
+
+        name:
+          rol.name ?? '',
+
+        description:
+          rol.description ?? '',
+
+        status:
+          rol.status ?? 1,
+      })
+
+    } else {
+
+      setFormulario({
+        code: '',
+        name: '',
+        description: '',
+        status: 1,
+      })
+
     }
-  }, [show]);
 
-  if (!show) return null;
+  }, [rol])
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      await onSubmit({ code, name, description, status });
-    } catch (err) {
-      // onSubmit puede lanzar; lo dejamos propagar o manejar en RolesPage
-      console.error("RoleForm submit error:", err);
-    } finally {
-      setSubmitting(false);
+
+  // ============================================================
+  // CAMBIAR CAMPO
+  // ============================================================
+
+  const cambiarCampo = (
+    campo,
+    valor
+  ) => {
+
+    setFormulario(
+      (actual) => ({
+        ...actual,
+        [campo]: valor,
+      })
+    )
+
+  }
+
+
+  // ============================================================
+  // GUARDAR
+  // ============================================================
+
+  const guardar = (
+    event
+  ) => {
+
+    event.preventDefault()
+
+
+    const datos = {
+
+      code:
+        formulario.code.trim(),
+
+      name:
+        formulario.name.trim(),
+
+      description:
+        formulario.description.trim() ||
+        null,
+
     }
-  };
 
-  const handleBackdropClick = (e) => {
-    // cerrar solo si se clickea el backdrop (no el dialog)
-    if (e.target === e.currentTarget) {
-      onCancel();
+
+    // ==========================================================
+    // EL ESTADO SOLO SE ENVÍA AL EDITAR
+    // ==========================================================
+
+    if (rol) {
+
+      datos.status =
+        Number(
+          formulario.status
+        )
+
     }
-  };
+
+
+    onGuardar(
+      datos
+    )
+
+  }
+
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
-    <div style={backdropStyle} onMouseDown={handleBackdropClick} role="dialog" aria-modal="true">
-      <div style={dialogStyle} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={headerStyle}>
-          <h5 style={{ margin: 0 }}>{initial ? "Editar Rol" : "Nuevo Rol"}</h5>
-          <button
-            type="button"
-            onClick={onCancel}
-            aria-label="Cerrar"
-            style={{
-              border: "none",
-              background: "transparent",
-              fontSize: 18,
-              cursor: "pointer",
-              lineHeight: 1,
-            }}
+
+    <div
+      className="modal d-block"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor:
+          'rgba(0, 0, 0, 0.5)',
+        zIndex: 2000,
+        overflowY: 'auto',
+      }}
+    >
+
+      <div
+        className="
+          modal-dialog
+          modal-dialog-centered
+        "
+        style={{
+          maxWidth: '600px',
+          width: 'calc(100% - 2rem)',
+          margin: '1rem auto',
+        }}
+      >
+
+        <div
+          className="modal-content"
+          style={{
+            maxHeight:
+              'calc(100vh - 2rem)',
+          }}
+        >
+
+
+          {/* ================================================== */}
+          {/* CABECERA                                           */}
+          {/* ================================================== */}
+
+          <div
+            className="
+              modal-header
+              py-2
+              px-3
+            "
           >
-            ×
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={bodyStyle}>
-            <div className="mb-3">
-              <label className="form-label">Código</label>
-              <input
-                className="form-control"
-                type="text"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                disabled={!!initial}
-              />
-            </div>
+            <div>
 
-            <div className="mb-3">
-              <label className="form-label">Nombre</label>
-              <input
-                className="form-control"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="mb-3">
-              <label className="form-label">Descripción</label>
-              <textarea
-                className="form-control"
-                rows="3"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-0">
-              <label className="form-label">Estado</label>
-              <select
-                className="form-select"
-                value={status}
-                onChange={(e) => setStatus(Number(e.target.value))}
+              <h5
+                className="
+                  modal-title
+                  fw-bold
+                  mb-0
+                "
               >
-                <option value={1}>Activo</option>
-                <option value={0}>Inactivo</option>
-              </select>
-            </div>
-          </div>
+                {rol
+                  ? 'Editar rol'
+                  : 'Nuevo rol'}
+              </h5>
 
-          <div style={footerStyle}>
+              <small
+                className="text-muted"
+              >
+                {rol
+                  ? 'Actualiza la información del rol'
+                  : 'Ingresa la información del nuevo rol'}
+              </small>
+
+            </div>
+
+
             <button
               type="button"
-              className="btn btn-outline-secondary"
-              onClick={onCancel}
-              disabled={submitting}
-            >
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? "Guardando..." : initial ? "Guardar cambios" : "Crear rol"}
-            </button>
+              className="btn-close"
+              aria-label="Cerrar"
+              onClick={
+                onCancelar
+              }
+              disabled={
+                guardando
+              }
+            />
+
           </div>
-        </form>
+
+
+          {/* ================================================== */}
+          {/* FORMULARIO                                         */}
+          {/* ================================================== */}
+
+          <form
+            onSubmit={
+              guardar
+            }
+            autoComplete="off"
+          >
+
+            {/* ================================================== */}
+            {/* CUERPO                                             */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-body
+                py-3
+                px-3
+              "
+              style={{
+                overflowY: 'auto',
+                maxHeight:
+                  'calc(100vh - 150px)',
+              }}
+            >
+
+
+              {/* ================================================= */}
+              {/* ERROR DEL BACKEND                                  */}
+              {/* ================================================= */}
+
+              {error && (
+
+                <div
+                  className="
+                    alert
+                    alert-danger
+                    py-2
+                    mb-3
+                  "
+                  role="alert"
+                >
+
+                  <div
+                    className="
+                      d-flex
+                      align-items-start
+                    "
+                  >
+
+                    <div
+                      className="me-2"
+                      style={{
+                        fontSize: '1.1rem',
+                      }}
+                    >
+                      ⚠️
+                    </div>
+
+                    <div>
+                      {error}
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )}
+
+
+              {/* ================================================= */}
+              {/* CÓDIGO                                             */}
+              {/* ================================================= */}
+
+              <div className="mb-3">
+
+                <label
+                  className="
+                    form-label
+                    fw-semibold
+                    mb-1
+                  "
+                >
+                  Código
+                </label>
+
+                <input
+                  type="text"
+                  className="form-control"
+                  value={
+                    formulario.code
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    cambiarCampo(
+                      'code',
+                      event.target.value
+                    )
+                  }
+                  placeholder="Ej. ADMIN"
+                  maxLength={50}
+                  required
+                  disabled={
+                    guardando
+                  }
+                />
+
+                <div
+                  className="
+                    form-text
+                  "
+                >
+                  Identificador único del rol.
+                </div>
+
+              </div>
+
+
+              {/* ================================================= */}
+              {/* NOMBRE                                             */}
+              {/* ================================================= */}
+
+              <div className="mb-3">
+
+                <label
+                  className="
+                    form-label
+                    fw-semibold
+                    mb-1
+                  "
+                >
+                  Nombre
+                </label>
+
+                <input
+                  type="text"
+                  className="form-control"
+                  value={
+                    formulario.name
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    cambiarCampo(
+                      'name',
+                      event.target.value
+                    )
+                  }
+                  placeholder="Ej. Administrador"
+                  maxLength={100}
+                  required
+                  disabled={
+                    guardando
+                  }
+                />
+
+              </div>
+
+
+              {/* ================================================= */}
+              {/* ESTADO                                             */}
+              {/* ================================================= */}
+
+              {rol && (
+
+                <div className="mb-3">
+
+                  <label
+                    className="
+                      form-label
+                      fw-semibold
+                      mb-1
+                    "
+                  >
+                    Estado
+                  </label>
+
+                  <select
+                    className="form-select"
+                    value={
+                      formulario.status
+                    }
+                    onChange={(
+                      event
+                    ) =>
+                      cambiarCampo(
+                        'status',
+                        event.target.value
+                      )
+                    }
+                    disabled={
+                      guardando
+                    }
+                  >
+
+                    <option value="1">
+                      Activo
+                    </option>
+
+                    <option value="0">
+                      Inactivo
+                    </option>
+
+                  </select>
+
+                </div>
+
+              )}
+
+
+              {/* ================================================= */}
+              {/* DESCRIPCIÓN                                        */}
+              {/* ================================================= */}
+
+              <div className="mb-0">
+
+                <label
+                  className="
+                    form-label
+                    fw-semibold
+                    mb-1
+                  "
+                >
+                  Descripción
+                </label>
+
+                <textarea
+                  className="form-control"
+                  rows="4"
+                  value={
+                    formulario.description
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    cambiarCampo(
+                      'description',
+                      event.target.value
+                    )
+                  }
+                  placeholder="Descripción del rol..."
+                  maxLength={500}
+                  disabled={
+                    guardando
+                  }
+                />
+
+                <div
+                  className="
+                    form-text
+                  "
+                >
+                  Máximo 500 caracteres.
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* ================================================== */}
+            {/* BOTONES                                             */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-footer
+                py-2
+                px-3
+              "
+            >
+
+              <button
+                type="button"
+                className="
+                  btn
+                  btn-secondary
+                "
+                onClick={
+                  onCancelar
+                }
+                disabled={
+                  guardando
+                }
+              >
+                Cancelar
+              </button>
+
+
+              <button
+                type="submit"
+                className="
+                  btn
+                  btn-primary
+                "
+                disabled={
+                  guardando
+                }
+              >
+
+                {guardando ? (
+
+                  <>
+
+                    <span
+                      className="
+                        spinner-border
+                        spinner-border-sm
+                        me-2
+                      "
+                      role="status"
+                      aria-hidden="true"
+                    />
+
+                    {rol
+                      ? 'Guardando...'
+                      : 'Creando...'}
+
+                  </>
+
+                ) : (
+
+                  rol
+                    ? 'Guardar cambios'
+                    : 'Crear rol'
+
+                )}
+
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+
       </div>
+
     </div>
-  );
+
+  )
+
 }
 
-export default RoleForm;
+
+export default RoleForm

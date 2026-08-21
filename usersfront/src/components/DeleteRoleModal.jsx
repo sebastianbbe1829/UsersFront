@@ -1,94 +1,316 @@
-// src/components/DeleteRoleModal.jsx
-import { useState, useEffect } from "react";
+import {
+  useState,
+} from 'react'
 
-function DeleteRoleModal({ role, show = false, onConfirm, onCancel }) {
-  const [submitting, setSubmitting] = useState(false);
+import {
+  eliminarRol,
+} from '../services/api'
 
-  useEffect(() => {
-    if (show) {
-      const prev = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prev;
-      };
-    }
-  }, [show]);
 
-  if (!show || !role) return null;
+function DeleteRoleModal({
+  rol,
+  token,
+  onRolEliminado,
+  onCancelar,
+}) {
 
-  const handleConfirm = async () => {
-    if (submitting) return;
-    setSubmitting(true);
+  // ============================================================
+  // ESTADOS
+  // ============================================================
+
+  const [
+    error,
+    setError,
+  ] = useState('')
+
+
+  const [
+    eliminando,
+    setEliminando,
+  ] = useState(false)
+
+
+  // ============================================================
+  // CONFIRMAR ELIMINACIÓN
+  // ============================================================
+
+  const confirmarEliminacion = async () => {
+
+    setError('')
+    setEliminando(true)
+
+
     try {
-      await onConfirm(role);
-    } catch (err) {
-      console.error("Error al eliminar rol:", err);
+
+      const resultado =
+        await eliminarRol(
+          rol.id,
+          token
+        )
+
+
+      console.log(
+        'Rol eliminado:',
+        resultado
+      )
+
+
+      onRolEliminado(
+        rol.id
+      )
+
+    } catch (error) {
+
+      console.error(
+        'Error eliminando rol:',
+        error
+      )
+
+      setError(
+        error.message ||
+        'No fue posible eliminar el rol.'
+      )
+
     } finally {
-      setSubmitting(false);
+
+      setEliminando(false)
+
     }
-  };
+
+  }
+
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
-    <>
-      <div className="modal show d-block" tabIndex="-1" role="dialog" aria-modal="true">
-        <div className="modal-dialog modal-md modal-dialog-centered" role="document">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">Eliminar Rol</h5>
-              <button type="button" className="btn-close" aria-label="Cerrar" onClick={onCancel}></button>
-            </div>
 
-            <div className="modal-body">
-              <div className="d-flex gap-3 align-items-start">
-                <div>
-                  <div
-                    className="rounded-circle bg-warning d-flex align-items-center justify-content-center"
-                    style={{ width: 44, height: 44 }}
-                    aria-hidden="true"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" className="bi bi-exclamation-triangle" viewBox="0 0 16 16">
-                      <path d="M7.938 2.016a.13.13 0 0 1 .125 0l6.857 3.95c.11.063.18.18.18.308v7.86c0 .128-.07.245-.18.308l-6.857 3.95a.13.13 0 0 1-.125 0L1.08 14.442A.31.31 0 0 1 .9 14.134V6.274c0-.128.07-.245.18-.308L7.938 2.016zM8 5.5c-.535 0-.954.462-.9.995l.35 3.507c.05.5.48.898.95.898s.9-.398.95-.898l.35-3.507A.905.905 0 0 0 8 5.5zm.002 6a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
-                    </svg>
-                  </div>
-                </div>
+    <div
+      className="modal d-block"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor:
+          'rgba(0, 0, 0, 0.5)',
+        zIndex: 2000,
+        overflowY: 'auto',
+      }}
+    >
 
-                <div className="flex-grow-1">
-                  <p className="mb-2 fw-semibold">¿Estás seguro de que deseas eliminar este rol?</p>
+      <div
+        className="
+          modal-dialog
+          modal-dialog-centered
+        "
+      >
 
-                  <ul className="list-unstyled small mb-0">
-                    <li><strong>Código:</strong> <span className="text-monospace">{role.code}</span></li>
-                    <li><strong>Nombre:</strong> {role.name}</li>
-                    {role.description && <li><strong>Descripción:</strong> {role.description}</li>}
-                  </ul>
+        <div className="modal-content">
 
-                  <p className="mt-3 text-muted small">
-                    Importante: esta acción no se puede deshacer. Si el rol está asignado a usuarios, la eliminación puede afectar accesos.
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            <div className="modal-footer">
-              <button type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={submitting}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleConfirm}
-                disabled={submitting}
-              >
-                {submitting ? "Eliminando..." : "Sí, eliminar rol"}
-              </button>
-            </div>
+          {/* ================================================== */}
+          {/* CABECERA                                           */}
+          {/* ================================================== */}
+
+          <div className="modal-header">
+
+            <h5 className="modal-title">
+              Eliminar rol
+            </h5>
+
+            <button
+              type="button"
+              className="btn-close"
+              onClick={onCancelar}
+              disabled={eliminando}
+            />
+
           </div>
+
+
+          {/* ================================================== */}
+          {/* CONTENIDO                                          */}
+          {/* ================================================== */}
+
+          <div className="modal-body">
+
+
+            {/* ERROR */}
+
+            {error && (
+
+              <div className="alert alert-danger">
+                {error}
+              </div>
+
+            )}
+
+
+            {/* ICONO */}
+
+            <div className="text-center mb-3">
+
+              <div
+                style={{
+                  fontSize: '3.5rem',
+                }}
+              >
+                ⚠️
+              </div>
+
+            </div>
+
+
+            {/* MENSAJE */}
+
+            <p className="text-center">
+
+              ¿Estás seguro de que deseas
+              eliminar este rol?
+
+            </p>
+
+
+            {/* INFORMACIÓN */}
+
+            <div
+              className="
+                card
+                bg-light
+                border-0
+              "
+            >
+
+              <div className="card-body">
+
+
+                {/* CÓDIGO */}
+
+                <div className="row">
+
+                  <div className="col-4 fw-bold">
+                    Código:
+                  </div>
+
+                  <div className="col-8">
+                    {rol.code}
+                  </div>
+
+                </div>
+
+
+                {/* NOMBRE */}
+
+                <div className="row mt-2">
+
+                  <div className="col-4 fw-bold">
+                    Nombre:
+                  </div>
+
+                  <div className="col-8">
+                    {rol.name}
+                  </div>
+
+                </div>
+
+
+                {/* DESCRIPCIÓN */}
+
+                {rol.description && (
+
+                  <div className="row mt-2">
+
+                    <div className="col-4 fw-bold">
+                      Descripción:
+                    </div>
+
+                    <div className="col-8 text-break">
+                      {rol.description}
+                    </div>
+
+                  </div>
+
+                )}
+
+              </div>
+
+            </div>
+
+
+            {/* ADVERTENCIA */}
+
+            <div
+              className="
+                alert
+                alert-warning
+                mt-3
+                mb-0
+              "
+            >
+
+              <strong>
+                Importante:
+              </strong>{' '}
+
+              el rol será marcado como eliminado
+              y dejará de aparecer en el listado.
+
+            </div>
+
+          </div>
+
+
+          {/* ================================================== */}
+          {/* BOTONES                                            */}
+          {/* ================================================== */}
+
+          <div className="modal-footer">
+
+            <button
+              type="button"
+              className="
+                btn
+                btn-secondary
+              "
+              onClick={onCancelar}
+              disabled={eliminando}
+            >
+              Cancelar
+            </button>
+
+
+            <button
+              type="button"
+              className="
+                btn
+                btn-danger
+              "
+              onClick={
+                confirmarEliminacion
+              }
+              disabled={eliminando}
+            >
+
+              {eliminando
+                ? 'Eliminando...'
+                : 'Sí, eliminar rol'}
+
+            </button>
+
+          </div>
+
         </div>
+
       </div>
 
-      {/* backdrop de Bootstrap */}
-      <div className="modal-backdrop show"></div>
-    </>
-  );
+    </div>
+
+  )
+
 }
 
-export default DeleteRoleModal;
+
+export default DeleteRoleModal
