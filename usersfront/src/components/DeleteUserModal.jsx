@@ -7,43 +7,82 @@ function DeleteUserModal({
   onUsuarioEliminado,
   onCancelar,
 }) {
-  const [error, setError] = useState('')
-  const [eliminando, setEliminando] = useState(false)
+  const [error, setError] =
+    useState('')
+
+  const [eliminando, setEliminando] =
+    useState(false)
+
+
+  // ==========================
+  // CONFIRMAR ELIMINACION
+  // ==========================
 
   const confirmarEliminacion = async () => {
+
     setError('')
     setEliminando(true)
 
+
     try {
-      const resultado = await eliminarUsuario(
-        usuario.dni,
-        token
+
+      const resultado =
+        await eliminarUsuario(
+          usuario.dni,
+          token
+        )
+
+
+      console.log(
+        'Usuario eliminado:',
+        resultado
       )
 
-      console.log('Usuario eliminado:', resultado)
 
-      onUsuarioEliminado(usuario.dni)
+      onUsuarioEliminado(
+        usuario.dni
+      )
 
     } catch (error) {
-      console.error('Error eliminando usuario:', error)
 
-      setError(error.message)
+      console.error(
+        'Error eliminando usuario:',
+        error
+      )
+
+      setError(
+        error.message
+      )
 
     } finally {
+
       setEliminando(false)
+
     }
+
   }
 
+
   return (
+
     <div
       className="modal d-block"
       style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        zIndex: 2000,
+        overflowY: 'auto',
       }}
     >
+
       <div className="modal-dialog modal-dialog-centered">
 
         <div className="modal-content">
+
 
           {/* CABECERA */}
 
@@ -62,15 +101,24 @@ function DeleteUserModal({
 
           </div>
 
+
           {/* CONTENIDO */}
 
           <div className="modal-body">
 
+
+            {/* ERROR */}
+
             {error && (
+
               <div className="alert alert-danger">
                 {error}
               </div>
+
             )}
+
+
+            {/* ICONO */}
 
             <div className="text-center mb-3">
 
@@ -84,13 +132,25 @@ function DeleteUserModal({
 
             </div>
 
+
+            {/* MENSAJE */}
+
             <p className="text-center">
-              ¿Estás seguro de que deseas eliminar este usuario?
+
+              ¿Estás seguro de que deseas
+              eliminar este usuario?
+
             </p>
+
+
+            {/* INFORMACION */}
 
             <div className="card bg-light border-0">
 
               <div className="card-body">
+
+
+                {/* DNI */}
 
                 <div className="row">
 
@@ -104,6 +164,9 @@ function DeleteUserModal({
 
                 </div>
 
+
+                {/* NOMBRE */}
+
                 <div className="row mt-2">
 
                   <div className="col-4 fw-bold">
@@ -115,6 +178,9 @@ function DeleteUserModal({
                   </div>
 
                 </div>
+
+
+                {/* EMAIL */}
 
                 <div className="row mt-2">
 
@@ -132,14 +198,28 @@ function DeleteUserModal({
 
             </div>
 
-            <div className="alert alert-warning mt-3 mb-0">
 
-              <strong>Importante:</strong> esta acción no se
-              puede deshacer.
+            {/* ADVERTENCIA */}
+
+            <div
+              className="
+                alert
+                alert-warning
+                mt-3
+                mb-0
+              "
+            >
+
+              <strong>
+                Importante:
+              </strong>{' '}
+
+              esta acción no se puede deshacer.
 
             </div>
 
           </div>
+
 
           {/* BOTONES */}
 
@@ -160,9 +240,11 @@ function DeleteUserModal({
               onClick={confirmarEliminacion}
               disabled={eliminando}
             >
+
               {eliminando
                 ? 'Eliminando...'
                 : 'Sí, eliminar usuario'}
+
             </button>
 
           </div>
@@ -170,7 +252,9 @@ function DeleteUserModal({
         </div>
 
       </div>
+
     </div>
+
   )
 }
 

@@ -8,55 +8,94 @@ function EditUserForm({
   onUsuarioActualizado,
   onCancelar,
 }) {
-  const [name, setName] = useState(usuario.name || '')
-  const [email, setEmail] = useState(usuario.email || '')
-  const [phone, setPhone] = useState(usuario.phone || '')
-  const [status, setStatus] = useState(usuario.status)
-  const [password, setPassword] = useState('')
+  const [name, setName] =
+    useState(usuario.name || '')
 
-  const [error, setError] = useState('')
-  const [guardando, setGuardando] = useState(false)
-  const [erroresValidacion, setErroresValidacion] = useState({})
+  const [email, setEmail] =
+    useState(usuario.email || '')
 
-  // ==========================
+  const [phone, setPhone] =
+    useState(usuario.phone || '')
+
+  const [status, setStatus] =
+    useState(usuario.status)
+
+  const [password, setPassword] =
+    useState('')
+
+  const [error, setError] =
+    useState('')
+
+  const [guardando, setGuardando] =
+    useState(false)
+
+  const [
+    erroresValidacion,
+    setErroresValidacion,
+  ] = useState({})
+
+
+  // ============================================================
   // VALIDAR FORMULARIO
-  // ==========================
+  // ============================================================
 
   const validarFormulario = () => {
+
     const errores = {}
 
-    const validacionNombre = validaciones.nombre(name)
+    const validacionNombre =
+      validaciones.nombre(name)
+
     if (!validacionNombre.valido) {
-      errores.name = validacionNombre.error
+      errores.name =
+        validacionNombre.error
     }
 
-    const validacionEmail = validaciones.email(email)
+    const validacionEmail =
+      validaciones.email(email)
+
     if (!validacionEmail.valido) {
-      errores.email = validacionEmail.error
+      errores.email =
+        validacionEmail.error
     }
 
-    const validacionTelefono = validaciones.telefono(phone)
+    const validacionTelefono =
+      validaciones.telefono(phone)
+
     if (!validacionTelefono.valido) {
-      errores.phone = validacionTelefono.error
+      errores.phone =
+        validacionTelefono.error
     }
 
-    const validacionPassword = validaciones.contrasenaNueva(password)
+    const validacionPassword =
+      validaciones.contrasenaNueva(password)
+
     if (!validacionPassword.valido) {
-      errores.password = validacionPassword.error
+      errores.password =
+        validacionPassword.error
     }
 
     return errores
   }
 
+
+  // ============================================================
+  // GUARDAR CAMBIOS
+  // ============================================================
+
   const guardarCambios = async (event) => {
+
     event.preventDefault()
 
     setError('')
     setErroresValidacion({})
 
-    // Validar formulario
-    const errores = validarFormulario()
-    if (Object.keys(errores).length > 0) {
+    const errores =
+      validarFormulario()
+
+    if (
+      Object.keys(errores).length > 0
+    ) {
       setErroresValidacion(errores)
       return
     }
@@ -70,46 +109,100 @@ function EditUserForm({
       status,
     }
 
-    // Solo enviamos la contraseña si el usuario
-    // escribió una nueva contraseña.
-    if (password.trim() !== '') {
-      datosActualizados.password = password
+    if (
+      password.trim() !== ''
+    ) {
+      datosActualizados.password =
+        password
     }
 
     try {
-      const resultado = await actualizarUsuario(
-        usuario.dni,
-        datosActualizados,
-        token
+
+      const resultado =
+        await actualizarUsuario(
+          usuario.dni,
+          datosActualizados,
+          token
+        )
+
+      console.log(
+        'Usuario actualizado:',
+        resultado
       )
 
-      console.log('Usuario actualizado:', resultado)
+      onUsuarioActualizado(
+        resultado
+      )
 
-      onUsuarioActualizado(resultado)
     } catch (error) {
-      console.error('Error actualizando usuario:', error)
 
-      setError(error.message)
+      console.error(
+        'Error actualizando usuario:',
+        error
+      )
+
+      setError(
+        error.message
+      )
+
     } finally {
+
       setGuardando(false)
+
     }
   }
 
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+
   return (
+
     <div
       className="modal d-block"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor:
+          'rgba(0, 0, 0, 0.5)',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        overflow: 'hidden',
       }}
     >
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
 
+      <div
+        className="
+          modal-dialog
+          modal-dialog-centered
+        "
+        style={{
+          maxWidth: '500px',
+          width: 'calc(100% - 2rem)',
+          margin: '1rem auto',
+        }}
+      >
+
+        <div
+          className="modal-content"
+          style={{
+            maxHeight: 'calc(100vh - 2rem)',
+          }}
+        >
+
+          {/* ================================================== */}
           {/* CABECERA */}
+          {/* ================================================== */}
 
-          <div className="modal-header">
+          <div
+            className="
+              modal-header
+              py-2
+              px-3
+            "
+          >
 
-            <h5 className="modal-title">
+            <h5 className="modal-title mb-0">
               Editar usuario
             </h5>
 
@@ -122,28 +215,55 @@ function EditUserForm({
 
           </div>
 
+
+          {/* ================================================== */}
           {/* FORMULARIO */}
+          {/* ================================================== */}
 
           <form
             onSubmit={guardarCambios}
             autoComplete="off"
           >
 
-            <div className="modal-body">
+            {/* ================================================== */}
+            {/* CUERPO */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-body
+                py-3
+                px-3
+              "
+              style={{
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 150px)',
+              }}
+            >
 
               {/* ERROR */}
 
               {error && (
-                <div className="alert alert-danger">
+
+                <div
+                  className="
+                    alert
+                    alert-danger
+                    py-2
+                    mb-2
+                  "
+                >
                   ❌ {error}
                 </div>
+
               )}
 
-              {/* Numero de identificacion */}
 
-              <div className="mb-3">
+              {/* DNI */}
 
-                <label className="form-label">
+              <div className="mb-2">
+
+                <label className="form-label mb-1">
                   Número de identificación
                 </label>
 
@@ -155,131 +275,172 @@ function EditUserForm({
                 />
 
                 <div className="form-text">
-                  El número de identificación no puede ser modificado.
+                  El número de identificación no puede
+                  ser modificado.
                 </div>
 
               </div>
 
+
               {/* NOMBRE */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Nombre
                 </label>
 
                 <input
                   type="text"
                   className={`form-control ${
-                    erroresValidacion.name ? 'is-invalid' : ''
+                    erroresValidacion.name
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={name}
                   onChange={(event) =>
-                    setName(event.target.value)
+                    setName(
+                      event.target.value
+                    )
                   }
                   disabled={guardando}
                 />
 
                 {erroresValidacion.name && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.name}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* EMAIL */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Email
                 </label>
 
                 <input
                   type="email"
                   className={`form-control ${
-                    erroresValidacion.email ? 'is-invalid' : ''
+                    erroresValidacion.email
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={email}
                   onChange={(event) =>
-                    setEmail(event.target.value)
+                    setEmail(
+                      event.target.value
+                    )
                   }
                   disabled={guardando}
                 />
 
                 {erroresValidacion.email && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.email}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* TELÉFONO */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Teléfono
                 </label>
 
                 <input
                   type="text"
                   className={`form-control ${
-                    erroresValidacion.phone ? 'is-invalid' : ''
+                    erroresValidacion.phone
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={phone}
                   onChange={(event) =>
-                    setPhone(event.target.value)
+                    setPhone(
+                      event.target.value
+                    )
                   }
                   disabled={guardando}
                 />
 
                 {erroresValidacion.phone && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.phone}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* ESTADO */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Estado
                 </label>
 
                 <select
                   className="form-select"
                   value={status}
-                  onChange={(event) => setStatus(parseInt(event.target.value))}
+                  onChange={(event) =>
+                    setStatus(
+                      parseInt(
+                        event.target.value
+                      )
+                    )
+                  }
                   disabled={guardando}
                 >
-                  <option value="1">Activo</option>
-                  <option value="0">Inactivo</option>
+
+                  <option value="1">
+                    Activo
+                  </option>
+
+                  <option value="0">
+                    Inactivo
+                  </option>
+
                 </select>
 
               </div>
 
+
               {/* CONTRASEÑA */}
 
-              <div className="mb-3">
+              <div className="mb-0">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Cambiar contraseña
                 </label>
 
                 <input
                   type="password"
                   className={`form-control ${
-                    erroresValidacion.password ? 'is-invalid' : ''
+                    erroresValidacion.password
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={password}
                   onChange={(event) =>
-                    setPassword(event.target.value)
+                    setPassword(
+                      event.target.value
+                    )
                   }
                   placeholder="Nueva contraseña"
                   autoComplete="new-password"
@@ -287,23 +448,34 @@ function EditUserForm({
                 />
 
                 <div className="form-text">
-                  Déjala vacía si no deseas cambiar la
-                  contraseña actual.
+                  Déjala vacía si no deseas cambiar
+                  la contraseña actual.
                 </div>
 
                 {erroresValidacion.password && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.password}
                   </div>
+
                 )}
 
               </div>
 
             </div>
 
-            {/* BOTONES */}
 
-            <div className="modal-footer">
+            {/* ================================================== */}
+            {/* BOTONES */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-footer
+                py-2
+                px-3
+              "
+            >
 
               <button
                 type="button"
@@ -319,18 +491,30 @@ function EditUserForm({
                 className="btn btn-primary"
                 disabled={guardando}
               >
+
                 {guardando ? (
+
                   <>
                     <span
-                      className="spinner-border spinner-border-sm me-2"
+                      className="
+                        spinner-border
+                        spinner-border-sm
+                        me-2
+                      "
                       role="status"
                       aria-hidden="true"
                     />
+
                     Guardando...
+
                   </>
+
                 ) : (
+
                   'Guardar cambios'
+
                 )}
+
               </button>
 
             </div>
@@ -338,8 +522,11 @@ function EditUserForm({
           </form>
 
         </div>
+
       </div>
+
     </div>
+
   )
 }
 

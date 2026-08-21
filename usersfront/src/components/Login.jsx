@@ -1,10 +1,6 @@
-import {
-  useState,
-} from 'react'
+import { useState } from 'react'
 
-import {
-  useAuth,
-} from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 
 
 function Login({
@@ -95,9 +91,7 @@ function Login({
 
     event.preventDefault()
 
-
     setError('')
-
     setErroresValidacion({})
 
 
@@ -122,10 +116,6 @@ function Login({
 
 
     try {
-
-      // --------------------------------------------------------
-      // LoginPage se encarga de autenticar y navegar
-      // --------------------------------------------------------
 
       await onLogin(
         usuario,
@@ -166,6 +156,7 @@ function Login({
         d-flex
         align-items-center
         justify-content-center
+        p-3
       "
       style={{
         background:
@@ -180,18 +171,18 @@ function Login({
           border-0
         "
         style={{
-          width: '400px',
-          maxWidth: '90%',
+          width: '100%',
+          maxWidth: '380px',
         }}
       >
 
-        <div className="card-body p-5">
+        <div className="card-body p-4">
 
           {/* ================================================== */}
           {/* ENCABEZADO                                        */}
           {/* ================================================== */}
 
-          <div className="text-center mb-4">
+          <div className="text-center mb-3">
 
             <div
               className="
@@ -200,17 +191,17 @@ function Login({
                 d-inline-flex
                 align-items-center
                 justify-content-center
-                mb-3
+                mb-2
               "
               style={{
-                width: '70px',
-                height: '70px',
+                width: '54px',
+                height: '54px',
               }}
             >
 
               <span
                 style={{
-                  fontSize: '32px',
+                  fontSize: '25px',
                 }}
               >
                 👥
@@ -219,9 +210,9 @@ function Login({
             </div>
 
 
-            <h2 className="fw-bold">
+            <h3 className="fw-bold mb-1">
               Gestión de Usuarios
-            </h2>
+            </h3>
 
 
             <p className="text-muted mb-2">
@@ -241,7 +232,7 @@ function Login({
                   align-items-center
                   gap-2
                   px-3
-                  py-2
+                  py-1
                   rounded-pill
                   bg-light
                   border
@@ -275,12 +266,13 @@ function Login({
             {/* USUARIO                                           */}
             {/* ================================================= */}
 
-            <div className="mb-3">
+            <div className="mb-2">
 
               <label
                 className="
                   form-label
                   fw-semibold
+                  mb-1
                 "
               >
                 Usuario
@@ -291,7 +283,6 @@ function Login({
                 type="text"
                 className={`
                   form-control
-                  form-control-lg
                   ${
                     erroresValidacion.usuario
                       ? 'is-invalid'
@@ -332,12 +323,13 @@ function Login({
             {/* CONTRASEÑA                                        */}
             {/* ================================================= */}
 
-            <div className="mb-4">
+            <div className="mb-3">
 
               <label
                 className="
                   form-label
                   fw-semibold
+                  mb-1
                 "
               >
                 Contraseña
@@ -354,7 +346,6 @@ function Login({
                   }
                   className={`
                     form-control
-                    form-control-lg
                     ${
                       erroresValidacion.password
                         ? 'is-invalid'
@@ -436,6 +427,9 @@ function Login({
                 className="
                   alert
                   alert-warning
+                  py-2
+                  px-3
+                  mb-2
                 "
               >
                 ⚠️ {mensajeSesion}
@@ -454,6 +448,9 @@ function Login({
                 className="
                   alert
                   alert-danger
+                  py-2
+                  px-3
+                  mb-2
                 "
               >
                 ❌ {error}
@@ -471,7 +468,6 @@ function Login({
               className="
                 btn
                 btn-primary
-                btn-lg
                 w-100
               "
               disabled={

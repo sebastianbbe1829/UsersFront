@@ -259,7 +259,7 @@ function MainPage() {
 
   return (
 
-    <div className="container-fluid p-4">
+    <div className="container-fluid px-3 py-3">
 
       {/* ================================================== */}
       {/* MENSAJE EXPORTACIÓN */}
@@ -274,6 +274,8 @@ function MainPage() {
             alert-dismissible
             fade
             show
+            py-2
+            mb-3
           `}
           role="alert"
         >

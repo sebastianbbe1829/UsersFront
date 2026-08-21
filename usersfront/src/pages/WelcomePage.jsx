@@ -91,9 +91,12 @@ function WelcomePage() {
         align-items-center
         justify-content-center
         text-center
+        px-3
       "
       style={{
-        minHeight: 'calc(100vh - 70px)',
+        height: '100%',
+        width: '100%',
+        overflow: 'hidden',
       }}
     >
 
@@ -110,15 +113,18 @@ function WelcomePage() {
           align-items-center
           justify-content-center
           shadow
-          mb-4
+          mb-3
         "
         style={{
-          width: '90px',
-          height: '90px',
-          fontSize: '42px',
+          width: '100px',
+          height: '100px',
+          fontSize: '46px',
+          flexShrink: 0,
         }}
       >
+
         👋
+
       </div>
 
 
@@ -129,20 +135,30 @@ function WelcomePage() {
       <h1
         className="
           fw-bold
-          mb-3
+          mb-2
         "
+        style={{
+          fontSize: 'clamp(1.8rem, 4vw, 2.6rem)',
+        }}
       >
+
         Bienvenido a su sistema
+
       </h1>
 
 
       <h4
         className="
           text-muted
-          mb-4
+          mb-3
         "
+        style={{
+          fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
+        }}
       >
+
         Gestión de Usuarios
+
       </h4>
 
 
@@ -184,7 +200,7 @@ function WelcomePage() {
             border
             px-3
             py-2
-            mb-4
+            mb-3
           "
           style={{
             fontSize: '14px',
@@ -208,6 +224,9 @@ function WelcomePage() {
           text-capitalize
           mb-2
         "
+        style={{
+          fontSize: '15px',
+        }}
       >
 
         📅 {fecha}
@@ -222,8 +241,10 @@ function WelcomePage() {
       <div
         className="
           fw-semibold
-          fs-3
         "
+        style={{
+          fontSize: 'clamp(1.6rem, 4vw, 2rem)',
+        }}
       >
 
         🕐 {hora}
@@ -238,9 +259,12 @@ function WelcomePage() {
       <p
         className="
           text-muted
-          mt-4
+          mt-3
           mb-0
         "
+        style={{
+          fontSize: '15px',
+        }}
       >
 
         Seleccione una opción del menú

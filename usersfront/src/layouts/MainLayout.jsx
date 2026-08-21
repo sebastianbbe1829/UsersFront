@@ -1,6 +1,7 @@
 import {
   NavLink,
   Outlet,
+  useLocation,
   useNavigate,
 } from 'react-router-dom'
 
@@ -32,6 +33,9 @@ function MainLayout() {
 
   const navigate =
     useNavigate()
+
+  const location =
+    useLocation()
 
 
   // ============================================================
@@ -96,10 +100,6 @@ function MainLayout() {
     cerrarSesion()
 
 
-    // ----------------------------------------------------------
-    // Regresar al login del tenant actual
-    // ----------------------------------------------------------
-
     if (tenant) {
 
       navigate(
@@ -113,10 +113,6 @@ function MainLayout() {
 
     }
 
-
-    // ----------------------------------------------------------
-    // Seguridad: si no existe tenant
-    // ----------------------------------------------------------
 
     navigate(
       '/login',
@@ -136,6 +132,64 @@ function MainLayout() {
     menuColapsado
       ? '72px'
       : '250px'
+
+
+  // ============================================================
+  // TÍTULO DEL ENCABEZADO
+  // ============================================================
+
+  const obtenerTituloPagina = () => {
+
+    const ruta =
+      location.pathname
+
+
+    if (
+      ruta.includes('/usuarios')
+    ) {
+
+      return {
+        icono: '👥',
+        titulo: 'Gestión de usuarios',
+      }
+
+    }
+
+
+    if (
+      ruta.includes('/roles')
+    ) {
+
+      return {
+        icono: '🛡️',
+        titulo: 'Gestión de roles',
+      }
+
+    }
+
+
+    if (
+      ruta.includes('/permisos')
+    ) {
+
+      return {
+        icono: '🔐',
+        titulo: 'Gestión de permisos',
+      }
+
+    }
+
+
+    return {
+      icono: '🏠',
+      titulo: 'Panel de administración',
+    }
+
+  }
+
+
+  const pagina =
+    obtenerTituloPagina()
 
 
   // ============================================================
@@ -398,78 +452,6 @@ function MainLayout() {
         >
 
           {/* ================================================== */}
-          {/* USUARIO LOGUEADO */}
-          {/* ================================================== */}
-
-          {usuarioLogueado && (
-
-            <div
-              className="
-                border-top
-                border-secondary
-                px-3
-                py-3
-              "
-            >
-
-              <div
-                className="
-                  d-flex
-                  align-items-center
-                "
-              >
-
-                <span
-                  style={{
-                    fontSize: '24px',
-                    minWidth: '24px',
-                    textAlign: 'center',
-                  }}
-                >
-                  👤
-                </span>
-
-
-                {!menuColapsado && (
-
-                  <div
-                    className="
-                      ms-3
-                      text-truncate
-                    "
-                  >
-
-                    <div
-                      className="
-                        fw-bold
-                        text-truncate
-                      "
-                      style={{
-                        maxWidth: '170px',
-                      }}
-                    >
-                      {usuarioLogueado.name}
-                    </div>
-
-
-                    <small
-                      className="text-white-50"
-                    >
-                      {usuarioLogueado.dni}
-                    </small>
-
-                  </div>
-
-                )}
-
-              </div>
-
-            </div>
-
-          )}
-
-
-          {/* ================================================== */}
           {/* MODO OSCURO */}
           {/* ================================================== */}
 
@@ -601,15 +583,189 @@ function MainLayout() {
             height: '70px',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
             padding: '0 30px',
           }}
         >
 
-          <h5
-            className="mb-0 fw-bold"
+          {/* ================================================== */}
+          {/* TÍTULO */}
+          {/* ================================================== */}
+
+          <div
+            className="
+              d-flex
+              align-items-center
+              gap-2
+            "
           >
-            Panel de administración
-          </h5>
+
+            <span
+              style={{
+                fontSize: '21px',
+              }}
+            >
+              {pagina.icono}
+            </span>
+
+
+            <h5
+              className="
+                mb-0
+                fw-bold
+              "
+            >
+
+              {pagina.titulo}
+
+            </h5>
+
+          </div>
+
+
+          {/* ================================================== */}
+          {/* INFORMACIÓN DEL USUARIO */}
+          {/* ================================================== */}
+
+          <div
+            className="
+              d-flex
+              align-items-center
+              gap-3
+            "
+          >
+
+            {/* ================================================= */}
+            {/* TENANT */}
+            {/* ================================================= */}
+
+            {tenant && (
+
+              <div
+                className="
+                  d-none
+                  d-md-flex
+                  align-items-center
+                  gap-2
+                "
+              >
+
+                <span>
+                  🏢
+                </span>
+
+                <span
+                  className="fw-semibold"
+                >
+                  {tenant}
+                </span>
+
+              </div>
+
+            )}
+
+
+            {/* ================================================= */}
+            {/* SEPARADOR */}
+            {/* ================================================= */}
+
+            {tenant && usuarioLogueado && (
+
+              <span
+                className="
+                  text-muted
+                  d-none
+                  d-md-inline
+                "
+              >
+                |
+              </span>
+
+            )}
+
+
+            {/* ================================================= */}
+            {/* USUARIO */}
+            {/* ================================================= */}
+
+            {usuarioLogueado && (
+
+              <div
+                className="
+                  d-flex
+                  align-items-center
+                  gap-2
+                "
+              >
+
+                <span
+                  style={{
+                    fontSize: '21px',
+                  }}
+                >
+                  👤
+                </span>
+
+
+                <div
+                  className="
+                    d-none
+                    d-sm-block
+                    text-end
+                  "
+                >
+
+                  <div
+                    className="
+                      fw-semibold
+                      text-truncate
+                    "
+                    style={{
+                      maxWidth: '180px',
+                    }}
+                  >
+
+                    {usuarioLogueado.name}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* ================================================= */}
+            {/* ESTADO */}
+            {/* ================================================= */}
+
+            <div
+              className="
+                d-flex
+                align-items-center
+                gap-1
+              "
+              title="Sesión activa"
+            >
+
+              <span
+                style={{
+                  fontSize: '12px',
+                }}
+              >
+                🟢
+              </span>
+
+              <small
+                className="text-muted"
+              >
+                Activa
+              </small>
+
+            </div>
+
+          </div>
 
         </header>
 

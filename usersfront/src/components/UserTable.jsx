@@ -11,9 +11,9 @@ function UserTable({
   onEliminarUsuario,
 }) {
 
-  // ==========================
+  // ============================================================
   // ESTADOS
-  // ==========================
+  // ============================================================
 
   const [busqueda, setBusqueda] =
     useState('')
@@ -28,9 +28,9 @@ function UserTable({
     useState(1)
 
 
-  // ==========================
+  // ============================================================
   // FILTRAR USUARIOS
-  // ==========================
+  // ============================================================
 
   const usuariosFiltrados =
     useMemo(() => {
@@ -40,12 +40,9 @@ function UserTable({
           .toLowerCase()
           .trim()
 
+
       return usuarios.filter(
         (usuario) => {
-
-          // --------------------------
-          // BUSQUEDA
-          // --------------------------
 
           const coincideBusqueda =
             !texto ||
@@ -74,16 +71,14 @@ function UserTable({
               .includes(texto)
 
 
-          // --------------------------
-          // FILTRO ESTADO
-          // --------------------------
-
           const coincideEstado =
             estadoFiltro === 'todos' ||
+
             (
               estadoFiltro === 'activos' &&
               usuario.status === 1
             ) ||
+
             (
               estadoFiltro === 'inactivos' &&
               usuario.status === 0
@@ -105,9 +100,9 @@ function UserTable({
     ])
 
 
-  // ==========================
+  // ============================================================
   // PAGINACIÓN
-  // ==========================
+  // ============================================================
 
   const totalPaginas =
     Math.ceil(
@@ -133,39 +128,37 @@ function UserTable({
     )
 
 
-  // ==========================
+  // ============================================================
   // CAMBIAR BÚSQUEDA
-  // ==========================
+  // ============================================================
 
   const cambiarBusqueda = (
     valor
   ) => {
 
     setBusqueda(valor)
-
     setPaginaActual(1)
 
   }
 
 
-  // ==========================
+  // ============================================================
   // CAMBIAR ESTADO
-  // ==========================
+  // ============================================================
 
   const cambiarEstado = (
     valor
   ) => {
 
     setEstadoFiltro(valor)
-
     setPaginaActual(1)
 
   }
 
 
-  // ==========================
+  // ============================================================
   // CAMBIAR CANTIDAD
-  // ==========================
+  // ============================================================
 
   const cambiarCantidad = (
     valor
@@ -180,9 +173,9 @@ function UserTable({
   }
 
 
-  // ==========================
+  // ============================================================
   // CAMBIAR PÁGINA
-  // ==========================
+  // ============================================================
 
   const cambiarPagina = (
     pagina
@@ -200,24 +193,22 @@ function UserTable({
   }
 
 
-  // ==========================
+  // ============================================================
   // LIMPIAR FILTROS
-  // ==========================
+  // ============================================================
 
   const limpiarFiltros = () => {
 
     setBusqueda('')
-
     setEstadoFiltro('todos')
-
     setPaginaActual(1)
 
   }
 
 
-  // ==========================
-  // PÁGINAS A MOSTRAR
-  // ==========================
+  // ============================================================
+  // PÁGINAS
+  // ============================================================
 
   const paginas = []
 
@@ -232,18 +223,18 @@ function UserTable({
   }
 
 
-  // ==========================
+  // ============================================================
   // RENDER
-  // ==========================
+  // ============================================================
 
   return (
 
-    <div className="container pb-5">
+    <div className="container-fluid px-0 pb-3">
 
 
-      {/* ========================== */}
-      {/* ENCABEZADO */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* ENCABEZADO                                             */}
+      {/* ====================================================== */}
 
       <div
         className="
@@ -252,28 +243,40 @@ function UserTable({
           flex-md-row
           justify-content-between
           align-items-md-center
-          gap-3
-          mb-4
+          gap-2
+          mb-2
         "
       >
 
         <div>
 
-          <h2 className="mb-1">
+          <h4
+            className="
+              mb-0
+              fw-bold
+            "
+          >
             Usuarios
-          </h2>
+          </h4>
 
-          <p className="text-muted mb-0">
+
+          <small className="text-muted">
             Gestión de usuarios del sistema
-          </p>
+          </small>
 
         </div>
 
 
         <button
           type="button"
-          className="btn btn-primary"
-          onClick={onNuevoUsuario}
+          className="
+            btn
+            btn-primary
+            btn-sm
+          "
+          onClick={
+            onNuevoUsuario
+          }
         >
           + Nuevo usuario
         </button>
@@ -281,41 +284,54 @@ function UserTable({
       </div>
 
 
-      {/* ========================== */}
-      {/* FILTROS */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* FILTROS                                                */}
+      {/* ====================================================== */}
 
       <div
         className="
           card
           shadow-sm
-          mb-3
+          border-0
+          mb-2
         "
       >
 
-        <div className="card-body">
+        <div
+          className="
+            card-body
+            py-2
+            px-3
+          "
+        >
+
+          <div className="row g-2 align-items-end">
 
 
-          <div className="row g-3">
-
-
-            {/* ========================== */}
-            {/* BUSCAR */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* BUSCAR                                            */}
+            {/* ================================================= */}
 
             <div className="col-12 col-md-7">
 
               <label
-                className="form-label fw-bold"
+                className="
+                  form-label
+                  fw-semibold
+                  small
+                  mb-1
+                "
               >
                 Buscar usuario
               </label>
 
 
-              <div className="input-group">
+              <div className="input-group input-group-sm">
 
                 <span
-                  className="input-group-text"
+                  className="
+                    input-group-text
+                  "
                 >
                   🔎
                 </span>
@@ -323,17 +339,18 @@ function UserTable({
 
                 <input
                   type="text"
-                  className="form-control"
-                  placeholder="Número de identificación, nombre, email o teléfono..."
+                  className="
+                    form-control
+                  "
+                  placeholder="
+                    Identificación, nombre, email o teléfono...
+                  "
                   value={busqueda}
                   onChange={(e) =>
                     cambiarBusqueda(
                       e.target.value
                     )
                   }
-                  style={{
-                    textAlign: 'left',
-                  }}
                 />
 
               </div>
@@ -341,21 +358,29 @@ function UserTable({
             </div>
 
 
-            {/* ========================== */}
-            {/* ESTADO */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* ESTADO                                             */}
+            {/* ================================================= */}
 
-            <div className="col-12 col-md-3">
+            <div className="col-6 col-md-3">
 
               <label
-                className="form-label fw-bold"
+                className="
+                  form-label
+                  fw-semibold
+                  small
+                  mb-1
+                "
               >
                 Estado
               </label>
 
 
               <select
-                className="form-select"
+                className="
+                  form-select
+                  form-select-sm
+                "
                 value={estadoFiltro}
                 onChange={(e) =>
                   cambiarEstado(
@@ -381,21 +406,29 @@ function UserTable({
             </div>
 
 
-            {/* ========================== */}
-            {/* MOSTRAR */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* MOSTRAR                                            */}
+            {/* ================================================= */}
 
-            <div className="col-12 col-md-2">
+            <div className="col-6 col-md-2">
 
               <label
-                className="form-label fw-bold"
+                className="
+                  form-label
+                  fw-semibold
+                  small
+                  mb-1
+                "
               >
                 Mostrar
               </label>
 
 
               <select
-                className="form-select"
+                className="
+                  form-select
+                  form-select-sm
+                "
                 value={usuariosPorPagina}
                 onChange={(e) =>
                   cambiarCantidad(
@@ -427,21 +460,28 @@ function UserTable({
           </div>
 
 
-          {/* ========================== */}
-          {/* LIMPIAR */}
-          {/* ========================== */}
+          {/* ================================================= */}
+          {/* LIMPIAR FILTROS                                   */}
+          {/* ================================================= */}
 
           {(busqueda ||
             estadoFiltro !== 'todos') && (
 
-            <div className="mt-3">
+            <div className="mt-2">
 
               <button
                 type="button"
-                className="btn btn-outline-secondary btn-sm"
-                onClick={limpiarFiltros}
+                className="
+                  btn
+                  btn-outline-secondary
+                  btn-sm
+                  py-0
+                "
+                onClick={
+                  limpiarFiltros
+                }
               >
-                ✕ Limpiar filtros
+                × Limpiar filtros
               </button>
 
             </div>
@@ -453,14 +493,15 @@ function UserTable({
       </div>
 
 
-      {/* ========================== */}
-      {/* TABLA DESKTOP */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* TABLA DESKTOP                                         */}
+      {/* ====================================================== */}
 
       <div
         className="
           card
           shadow-sm
+          border-0
           d-none
           d-md-block
         "
@@ -474,11 +515,14 @@ function UserTable({
               table-hover
               align-middle
               mb-0
+              table-sm
             "
           >
 
             <thead
-              className="table-dark"
+              className="
+                table-dark
+              "
             >
 
               <tr>
@@ -522,12 +566,11 @@ function UserTable({
                     colSpan="6"
                     className="
                       text-center
-                      py-5
+                      py-4
                       text-muted
                     "
                   >
                     No se encontraron usuarios.
-
                   </td>
 
                 </tr>
@@ -596,7 +639,7 @@ function UserTable({
                           className="
                             d-flex
                             justify-content-center
-                            gap-2
+                            gap-1
                           "
                         >
 
@@ -606,6 +649,7 @@ function UserTable({
                               btn
                               btn-warning
                               btn-sm
+                              py-0
                             "
                             onClick={() =>
                               onEditarUsuario(
@@ -623,6 +667,7 @@ function UserTable({
                               btn
                               btn-danger
                               btn-sm
+                              py-0
                             "
                             onClick={() =>
                               onEliminarUsuario(
@@ -653,15 +698,11 @@ function UserTable({
       </div>
 
 
-      {/* ========================== */}
-      {/* TARJETAS MOBILE */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* TARJETAS MOBILE                                       */}
+      {/* ====================================================== */}
 
-      <div
-        className="
-          d-md-none
-        "
-      >
+      <div className="d-md-none">
 
         {usuariosPagina.length === 0 ? (
 
@@ -670,14 +711,12 @@ function UserTable({
               card
               shadow-sm
               text-center
-              py-5
+              py-4
             "
           >
 
             <div className="text-muted">
-
               No se encontraron usuarios.
-
             </div>
 
           </div>
@@ -691,19 +730,17 @@ function UserTable({
                 className="
                   card
                   shadow-sm
-                  mb-3
+                  mb-2
                 "
                 key={usuario.dni}
               >
 
-                <div className="card-body">
+                <div className="card-body py-3">
 
 
-                  {/* ========================== */}
                   {/* NOMBRE */}
-                  {/* ========================== */}
 
-                  <div className="mb-3">
+                  <div className="mb-2">
 
                     <div
                       className="
@@ -717,7 +754,6 @@ function UserTable({
                     <div
                       className="
                         fw-bold
-                        fs-5
                       "
                     >
                       {usuario.name}
@@ -726,11 +762,9 @@ function UserTable({
                   </div>
 
 
-                  {/* ========================== */}
                   {/* DNI */}
-                  {/* ========================== */}
 
-                  <div className="mb-3">
+                  <div className="mb-2">
 
                     <div
                       className="
@@ -748,11 +782,9 @@ function UserTable({
                   </div>
 
 
-                  {/* ========================== */}
                   {/* EMAIL */}
-                  {/* ========================== */}
 
-                  <div className="mb-3">
+                  <div className="mb-2">
 
                     <div
                       className="
@@ -764,7 +796,9 @@ function UserTable({
                     </div>
 
                     <div
-                      className="text-break"
+                      className="
+                        text-break
+                      "
                     >
                       {usuario.email}
                     </div>
@@ -772,11 +806,9 @@ function UserTable({
                   </div>
 
 
-                  {/* ========================== */}
                   {/* TELÉFONO */}
-                  {/* ========================== */}
 
-                  <div className="mb-3">
+                  <div className="mb-2">
 
                     <div
                       className="
@@ -794,11 +826,9 @@ function UserTable({
                   </div>
 
 
-                  {/* ========================== */}
                   {/* ESTADO */}
-                  {/* ========================== */}
 
-                  <div className="mb-3">
+                  <div className="mb-2">
 
                     <div
                       className="
@@ -838,14 +868,12 @@ function UserTable({
                   </div>
 
 
-                  {/* ========================== */}
                   {/* ACCIONES */}
-                  {/* ========================== */}
 
                   <div
                     className="
                       d-grid
-                      gap-2
+                      gap-1
                     "
                   >
 
@@ -854,6 +882,7 @@ function UserTable({
                       className="
                         btn
                         btn-warning
+                        btn-sm
                       "
                       onClick={() =>
                         onEditarUsuario(
@@ -870,6 +899,7 @@ function UserTable({
                       className="
                         btn
                         btn-danger
+                        btn-sm
                       "
                       onClick={() =>
                         onEliminarUsuario(
@@ -894,9 +924,9 @@ function UserTable({
       </div>
 
 
-      {/* ========================== */}
-      {/* INFORMACIÓN */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* INFORMACIÓN                                          */}
+      {/* ====================================================== */}
 
       <div
         className="
@@ -905,8 +935,9 @@ function UserTable({
           flex-md-row
           justify-content-between
           align-items-md-center
-          gap-2
-          mt-3
+          gap-1
+          mt-2
+          small
           text-muted
         "
       >
@@ -975,20 +1006,21 @@ function UserTable({
       </div>
 
 
-      {/* ========================== */}
-      {/* PAGINACIÓN */}
-      {/* ========================== */}
+      {/* ====================================================== */}
+      {/* PAGINACIÓN                                            */}
+      {/* ====================================================== */}
 
       {totalPaginas > 1 && (
 
         <nav
-          className="mt-4"
+          className="mt-2"
           aria-label="Paginación de usuarios"
         >
 
           <ul
             className="
               pagination
+              pagination-sm
               justify-content-center
               flex-wrap
               mb-0

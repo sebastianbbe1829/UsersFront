@@ -17,50 +17,73 @@ function UserForm({
   const [guardando, setGuardando] = useState(false)
   const [erroresValidacion, setErroresValidacion] = useState({})
 
-  // ==========================
+  // ============================================================
   // VALIDAR FORMULARIO
-  // ==========================
+  // ============================================================
 
   const validarFormulario = () => {
     const errores = {}
 
-    const validacionDni = validaciones.dni(dni)
+    const validacionDni =
+      validaciones.dni(dni)
+
     if (!validacionDni.valido) {
-      errores.dni = validacionDni.error
+      errores.dni =
+        validacionDni.error
     }
 
-    const validacionNombre = validaciones.nombre(name)
+    const validacionNombre =
+      validaciones.nombre(name)
+
     if (!validacionNombre.valido) {
-      errores.name = validacionNombre.error
+      errores.name =
+        validacionNombre.error
     }
 
-    const validacionEmail = validaciones.email(email)
+    const validacionEmail =
+      validaciones.email(email)
+
     if (!validacionEmail.valido) {
-      errores.email = validacionEmail.error
+      errores.email =
+        validacionEmail.error
     }
 
-    const validacionTelefono = validaciones.telefono(phone)
+    const validacionTelefono =
+      validaciones.telefono(phone)
+
     if (!validacionTelefono.valido) {
-      errores.phone = validacionTelefono.error
+      errores.phone =
+        validacionTelefono.error
     }
 
-    const validacionPassword = validaciones.contrasena(password)
+    const validacionPassword =
+      validaciones.contrasena(password)
+
     if (!validacionPassword.valido) {
-      errores.password = validacionPassword.error
+      errores.password =
+        validacionPassword.error
     }
 
     return errores
   }
 
+  // ============================================================
+  // GUARDAR USUARIO
+  // ============================================================
+
   const guardarUsuario = async (event) => {
+
     event.preventDefault()
 
     setError('')
     setErroresValidacion({})
 
-    // Validar formulario
-    const errores = validarFormulario()
-    if (Object.keys(errores).length > 0) {
+    const errores =
+      validarFormulario()
+
+    if (
+      Object.keys(errores).length > 0
+    ) {
       setErroresValidacion(errores)
       return
     }
@@ -76,40 +99,88 @@ function UserForm({
     }
 
     try {
-      const resultado = await crearUsuario(
-        usuario,
-        token
-      )
 
-      console.log('Usuario creado:', resultado)
+      const resultado =
+        await crearUsuario(
+          usuario,
+          token
+        )
+
+      console.log(
+        'Usuario creado:',
+        resultado
+      )
 
       onUsuarioCreado(resultado)
 
     } catch (error) {
-      console.error('Error creando usuario:', error)
 
-      setError(error.message)
+      console.error(
+        'Error creando usuario:',
+        error
+      )
+
+      setError(
+        error.message
+      )
 
     } finally {
+
       setGuardando(false)
+
     }
   }
 
+  // ============================================================
+  // RENDER
+  // ============================================================
+
   return (
+
     <div
       className="modal d-block"
       style={{
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor:
+          'rgba(0, 0, 0, 0.5)',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        overflow: 'hidden',
       }}
     >
-      <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content">
 
+      <div
+        className="
+          modal-dialog
+          modal-dialog-centered
+        "
+        style={{
+          maxWidth: '500px',
+          width: 'calc(100% - 2rem)',
+          margin: '1rem auto',
+        }}
+      >
+
+        <div
+          className="modal-content"
+          style={{
+            maxHeight: 'calc(100vh - 2rem)',
+          }}
+        >
+
+          {/* ================================================== */}
           {/* CABECERA */}
+          {/* ================================================== */}
 
-          <div className="modal-header">
+          <div
+            className="
+              modal-header
+              py-2
+              px-3
+            "
+          >
 
-            <h5 className="modal-title">
+            <h5 className="modal-title mb-0">
               Nuevo usuario
             </h5>
 
@@ -122,39 +193,70 @@ function UserForm({
 
           </div>
 
+
+          {/* ================================================== */}
           {/* FORMULARIO */}
+          {/* ================================================== */}
 
           <form
             onSubmit={guardarUsuario}
             autoComplete="off"
           >
 
-            <div className="modal-body">
+            {/* ================================================== */}
+            {/* CUERPO */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-body
+                py-3
+                px-3
+              "
+              style={{
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 150px)',
+              }}
+            >
 
               {/* ERROR */}
 
               {error && (
-                <div className="alert alert-danger">
+
+                <div
+                  className="
+                    alert
+                    alert-danger
+                    py-2
+                    mb-2
+                  "
+                >
                   ❌ {error}
                 </div>
+
               )}
 
-              {/* Numero de identificacion */}
 
-              <div className="mb-3">
+              {/* DNI */}
 
-                <label className="form-label">
+              <div className="mb-2">
+
+                <label className="form-label mb-1">
                   Número de identificación
                 </label>
 
                 <input
                   type="text"
                   className={`form-control ${
-                    erroresValidacion.dni ? 'is-invalid' : ''
+                    erroresValidacion.dni
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={dni}
                   onChange={(event) =>
-                    setDni(event.target.value)
+                    setDni(
+                      event.target.value
+                    )
                   }
                   placeholder="Ingrese el DNI"
                   autoComplete="off"
@@ -162,29 +264,36 @@ function UserForm({
                 />
 
                 {erroresValidacion.dni && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.dni}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* NOMBRE */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Nombre
                 </label>
 
                 <input
                   type="text"
                   className={`form-control ${
-                    erroresValidacion.name ? 'is-invalid' : ''
+                    erroresValidacion.name
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={name}
                   onChange={(event) =>
-                    setName(event.target.value)
+                    setName(
+                      event.target.value
+                    )
                   }
                   placeholder="Ingrese el nombre"
                   autoComplete="off"
@@ -192,29 +301,36 @@ function UserForm({
                 />
 
                 {erroresValidacion.name && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.name}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* EMAIL */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Email
                 </label>
 
                 <input
                   type="email"
                   className={`form-control ${
-                    erroresValidacion.email ? 'is-invalid' : ''
+                    erroresValidacion.email
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={email}
                   onChange={(event) =>
-                    setEmail(event.target.value)
+                    setEmail(
+                      event.target.value
+                    )
                   }
                   placeholder="Ingrese el email"
                   autoComplete="off"
@@ -222,29 +338,36 @@ function UserForm({
                 />
 
                 {erroresValidacion.email && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.email}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* TELÉFONO */}
 
-              <div className="mb-3">
+              <div className="mb-2">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Teléfono
                 </label>
 
                 <input
                   type="text"
                   className={`form-control ${
-                    erroresValidacion.phone ? 'is-invalid' : ''
+                    erroresValidacion.phone
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={phone}
                   onChange={(event) =>
-                    setPhone(event.target.value)
+                    setPhone(
+                      event.target.value
+                    )
                   }
                   placeholder="Ingrese el teléfono"
                   autoComplete="off"
@@ -252,29 +375,36 @@ function UserForm({
                 />
 
                 {erroresValidacion.phone && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.phone}
                   </div>
+
                 )}
 
               </div>
 
+
               {/* CONTRASEÑA */}
 
-              <div className="mb-3">
+              <div className="mb-0">
 
-                <label className="form-label">
+                <label className="form-label mb-1">
                   Contraseña
                 </label>
 
                 <input
                   type="password"
                   className={`form-control ${
-                    erroresValidacion.password ? 'is-invalid' : ''
+                    erroresValidacion.password
+                      ? 'is-invalid'
+                      : ''
                   }`}
                   value={password}
                   onChange={(event) =>
-                    setPassword(event.target.value)
+                    setPassword(
+                      event.target.value
+                    )
                   }
                   placeholder="Ingrese la contraseña"
                   autoComplete="new-password"
@@ -282,18 +412,29 @@ function UserForm({
                 />
 
                 {erroresValidacion.password && (
+
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.password}
                   </div>
+
                 )}
 
               </div>
 
             </div>
 
-            {/* BOTONES */}
 
-            <div className="modal-footer">
+            {/* ================================================== */}
+            {/* BOTONES */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                modal-footer
+                py-2
+                px-3
+              "
+            >
 
               <button
                 type="button"
@@ -309,18 +450,30 @@ function UserForm({
                 className="btn btn-primary"
                 disabled={guardando}
               >
+
                 {guardando ? (
+
                   <>
                     <span
-                      className="spinner-border spinner-border-sm me-2"
+                      className="
+                        spinner-border
+                        spinner-border-sm
+                        me-2
+                      "
                       role="status"
                       aria-hidden="true"
                     />
+
                     Guardando...
+
                   </>
+
                 ) : (
+
                   'Crear usuario'
+
                 )}
+
               </button>
 
             </div>
@@ -328,8 +481,11 @@ function UserForm({
           </form>
 
         </div>
+
       </div>
+
     </div>
+
   )
 }
 

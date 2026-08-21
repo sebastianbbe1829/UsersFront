@@ -4,46 +4,101 @@ function Dashboard({
   exportandoExcel,
 }) {
 
-  const totalUsuarios = usuarios.length
+  // ============================================================
+  // ESTADÍSTICAS
+  // ============================================================
 
-  const usuariosActivos = usuarios.filter(
-    (usuario) => usuario.status === 1
-  ).length
+  const totalUsuarios =
+    usuarios.length
 
-  const usuariosInactivos = usuarios.filter(
-    (usuario) => usuario.status === 0
-  ).length
+  const usuariosActivos =
+    usuarios.filter(
+      (usuario) =>
+        usuario.status === 1
+    ).length
 
+  const usuariosInactivos =
+    usuarios.filter(
+      (usuario) =>
+        usuario.status === 0
+    ).length
+
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
 
-    <div className="container mb-4">
+    <div
+      className="
+        container-fluid
+        px-0
+        mb-3
+      "
+    >
 
-      <div className="row g-3">
+      <div
+        className="
+          row
+          g-2
+        "
+      >
 
-        {/* ========================== */}
+        {/* ================================================== */}
         {/* TOTAL */}
-        {/* ========================== */}
+        {/* ================================================== */}
 
         <div className="col-12 col-md-4">
 
-          <div className="card shadow-sm border-0 h-100">
+          <div
+            className="
+              card
+              shadow-sm
+              border-0
+              h-100
+            "
+          >
 
-            <div className="card-body">
+            <div
+              className="
+                card-body
+                py-2
+                px-3
+              "
+            >
 
-              <div className="d-flex justify-content-between align-items-center">
+              <div
+                className="
+                  d-flex
+                  align-items-center
+                  justify-content-between
+                "
+              >
 
                 <div>
 
-                  <div className="text-muted">
+                  <div
+                    className="
+                      text-muted
+                      small
+                    "
+                  >
                     Total usuarios
                   </div>
 
-                  <h2 className="fw-bold mb-0">
+                  <div
+                    className="
+                      fw-bold
+                      fs-4
+                      lh-1
+                    "
+                  >
                     {totalUsuarios}
-                  </h2>
+                  </div>
 
                 </div>
+
 
                 <div
                   className="
@@ -55,9 +110,9 @@ function Dashboard({
                     justify-content-center
                   "
                   style={{
-                    width: '55px',
-                    height: '55px',
-                    fontSize: '1.5rem',
+                    width: '42px',
+                    height: '42px',
+                    fontSize: '1.2rem',
                   }}
                 >
                   👥
@@ -72,29 +127,61 @@ function Dashboard({
         </div>
 
 
-        {/* ========================== */}
+        {/* ================================================== */}
         {/* ACTIVOS */}
-        {/* ========================== */}
+        {/* ================================================== */}
 
         <div className="col-12 col-md-4">
 
-          <div className="card shadow-sm border-0 h-100">
+          <div
+            className="
+              card
+              shadow-sm
+              border-0
+              h-100
+            "
+          >
 
-            <div className="card-body">
+            <div
+              className="
+                card-body
+                py-2
+                px-3
+              "
+            >
 
-              <div className="d-flex justify-content-between align-items-center">
+              <div
+                className="
+                  d-flex
+                  align-items-center
+                  justify-content-between
+                "
+              >
 
                 <div>
 
-                  <div className="text-muted">
+                  <div
+                    className="
+                      text-muted
+                      small
+                    "
+                  >
                     Usuarios activos
                   </div>
 
-                  <h2 className="fw-bold text-success mb-0">
+                  <div
+                    className="
+                      fw-bold
+                      fs-4
+                      lh-1
+                      text-success
+                    "
+                  >
                     {usuariosActivos}
-                  </h2>
+                  </div>
 
                 </div>
+
 
                 <div
                   className="
@@ -106,9 +193,9 @@ function Dashboard({
                     justify-content-center
                   "
                   style={{
-                    width: '55px',
-                    height: '55px',
-                    fontSize: '1.5rem',
+                    width: '42px',
+                    height: '42px',
+                    fontSize: '1.2rem',
                   }}
                 >
                   ✓
@@ -123,38 +210,69 @@ function Dashboard({
         </div>
 
 
-        {/* ========================== */}
+        {/* ================================================== */}
         {/* INACTIVOS + EXPORTAR */}
-        {/* ========================== */}
+        {/* ================================================== */}
 
         <div className="col-12 col-md-4">
 
-          <div className="card shadow-sm border-0 h-100">
+          <div
+            className="
+              card
+              shadow-sm
+              border-0
+              h-100
+            "
+          >
 
-            <div className="card-body">
+            <div
+              className="
+                card-body
+                py-2
+                px-3
+              "
+            >
 
-              <div className="d-flex justify-content-between align-items-center">
-
-                {/* INFORMACIÓN */}
+              <div
+                className="
+                  d-flex
+                  align-items-center
+                  justify-content-between
+                "
+              >
 
                 <div>
 
-                  <div className="text-muted">
+                  <div
+                    className="
+                      text-muted
+                      small
+                    "
+                  >
                     Usuarios inactivos
                   </div>
 
-                  <h2 className="fw-bold text-secondary mb-0">
+                  <div
+                    className="
+                      fw-bold
+                      fs-4
+                      lh-1
+                      text-secondary
+                    "
+                  >
                     {usuariosInactivos}
-                  </h2>
+                  </div>
 
                 </div>
 
 
-                {/* ACCIONES */}
-
-                <div className="d-flex align-items-center gap-2">
-
-                  {/* ICONO */}
+                <div
+                  className="
+                    d-flex
+                    align-items-center
+                    gap-2
+                  "
+                >
 
                   <div
                     className="
@@ -166,20 +284,22 @@ function Dashboard({
                       justify-content-center
                     "
                     style={{
-                      width: '55px',
-                      height: '55px',
-                      fontSize: '1.5rem',
+                      width: '42px',
+                      height: '42px',
+                      fontSize: '1.2rem',
                     }}
                   >
                     ○
                   </div>
 
 
-                  {/* EXPORTAR */}
-
                   <button
                     type="button"
-                    className="btn btn-success"
+                    className="
+                      btn
+                      btn-success
+                      btn-sm
+                    "
                     onClick={
                       onExportarExcel
                     }
@@ -202,7 +322,12 @@ function Dashboard({
 
                     ) : (
 
-                      '📊'
+                      <>
+                        📊
+                        <span className="ms-1 d-none d-lg-inline">
+                          Excel
+                        </span>
+                      </>
 
                     )}
 
@@ -223,6 +348,7 @@ function Dashboard({
     </div>
 
   )
+
 }
 
 
