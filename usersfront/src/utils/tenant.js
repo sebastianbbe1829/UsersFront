@@ -1,35 +1,49 @@
-// ==========================
+// ============================================================
 // OBTENER TENANT DESDE LA URL
-// ==========================
+// ============================================================
 
 export const obtenerTenantDesdeUrl = () => {
 
   const path =
     window.location.pathname
 
+
+  // ==========================================================
+  // SEPARAR SEGMENTOS
+  // ==========================================================
+
   const partes =
     path
       .split('/')
       .filter(Boolean)
 
-  // ==========================
-  // URL RAÍZ
-  // ==========================
+
+  // ==========================================================
+  // URL SIN SEGMENTOS
+  // ==========================================================
 
   if (partes.length === 0) {
+
     return null
+
   }
 
-  // ==========================
-  // POR AHORA SOLO ACEPTAMOS
-  // UN SEGMENTO COMO TENANT
+
+  // ==========================================================
+  // EL PRIMER SEGMENTO SIEMPRE ES EL TENANT
+  //
+  // Ejemplos:
   //
   // /empresa-demo
-  // ==========================
-
-  if (partes.length !== 1) {
-    return null
-  }
+  // /empresa-demo/login
+  // /empresa-demo/usuarios
+  // /empresa-demo/roles
+  // /empresa-demo/permisos
+  //
+  // En todos los casos:
+  //
+  // tenant = empresa-demo
+  // ==========================================================
 
   return partes[0]
 

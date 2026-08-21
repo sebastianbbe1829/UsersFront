@@ -15,45 +15,60 @@ import UserForm from '../components/UserForm'
 import EditUserForm from '../components/EditUserForm'
 import DeleteUserModal from '../components/DeleteUserModal'
 import Dashboard from '../components/Dashboard'
+import SessionManager from '../components/SessionManager'
 
 
-function MainPage() {
+function UsersPage() {
 
-  // ========================================================
+  // ============================================================
   // CONTEXT
-  // ========================================================
+  // ============================================================
 
   const {
     token,
+    usuarioLogueado,
     usuarios,
     setUsuarios,
     manejarSesionExpirada,
   } = useAuth()
 
 
-  // ========================================================
+  // ============================================================
   // FORMULARIOS
-  // ========================================================
+  // ============================================================
 
-  const [mostrarFormulario, setMostrarFormulario] =
-    useState(false)
-
-  const [usuarioEditando, setUsuarioEditando] =
-    useState(null)
-
-  const [usuarioEliminando, setUsuarioEliminando] =
-    useState(null)
+  const [
+    mostrarFormulario,
+    setMostrarFormulario,
+  ] = useState(false)
 
 
-  // ========================================================
+  const [
+    usuarioEditando,
+    setUsuarioEditando,
+  ] = useState(null)
+
+
+  const [
+    usuarioEliminando,
+    setUsuarioEliminando,
+  ] = useState(null)
+
+
+  // ============================================================
   // EXPORTAR EXCEL
-  // ========================================================
+  // ============================================================
 
-  const [exportandoExcel, setExportandoExcel] =
-    useState(false)
+  const [
+    exportandoExcel,
+    setExportandoExcel,
+  ] = useState(false)
 
-  const [mensajeExportacion, setMensajeExportacion] =
-    useState(null)
+
+  const [
+    mensajeExportacion,
+    setMensajeExportacion,
+  ] = useState(null)
 
 
   const descargarExcel = async () => {
@@ -65,38 +80,60 @@ function MainPage() {
       setMensajeExportacion(null)
 
 
-      const blob =
-        await exportarUsuariosExcel(token)
+      // ========================================================
+      // SOLICITAR ARCHIVO
+      // ========================================================
 
+      const blob =
+        await exportarUsuariosExcel(
+          token
+        )
+
+
+      // ========================================================
+      // CREAR DESCARGA
+      // ========================================================
 
       const url =
-        window.URL.createObjectURL(blob)
+        window.URL.createObjectURL(
+          blob
+        )
+
 
       const enlace =
         document.createElement('a')
+
 
       enlace.href = url
 
       enlace.download =
         'reporte_usuarios.xlsx'
 
+
       document.body.appendChild(
         enlace
       )
 
+
       enlace.click()
 
       enlace.remove()
+
 
       window.URL.revokeObjectURL(
         url
       )
 
 
+      // ========================================================
+      // ÉXITO
+      // ========================================================
+
       setMensajeExportacion({
         tipo: 'success',
         texto: 'Excel generado correctamente.',
       })
+
 
     } catch (error) {
 
@@ -106,6 +143,10 @@ function MainPage() {
       )
 
 
+      // ========================================================
+      // SESIÓN EXPIRADA
+      // ========================================================
+
       if (error.status === 401) {
 
         manejarSesionExpirada()
@@ -113,6 +154,10 @@ function MainPage() {
         return
       }
 
+
+      // ========================================================
+      // SIN PERMISOS
+      // ========================================================
 
       if (error.status === 403) {
 
@@ -125,6 +170,10 @@ function MainPage() {
         return
       }
 
+
+      // ========================================================
+      // OTROS ERRORES
+      // ========================================================
 
       setMensajeExportacion({
         tipo: 'danger',
@@ -142,9 +191,9 @@ function MainPage() {
   }
 
 
-  // ========================================================
-  // CREAR
-  // ========================================================
+  // ============================================================
+  // CREAR USUARIO
+  // ============================================================
 
   const abrirFormulario = () => {
 
@@ -176,15 +225,17 @@ function MainPage() {
   }
 
 
-  // ========================================================
-  // EDITAR
-  // ========================================================
+  // ============================================================
+  // EDITAR USUARIO
+  // ============================================================
 
   const editarUsuario = (
     usuario
   ) => {
 
-    setUsuarioEditando(usuario)
+    setUsuarioEditando(
+      usuario
+    )
 
   }
 
@@ -216,15 +267,17 @@ function MainPage() {
   }
 
 
-  // ========================================================
-  // ELIMINAR
-  // ========================================================
+  // ============================================================
+  // ELIMINAR USUARIO
+  // ============================================================
 
   const eliminarUsuario = (
     usuario
   ) => {
 
-    setUsuarioEliminando(usuario)
+    setUsuarioEliminando(
+      usuario
+    )
 
   }
 
@@ -253,17 +306,46 @@ function MainPage() {
   }
 
 
-  // ========================================================
+  // ============================================================
   // RENDER
-  // ========================================================
+  // ============================================================
 
   return (
 
-    <div className="container-fluid p-4">
+    <>
 
-      {/* ================================================== */}
+      {/* ====================================================== */}
+      {/* VIGILAR SESIÓN */}
+      {/* ====================================================== */}
+
+      <SessionManager
+        token={token}
+        onSesionExpirada={
+          manejarSesionExpirada
+        }
+      />
+
+
+      {/* ====================================================== */}
+      {/* TÍTULO DE LA PÁGINA */}
+      {/* ====================================================== */}
+
+      <div className="mb-4">
+
+        <h2 className="fw-bold mb-1">
+          Gestión de Usuarios
+        </h2>
+
+        <p className="text-muted mb-0">
+          Administración de usuarios del tenant actual.
+        </p>
+
+      </div>
+
+
+      {/* ====================================================== */}
       {/* MENSAJE EXPORTACIÓN */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
 
       {mensajeExportacion && (
 
@@ -294,9 +376,9 @@ function MainPage() {
       )}
 
 
-      {/* ================================================== */}
+      {/* ====================================================== */}
       {/* DASHBOARD */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
 
       <Dashboard
         usuarios={
@@ -311,9 +393,9 @@ function MainPage() {
       />
 
 
-      {/* ================================================== */}
+      {/* ====================================================== */}
       {/* TABLA */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
 
       <UserTable
         usuarios={
@@ -331,9 +413,9 @@ function MainPage() {
       />
 
 
-      {/* ================================================== */}
+      {/* ====================================================== */}
       {/* NUEVO USUARIO */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
 
       {mostrarFormulario && (
 
@@ -350,9 +432,9 @@ function MainPage() {
       )}
 
 
-      {/* ================================================== */}
-      {/* EDITAR */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
+      {/* EDITAR USUARIO */}
+      {/* ====================================================== */}
 
       {usuarioEditando && (
 
@@ -372,9 +454,9 @@ function MainPage() {
       )}
 
 
-      {/* ================================================== */}
-      {/* ELIMINAR */}
-      {/* ================================================== */}
+      {/* ====================================================== */}
+      {/* ELIMINAR USUARIO */}
+      {/* ====================================================== */}
 
       {usuarioEliminando && (
 
@@ -393,11 +475,11 @@ function MainPage() {
 
       )}
 
-    </div>
+    </>
 
   )
 
 }
 
 
-export default MainPage
+export default UsersPage

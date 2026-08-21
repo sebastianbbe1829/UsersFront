@@ -1,13 +1,18 @@
-import { useState } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import {
+  useState,
+} from 'react'
+
+import {
+  useAuth,
+} from '../contexts/AuthContext'
 
 
 function Login({
   mensajeSesion,
+  onLogin,
 }) {
 
   const {
-    iniciarSesion,
     tenant,
   } = useAuth()
 
@@ -15,25 +20,30 @@ function Login({
   const [usuario, setUsuario] =
     useState('')
 
+
   const [password, setPassword] =
     useState('')
+
 
   const [error, setError] =
     useState('')
 
+
   const [cargando, setCargando] =
     useState(false)
 
+
   const [erroresValidacion, setErroresValidacion] =
     useState({})
+
 
   const [mostrarPassword, setMostrarPassword] =
     useState(false)
 
 
-  // ==========================
+  // ============================================================
   // VALIDACIONES
-  // ==========================
+  // ============================================================
 
   const validarFormulario = () => {
 
@@ -71,18 +81,20 @@ function Login({
 
 
     return errores
+
   }
 
 
-  // ==========================
+  // ============================================================
   // LOGIN
-  // ==========================
+  // ============================================================
 
   const manejarLogin = async (
     event
   ) => {
 
     event.preventDefault()
+
 
     setError('')
 
@@ -111,16 +123,11 @@ function Login({
 
     try {
 
-      /*
-       * IMPORTANTE:
-       *
-       * No enviamos el tenant desde aquí.
-       *
-       * AuthContext ya lo obtiene desde la URL
-       * y se lo pasa al servicio login().
-       */
+      // --------------------------------------------------------
+      // LoginPage se encarga de autenticar y navegar
+      // --------------------------------------------------------
 
-      await iniciarSesion(
+      await onLogin(
         usuario,
         password
       )
@@ -132,8 +139,10 @@ function Login({
         error
       )
 
+
       setError(
-        error.message
+        error?.message ||
+        'No fue posible iniciar sesión.'
       )
 
     } finally {
@@ -144,6 +153,10 @@ function Login({
 
   }
 
+
+  // ============================================================
+  // RENDER
+  // ============================================================
 
   return (
 
@@ -174,10 +187,9 @@ function Login({
 
         <div className="card-body p-5">
 
-
-          {/* ========================== */}
-          {/* ENCABEZADO */}
-          {/* ========================== */}
+          {/* ================================================== */}
+          {/* ENCABEZADO                                        */}
+          {/* ================================================== */}
 
           <div className="text-center mb-4">
 
@@ -217,9 +229,9 @@ function Login({
             </p>
 
 
-            {/* ========================== */}
-            {/* TENANT */}
-            {/* ========================== */}
+            {/* ================================================== */}
+            {/* TENANT                                            */}
+            {/* ================================================== */}
 
             {tenant && (
 
@@ -251,18 +263,17 @@ function Login({
           </div>
 
 
-          {/* ========================== */}
-          {/* FORMULARIO */}
-          {/* ========================== */}
+          {/* ================================================== */}
+          {/* FORMULARIO                                         */}
+          {/* ================================================== */}
 
           <form
             onSubmit={manejarLogin}
           >
 
-
-            {/* ========================== */}
-            {/* USUARIO */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* USUARIO                                           */}
+            {/* ================================================= */}
 
             <div className="mb-3">
 
@@ -317,9 +328,9 @@ function Login({
             </div>
 
 
-            {/* ========================== */}
-            {/* CONTRASEÑA */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* CONTRASEÑA                                        */}
+            {/* ================================================= */}
 
             <div className="mb-4">
 
@@ -415,9 +426,9 @@ function Login({
             </div>
 
 
-            {/* ========================== */}
-            {/* SESIÓN EXPIRADA */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* SESIÓN EXPIRADA                                   */}
+            {/* ================================================= */}
 
             {mensajeSesion && (
 
@@ -427,15 +438,15 @@ function Login({
                   alert-warning
                 "
               >
-                ⏰ {mensajeSesion}
+                ⚠️ {mensajeSesion}
               </div>
 
             )}
 
 
-            {/* ========================== */}
-            {/* ERROR LOGIN */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* ERROR LOGIN                                       */}
+            {/* ================================================= */}
 
             {error && (
 
@@ -451,9 +462,9 @@ function Login({
             )}
 
 
-            {/* ========================== */}
-            {/* BOTÓN INGRESAR */}
-            {/* ========================== */}
+            {/* ================================================= */}
+            {/* INGRESAR                                          */}
+            {/* ================================================= */}
 
             <button
               type="submit"
@@ -493,7 +504,6 @@ function Login({
               )}
 
             </button>
-
 
           </form>
 
