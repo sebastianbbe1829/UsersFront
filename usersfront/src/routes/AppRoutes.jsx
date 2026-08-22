@@ -10,6 +10,7 @@ import LoginPage from '../pages/LoginPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
+import PermisosPage from '../pages/PermisosPage'
 
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
@@ -28,10 +29,6 @@ import {
 // ============================================================
 
 function RutasProtegidas() {
-
-  // ==========================================================
-  // CONTEXT
-  // ==========================================================
 
   const {
     logueado,
@@ -112,10 +109,6 @@ function RutasProtegidas() {
 // ============================================================
 
 function AppRoutes() {
-
-  // ==========================================================
-  // TENANT
-  // ==========================================================
 
   const tenant =
     obtenerTenantDesdeUrl()
@@ -204,6 +197,7 @@ function AppRoutes() {
         {/* ==================================================== */}
         {/* ROLES */}
         {/* ==================================================== */}
+
         <Route
           path="roles"
           element={
@@ -211,7 +205,7 @@ function AppRoutes() {
           }
         />
 
-        
+
         {/* ==================================================== */}
         {/* PERMISOS */}
         {/* ==================================================== */}
@@ -219,19 +213,7 @@ function AppRoutes() {
         <Route
           path="permisos"
           element={
-
-            <div>
-
-              <h2 className="fw-bold">
-                Permisos
-              </h2>
-
-              <p className="text-muted">
-                Módulo de permisos próximamente.
-              </p>
-
-            </div>
-
+            <PermisosPage />
           }
         />
 
@@ -246,9 +228,7 @@ function AppRoutes() {
         path="*"
         element={
           <Navigate
-            to={
-              `/${tenant}`
-            }
+            to={`/${tenant}`}
             replace
           />
         }

@@ -14,6 +14,7 @@ import UserTable from '../components/UserTable'
 import UserForm from '../components/UserForm'
 import EditUserForm from '../components/EditUserForm'
 import DeleteUserModal from '../components/DeleteUserModal'
+import UserRolesModal from '../components/UserRolesModal'
 import Dashboard from '../components/Dashboard'
 import SessionManager from '../components/SessionManager'
 
@@ -52,6 +53,16 @@ function UsersPage() {
   const [
     usuarioEliminando,
     setUsuarioEliminando,
+  ] = useState(null)
+
+
+  // ============================================================
+  // ROLES DEL USUARIO
+  // ============================================================
+
+  const [
+    usuarioAdministrandoRoles,
+    setUsuarioAdministrandoRoles,
   ] = useState(null)
 
 
@@ -307,6 +318,28 @@ function UsersPage() {
 
 
   // ============================================================
+  // ADMINISTRAR ROLES
+  // ============================================================
+
+  const administrarRoles = (
+    usuario
+  ) => {
+
+    setUsuarioAdministrandoRoles(
+      usuario
+    )
+
+  }
+
+
+  const cerrarAdministracionRoles = () => {
+
+    setUsuarioAdministrandoRoles(null)
+
+  }
+
+
+  // ============================================================
   // RENDER
   // ============================================================
 
@@ -410,6 +443,9 @@ function UsersPage() {
         onEliminarUsuario={
           eliminarUsuario
         }
+        onAdministrarRoles={
+          administrarRoles
+        }
       />
 
 
@@ -470,6 +506,30 @@ function UsersPage() {
           }
           onCancelar={
             cerrarEliminacion
+          }
+        />
+
+      )}
+
+
+      {/* ====================================================== */}
+      {/* ADMINISTRAR ROLES */}
+      {/* ====================================================== */}
+
+      {usuarioAdministrandoRoles && (
+
+        <UserRolesModal
+          usuario={
+            usuarioAdministrandoRoles
+          }
+          token={
+            token
+          }
+          onCerrar={
+            cerrarAdministracionRoles
+          }
+          onSesionExpirada={
+            manejarSesionExpirada
           }
         />
 

@@ -3,48 +3,33 @@ import {
   useState,
 } from 'react'
 
-
-function UserTable({
-  usuarios,
-  onNuevoUsuario,
-  onEditarUsuario,
-  onEliminarUsuario,
-  onAdministrarRoles,
+function PermissionTable({
+  permisos,
+  onNuevoPermiso,
 }) {
 
   // ============================================================
   // ESTADOS
   // ============================================================
 
-  const [
-    busqueda,
-    setBusqueda,
-  ] = useState('')
+  const [busqueda, setBusqueda] =
+    useState('')
 
+  const [estadoFiltro, setEstadoFiltro] =
+    useState('todos')
 
-  const [
-    estadoFiltro,
-    setEstadoFiltro,
-  ] = useState('todos')
+  const [permisosPorPagina, setPermisosPorPagina] =
+    useState(10)
 
-
-  const [
-    usuariosPorPagina,
-    setUsuariosPorPagina,
-  ] = useState(10)
-
-
-  const [
-    paginaActual,
-    setPaginaActual,
-  ] = useState(1)
+  const [paginaActual, setPaginaActual] =
+    useState(1)
 
 
   // ============================================================
-  // FILTRAR USUARIOS
+  // FILTRAR PERMISOS
   // ============================================================
 
-  const usuariosFiltrados =
+  const permisosFiltrados =
     useMemo(() => {
 
       const texto =
@@ -53,31 +38,20 @@ function UserTable({
           .trim()
 
 
-      return usuarios.filter(
-        (usuario) => {
+      return permisos.filter(
+        (permiso) => {
 
           const coincideBusqueda =
             !texto ||
+
             String(
-              usuario.dni ?? ''
+              permiso.code ?? ''
             )
               .toLowerCase()
               .includes(texto) ||
 
             String(
-              usuario.name ?? ''
-            )
-              .toLowerCase()
-              .includes(texto) ||
-
-            String(
-              usuario.email ?? ''
-            )
-              .toLowerCase()
-              .includes(texto) ||
-
-            String(
-              usuario.phone ?? ''
+              permiso.name ?? ''
             )
               .toLowerCase()
               .includes(texto)
@@ -88,12 +62,12 @@ function UserTable({
 
             (
               estadoFiltro === 'activos' &&
-              usuario.status === 1
+              permiso.status === 1
             ) ||
 
             (
               estadoFiltro === 'inactivos' &&
-              usuario.status === 0
+              permiso.status === 0
             )
 
 
@@ -101,12 +75,11 @@ function UserTable({
             coincideBusqueda &&
             coincideEstado
           )
-
         }
       )
 
     }, [
-      usuarios,
+      permisos,
       busqueda,
       estadoFiltro,
     ])
@@ -118,23 +91,23 @@ function UserTable({
 
   const totalPaginas =
     Math.ceil(
-      usuariosFiltrados.length /
-      usuariosPorPagina
+      permisosFiltrados.length /
+      permisosPorPagina
     )
 
 
   const indiceInicial =
     (paginaActual - 1) *
-    usuariosPorPagina
+    permisosPorPagina
 
 
   const indiceFinal =
     indiceInicial +
-    usuariosPorPagina
+    permisosPorPagina
 
 
-  const usuariosPagina =
-    usuariosFiltrados.slice(
+  const permisosPagina =
+    permisosFiltrados.slice(
       indiceInicial,
       indiceFinal
     )
@@ -176,7 +149,7 @@ function UserTable({
     valor
   ) => {
 
-    setUsuariosPorPagina(
+    setPermisosPorPagina(
       Number(valor)
     )
 
@@ -268,12 +241,11 @@ function UserTable({
               fw-bold
             "
           >
-            Usuarios
+            Permisos
           </h4>
 
-
           <small className="text-muted">
-            Gestión de usuarios del sistema
+            Gestión de permisos globales del sistema
           </small>
 
         </div>
@@ -287,10 +259,10 @@ function UserTable({
             btn-sm
           "
           onClick={
-            onNuevoUsuario
+            onNuevoPermiso
           }
         >
-          + Nuevo usuario
+          + Nuevo permiso
         </button>
 
       </div>
@@ -320,9 +292,7 @@ function UserTable({
           <div className="row g-2 align-items-end">
 
 
-            {/* ================================================= */}
-            {/* BUSCAR                                            */}
-            {/* ================================================= */}
+            {/* BUSCAR */}
 
             <div className="col-12 col-md-7">
 
@@ -334,29 +304,19 @@ function UserTable({
                   mb-1
                 "
               >
-                Buscar usuario
+                Buscar permiso
               </label>
-
 
               <div className="input-group input-group-sm">
 
-                <span
-                  className="
-                    input-group-text
-                  "
-                >
+                <span className="input-group-text">
                   🔎
                 </span>
 
-
                 <input
                   type="text"
-                  className="
-                    form-control
-                  "
-                  placeholder="
-                    Identificación, nombre, email o teléfono...
-                  "
+                  className="form-control"
+                  placeholder="Código o nombre..."
                   value={busqueda}
                   onChange={(e) =>
                     cambiarBusqueda(
@@ -370,9 +330,7 @@ function UserTable({
             </div>
 
 
-            {/* ================================================= */}
-            {/* ESTADO                                             */}
-            {/* ================================================= */}
+            {/* ESTADO */}
 
             <div className="col-6 col-md-3">
 
@@ -386,7 +344,6 @@ function UserTable({
               >
                 Estado
               </label>
-
 
               <select
                 className="
@@ -418,9 +375,7 @@ function UserTable({
             </div>
 
 
-            {/* ================================================= */}
-            {/* MOSTRAR                                            */}
-            {/* ================================================= */}
+            {/* MOSTRAR */}
 
             <div className="col-6 col-md-2">
 
@@ -435,13 +390,12 @@ function UserTable({
                 Mostrar
               </label>
 
-
               <select
                 className="
                   form-select
                   form-select-sm
                 "
-                value={usuariosPorPagina}
+                value={permisosPorPagina}
                 onChange={(e) =>
                   cambiarCantidad(
                     e.target.value
@@ -472,12 +426,12 @@ function UserTable({
           </div>
 
 
-          {/* ================================================= */}
-          {/* LIMPIAR FILTROS                                   */}
-          {/* ================================================= */}
+          {/* LIMPIAR */}
 
-          {(busqueda ||
-            estadoFiltro !== 'todos') && (
+          {(
+            busqueda ||
+            estadoFiltro !== 'todos'
+          ) && (
 
             <div className="mt-2">
 
@@ -531,28 +485,16 @@ function UserTable({
             "
           >
 
-            <thead
-              className="
-                table-dark
-              "
-            >
+            <thead className="table-dark">
 
               <tr>
 
                 <th>
-                  Número de identificación
+                  Código
                 </th>
 
                 <th>
                   Nombre
-                </th>
-
-                <th>
-                  Email
-                </th>
-
-                <th>
-                  Teléfono
                 </th>
 
                 <th>
@@ -570,55 +512,43 @@ function UserTable({
 
             <tbody>
 
-              {usuariosPagina.length === 0 ? (
+              {permisosPagina.length === 0 ? (
 
                 <tr>
 
                   <td
-                    colSpan="6"
+                    colSpan="4"
                     className="
                       text-center
                       py-4
                       text-muted
                     "
                   >
-                    No se encontraron usuarios.
+                    No se encontraron permisos.
                   </td>
 
                 </tr>
 
               ) : (
 
-                usuariosPagina.map(
-                  (usuario) => (
+                permisosPagina.map(
+                  (permiso) => (
 
                     <tr
-                      key={usuario.dni}
+                      key={permiso.id}
                     >
 
                       <td>
-                        {usuario.dni}
+                        {permiso.code}
                       </td>
-
 
                       <td>
-                        {usuario.name}
+                        {permiso.name}
                       </td>
-
-
-                      <td>
-                        {usuario.email}
-                      </td>
-
-
-                      <td>
-                        {usuario.phone}
-                      </td>
-
 
                       <td>
 
-                        {usuario.status ? (
+                        {permiso.status === 1 ? (
 
                           <span
                             className="
@@ -645,23 +575,16 @@ function UserTable({
                       </td>
 
 
-                      {/* ================================================== */}
-                      {/* ACCIONES DESKTOP                                  */}
-                      {/* ================================================== */}
-
                       <td>
 
                         <div
                           className="
                             d-flex
                             justify-content-center
-                            align-items-center
                             gap-1
-                            flex-nowrap
+                            flex-wrap
                           "
                         >
-
-                          {/* EDITAR */}
 
                           <button
                             type="button"
@@ -670,63 +593,11 @@ function UserTable({
                               btn-warning
                               btn-sm
                               py-0
-                              px-2
                             "
-                            title="Editar usuario"
-                            aria-label={`Editar usuario ${usuario.name}`}
-                            onClick={() =>
-                              onEditarUsuario(
-                                usuario
-                              )
-                            }
+                            disabled
+                            title="Disponible cuando exista el endpoint de actualización"
                           >
-                            ✏️
-                          </button>
-
-
-                          {/* ELIMINAR */}
-
-                          <button
-                            type="button"
-                            className="
-                              btn
-                              btn-danger
-                              btn-sm
-                              py-0
-                              px-2
-                            "
-                            title="Eliminar usuario"
-                            aria-label={`Eliminar usuario ${usuario.name}`}
-                            onClick={() =>
-                              onEliminarUsuario(
-                                usuario
-                              )
-                            }
-                          >
-                            🗑️
-                          </button>
-
-
-                          {/* ROLES */}
-
-                          <button
-                            type="button"
-                            className="
-                              btn
-                              btn-primary
-                              btn-sm
-                              py-0
-                              px-2
-                            "
-                            title="Administrar roles"
-                            aria-label={`Administrar roles de ${usuario.name}`}
-                            onClick={() =>
-                              onAdministrarRoles(
-                                usuario
-                              )
-                            }
-                          >
-                            👥
+                            ✏️ Editar
                           </button>
 
                         </div>
@@ -755,7 +626,7 @@ function UserTable({
 
       <div className="d-md-none">
 
-        {usuariosPagina.length === 0 ? (
+        {permisosPagina.length === 0 ? (
 
           <div
             className="
@@ -767,15 +638,15 @@ function UserTable({
           >
 
             <div className="text-muted">
-              No se encontraron usuarios.
+              No se encontraron permisos.
             </div>
 
           </div>
 
         ) : (
 
-          usuariosPagina.map(
-            (usuario) => (
+          permisosPagina.map(
+            (permiso) => (
 
               <div
                 className="
@@ -783,134 +654,53 @@ function UserTable({
                   shadow-sm
                   mb-2
                 "
-                key={usuario.dni}
+                key={permiso.id}
               >
 
                 <div className="card-body py-3">
 
 
-                  {/* NOMBRE */}
+                  <div className="mb-2">
+
+                    <div className="text-muted small">
+                      Código
+                    </div>
+
+                    <div className="fw-bold">
+                      {permiso.code}
+                    </div>
+
+                  </div>
+
 
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
+                    <div className="text-muted small">
                       Nombre
                     </div>
 
-                    <div
-                      className="
-                        fw-bold
-                      "
-                    >
-                      {usuario.name}
-                    </div>
-
-                  </div>
-
-
-                  {/* DNI */}
-
-                  <div className="mb-2">
-
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
-                      Número de identificación
-                    </div>
-
                     <div>
-                      {usuario.dni}
+                      {permiso.name}
                     </div>
 
                   </div>
 
 
-                  {/* EMAIL */}
-
                   <div className="mb-2">
 
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
-                      Email
-                    </div>
-
-                    <div
-                      className="
-                        text-break
-                      "
-                    >
-                      {usuario.email}
-                    </div>
-
-                  </div>
-
-
-                  {/* TELÉFONO */}
-
-                  <div className="mb-2">
-
-                    <div
-                      className="
-                        text-muted
-                        small
-                      "
-                    >
-                      Teléfono
-                    </div>
-
-                    <div>
-                      {usuario.phone}
-                    </div>
-
-                  </div>
-
-
-                  {/* ESTADO */}
-
-                  <div className="mb-2">
-
-                    <div
-                      className="
-                        text-muted
-                        small
-                        mb-1
-                      "
-                    >
+                    <div className="text-muted small mb-1">
                       Estado
                     </div>
 
+                    {permiso.status === 1 ? (
 
-                    {usuario.status ? (
-
-                      <span
-                        className="
-                          badge
-                          bg-success
-                        "
-                      >
+                      <span className="badge bg-success">
                         Activo
                       </span>
 
                     ) : (
 
-                      <span
-                        className="
-                          badge
-                          bg-secondary
-                        "
-                      >
+                      <span className="badge bg-secondary">
                         Inactivo
                       </span>
 
@@ -919,18 +709,7 @@ function UserTable({
                   </div>
 
 
-                  {/* ================================================== */}
-                  {/* ACCIONES MOBILE                                    */}
-                  {/* ================================================== */}
-
-                  <div
-                    className="
-                      d-grid
-                      gap-1
-                    "
-                  >
-
-                    {/* EDITAR */}
+                  <div className="d-grid">
 
                     <button
                       type="button"
@@ -939,51 +718,10 @@ function UserTable({
                         btn-warning
                         btn-sm
                       "
-                      onClick={() =>
-                        onEditarUsuario(
-                          usuario
-                        )
-                      }
+                      disabled
+                      title="Disponible cuando exista el endpoint de actualización"
                     >
                       ✏️ Editar
-                    </button>
-
-
-                    {/* ROLES */}
-
-                    <button
-                      type="button"
-                      className="
-                        btn
-                        btn-primary
-                        btn-sm
-                      "
-                      onClick={() =>
-                        onAdministrarRoles(
-                          usuario
-                        )
-                      }
-                    >
-                      👥 Administrar roles
-                    </button>
-
-
-                    {/* ELIMINAR */}
-
-                    <button
-                      type="button"
-                      className="
-                        btn
-                        btn-danger
-                        btn-sm
-                      "
-                      onClick={() =>
-                        onEliminarUsuario(
-                          usuario
-                        )
-                      }
-                    >
-                      🗑️ Eliminar
                     </button>
 
                   </div>
@@ -1022,7 +760,7 @@ function UserTable({
 
           Mostrando{' '}
 
-          {usuariosFiltrados.length === 0
+          {permisosFiltrados.length === 0
             ? 0
             : indiceInicial + 1}
 
@@ -1030,14 +768,14 @@ function UserTable({
 
           {Math.min(
             indiceFinal,
-            usuariosFiltrados.length
+            permisosFiltrados.length
           )}
 
           {' de '}
 
-          {usuariosFiltrados.length}
+          {permisosFiltrados.length}
 
-          {' usuarios'}
+          {' permisos'}
 
         </div>
 
@@ -1047,22 +785,22 @@ function UserTable({
           Total:{' '}
 
           <strong>
-            {usuarios.length}
+            {permisos.length}
           </strong>
 
           {' | '}
 
           Activos:{' '}
 
-          <strong
-            className="text-success"
-          >
+          <strong className="text-success">
+
             {
-              usuarios.filter(
-                (usuario) =>
-                  usuario.status === 1
+              permisos.filter(
+                (permiso) =>
+                  permiso.status === 1
               ).length
             }
+
           </strong>
 
           {' | '}
@@ -1070,12 +808,14 @@ function UserTable({
           Inactivos:{' '}
 
           <strong>
+
             {
-              usuarios.filter(
-                (usuario) =>
-                  usuario.status === 0
+              permisos.filter(
+                (permiso) =>
+                  permiso.status === 0
               ).length
             }
+
           </strong>
 
         </div>
@@ -1091,7 +831,7 @@ function UserTable({
 
         <nav
           className="mt-2"
-          aria-label="Paginación de usuarios"
+          aria-label="Paginación de permisos"
         >
 
           <ul
@@ -1103,8 +843,6 @@ function UserTable({
               mb-0
             "
           >
-
-            {/* ANTERIOR */}
 
             <li
               className={
@@ -1133,8 +871,6 @@ function UserTable({
 
             </li>
 
-
-            {/* NÚMEROS */}
 
             {paginas.map(
               (pagina) => (
@@ -1167,8 +903,6 @@ function UserTable({
               )
             )}
 
-
-            {/* SIGUIENTE */}
 
             <li
               className={
@@ -1206,8 +940,6 @@ function UserTable({
     </div>
 
   )
-
 }
 
-
-export default UserTable
+export default PermissionTable

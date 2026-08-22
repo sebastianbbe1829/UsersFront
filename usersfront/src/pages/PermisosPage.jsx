@@ -11,10 +11,17 @@ import {
 
 import {
   obtenerPermisos,
+  crearPermiso,
 } from '../services/api'
 
 
 import SessionManager from '../components/SessionManager'
+
+
+import PermissionTable from '../components/PermissionTable'
+
+
+import PermissionForm from '../components/PermissionForm'
 
 
 function PermisosPage() {
@@ -47,6 +54,26 @@ function PermisosPage() {
     cargando,
     setCargando,
   ] = useState(true)
+
+
+  // ============================================================
+  // GUARDANDO
+  // ============================================================
+
+  const [
+    guardando,
+    setGuardando,
+  ] = useState(false)
+
+
+  // ============================================================
+  // MOSTRAR FORMULARIO
+  // ============================================================
+
+  const [
+    mostrarFormulario,
+    setMostrarFormulario,
+  ] = useState(false)
 
 
   // ============================================================
@@ -133,6 +160,112 @@ function PermisosPage() {
     } finally {
 
       setCargando(false)
+
+    }
+
+  }
+
+
+  // ============================================================
+  // CREAR PERMISO
+  // ============================================================
+
+  const guardarPermiso = async (
+    datos
+  ) => {
+
+    try {
+
+      setGuardando(true)
+      setMensaje(null)
+
+
+      const nuevoPermiso =
+        await crearPermiso(
+          datos,
+          token
+        )
+
+
+      // ========================================================
+      // AGREGAR EL NUEVO PERMISO A LA LISTA
+      // ========================================================
+
+      setPermisos(
+        (actuales) => [
+          ...actuales,
+          nuevoPermiso,
+        ]
+      )
+
+
+      // ========================================================
+      // CERRAR FORMULARIO
+      // ========================================================
+
+      setMostrarFormulario(false)
+
+
+      // ========================================================
+      // MENSAJE DE ÉXITO
+      // ========================================================
+
+      setMensaje({
+        tipo: 'success',
+        texto:
+          'El permiso fue creado correctamente.',
+      })
+
+    } catch (error) {
+
+      console.error(
+        'Error creando permiso:',
+        error
+      )
+
+
+      // ========================================================
+      // SESIÓN EXPIRADA
+      // ========================================================
+
+      if (error.status === 401) {
+
+        manejarSesionExpirada()
+
+        return
+      }
+
+
+      // ========================================================
+      // SIN PERMISOS
+      // ========================================================
+
+      if (error.status === 403) {
+
+        setMensaje({
+          tipo: 'danger',
+          texto:
+            'No tienes permisos para crear permisos.',
+        })
+
+        return
+      }
+
+
+      // ========================================================
+      // OTROS ERRORES
+      // ========================================================
+
+      setMensaje({
+        tipo: 'danger',
+        texto:
+          error.message ||
+          'No fue posible crear el permiso.',
+      })
+
+    } finally {
+
+      setGuardando(false)
 
     }
 
@@ -265,153 +398,48 @@ function PermisosPage() {
 
       ) : (
 
-        <>
+        <PermissionTable
+          permisos={permisos}
+          onNuevoPermiso={() => {
+            setMensaje(null)
+            setMostrarFormulario(true)
+          }}
+        />
 
-          {/* ================================================== */}
-          {/* RESUMEN                                             */}
-          {/* ================================================== */}
-
-          <div className="mb-3">
-
-            <span className="text-muted">
-              Total de permisos:{' '}
-            </span>
-
-            <strong>
-              {permisos.length}
-            </strong>
-
-          </div>
+      )}
 
 
-          {/* ================================================== */}
-          {/* TABLA                                              */}
-          {/* ================================================== */}
+      {/* ====================================================== */}
+      {/* FORMULARIO NUEVO PERMISO                              */}
+      {/* ====================================================== */}
 
-          <div
-            className="
-              card
-              shadow-sm
-              border-0
-            "
-          >
+      {mostrarFormulario && (
 
-            <div className="table-responsive">
+        <PermissionForm
+          onGuardar={
+            guardarPermiso
+          }
 
-              <table
-                className="
-                  table
-                  table-hover
-                  align-middle
-                  mb-0
-                "
-              >
+          onCancelar={() => {
 
-                <thead className="table-dark">
+            if (guardando) {
+              return
+            }
 
-                  <tr>
+            setMostrarFormulario(false)
 
-                    <th>
-                      Código
-                    </th>
+          }}
 
-                    <th>
-                      Nombre
-                    </th>
+          guardando={
+            guardando
+          }
 
-                    <th>
-                      Estado
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                  {permisos.length === 0 ? (
-
-                    <tr>
-
-                      <td
-                        colSpan="3"
-                        className="
-                          text-center
-                          py-4
-                          text-muted
-                        "
-                      >
-                        No hay permisos disponibles.
-                      </td>
-
-                    </tr>
-
-                  ) : (
-
-                    permisos.map(
-                      (permiso) => (
-
-                        <tr
-                          key={permiso.id}
-                        >
-
-                          <td>
-                            <strong>
-                              {permiso.code}
-                            </strong>
-                          </td>
-
-
-                          <td>
-                            {permiso.name}
-                          </td>
-
-
-                          <td>
-
-                            {permiso.status === 1 ? (
-
-                              <span
-                                className="
-                                  badge
-                                  bg-success
-                                "
-                              >
-                                Activo
-                              </span>
-
-                            ) : (
-
-                              <span
-                                className="
-                                  badge
-                                  bg-secondary
-                                "
-                              >
-                                Inactivo
-                              </span>
-
-                            )}
-
-                          </td>
-
-                        </tr>
-
-                      )
-                    )
-
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-          </div>
-
-        </>
+          error={
+            mensaje?.tipo === 'danger'
+              ? mensaje.texto
+              : ''
+          }
+        />
 
       )}
 

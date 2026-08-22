@@ -524,28 +524,6 @@ export const eliminarRol = async (
   return procesarRespuesta(response)
 }
 
-// ==========================
-// OBTENER PERMISOS GLOBALES
-// ==========================
-
-export const obtenerPermisos = async (
-  token
-) => {
-
-  const response = await fetch(
-    `${API_URL}/permission`,
-    {
-      method: 'GET',
-
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  )
-
-  return procesarRespuesta(response)
-}
-
 
 // ==========================
 // OBTENER PERMISOS DEL ROL
@@ -622,6 +600,172 @@ export const eliminarPermisoRol = async (
       headers: {
         Authorization:
           `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+// ==========================
+// OBTENER TENANTS DEL USUARIO
+// ==========================
+
+export const obtenerTenantsUsuario = async (
+  userId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/user-tenants/user/${userId}`,
+    {
+      method: 'GET',
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// OBTENER ROLES DEL USUARIO
+// ==========================
+
+export const obtenerRolesUsuario = async (
+  userTenantId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/user-tenant-roles/user/${userTenantId}`,
+    {
+      method: 'GET',
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ASIGNAR ROL A USUARIO
+// ==========================
+
+export const asignarRolUsuario = async (
+  userTenantId,
+  roleId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/user-tenant-roles`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify({
+        user_tenant_id:
+          userTenantId,
+
+        role_id:
+          roleId,
+      }),
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
+// ELIMINAR ROL DE USUARIO
+// ==========================
+
+export const eliminarRolUsuario = async (
+  userTenantRoleId,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/user-tenant-roles/${userTenantRoleId}`,
+    {
+      method: 'DELETE',
+
+      headers: {
+        Authorization:
+          `Bearer ${token}`,
+      },
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+// ==========================
+// CREAR PERMISO GLOBAL
+// ==========================
+
+export const crearPermiso = async (
+  permiso,
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/permission`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type':
+          'application/json',
+
+        Authorization:
+          `Bearer ${token}`,
+      },
+
+      body: JSON.stringify(
+        permiso
+      ),
+    }
+  )
+
+  return procesarRespuesta(
+    response
+  )
+}
+
+// ==========================
+// OBTENER PERMISOS GLOBALES
+// ==========================
+
+export const obtenerPermisos = async (
+  token
+) => {
+
+  const response = await fetch(
+    `${API_URL}/permission`,
+    {
+      method: 'GET',
+
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
     }
   )
