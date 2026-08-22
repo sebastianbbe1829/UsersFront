@@ -7,7 +7,6 @@ import {
 } from 'react'
 
 import {
-  obtenerUsuarios,
   obtenerPayloadToken,
   login,
 } from '../services/api'
@@ -75,43 +74,44 @@ export function AuthProvider({ children }) {
   // OBTENER SESIONES DE TENANTS
   // ==========================================================
 
-  const obtenerSesionesTenants = useCallback(() => {
+  const obtenerSesionesTenants =
+    useCallback(() => {
 
-    try {
+      try {
 
-      const sesiones =
-        localStorage.getItem(
-          TENANT_SESSIONS_KEY
+        const sesiones =
+          localStorage.getItem(
+            TENANT_SESSIONS_KEY
+          )
+
+        if (!sesiones) {
+          return {}
+        }
+
+        const resultado =
+          JSON.parse(sesiones)
+
+        if (
+          !resultado ||
+          typeof resultado !== 'object'
+        ) {
+          return {}
+        }
+
+        return resultado
+
+      } catch (error) {
+
+        console.error(
+          'Error leyendo sesiones de tenants:',
+          error
         )
 
-      if (!sesiones) {
         return {}
+
       }
 
-      const resultado =
-        JSON.parse(sesiones)
-
-      if (
-        !resultado ||
-        typeof resultado !== 'object'
-      ) {
-        return {}
-      }
-
-      return resultado
-
-    } catch (error) {
-
-      console.error(
-        'Error leyendo sesiones de tenants:',
-        error
-      )
-
-      return {}
-
-    }
-
-  }, [])
+    }, [])
 
 
   // ==========================================================
@@ -125,35 +125,22 @@ export function AuthProvider({ children }) {
         tokenNuevo
       ) => {
 
-        if (!tenantActual || !tokenNuevo) {
+        if (
+          !tenantActual ||
+          !tokenNuevo
+        ) {
           return
         }
-
 
         const sesiones =
           obtenerSesionesTenants()
 
-
         sesiones[tenantActual] =
           tokenNuevo
-
 
         localStorage.setItem(
           TENANT_SESSIONS_KEY,
           JSON.stringify(sesiones)
-        )
-
-
-        // ----------------------------------------------------
-        // Compatibilidad temporal
-        // ----------------------------------------------------
-        // Dejamos también access_token porque algunos
-        // componentes antiguos todavía podrían utilizarlo.
-        // Posteriormente podremos eliminarlo.
-
-        localStorage.setItem(
-          'access_token',
-          tokenNuevo
         )
 
       },
@@ -177,10 +164,8 @@ export function AuthProvider({ children }) {
           return null
         }
 
-
         const sesiones =
           obtenerSesionesTenants()
-
 
         return (
           sesiones[tenantActual] ||
@@ -208,26 +193,14 @@ export function AuthProvider({ children }) {
           return
         }
 
-
         const sesiones =
           obtenerSesionesTenants()
 
-
         delete sesiones[tenantActual]
-
 
         localStorage.setItem(
           TENANT_SESSIONS_KEY,
           JSON.stringify(sesiones)
-        )
-
-
-        // ----------------------------------------------------
-        // access_token temporal
-        // ----------------------------------------------------
-
-        localStorage.removeItem(
-          'access_token'
         )
 
       },
@@ -272,7 +245,6 @@ export function AuthProvider({ children }) {
             tokenGuardado
           )
 
-
         if (!payload) {
 
           console.warn(
@@ -290,7 +262,6 @@ export function AuthProvider({ children }) {
 
         const tenantToken =
           payload?.tenant_slug
-
 
         if (!tenantToken) {
 
@@ -310,7 +281,6 @@ export function AuthProvider({ children }) {
         const coincide =
           tenantToken === tenantActual
 
-
         console.log(
           'Validación tenant:',
           {
@@ -323,7 +293,6 @@ export function AuthProvider({ children }) {
             coincide,
           }
         )
-
 
         return coincide
 
@@ -359,7 +328,6 @@ export function AuthProvider({ children }) {
 
       const tenantActual =
         obtenerTenantDesdeUrl()
-
 
       console.log(
         'Cerrando sesión del tenant:',
@@ -405,7 +373,6 @@ export function AuthProvider({ children }) {
       const tenantActual =
         obtenerTenantDesdeUrl()
 
-
       console.log(
         'Sesión expirada para tenant:',
         tenantActual
@@ -443,7 +410,29 @@ export function AuthProvider({ children }) {
 
 
   // ==========================================================
-  // CARGAR DATOS
+  // CARGAR DATOS DE SESIÓN
+  // ==========================================================
+  //
+  // IMPORTANTE:
+  //
+  // Esta función NO consulta /users.
+  //
+  // El JWT ya contiene:
+  //
+  //   sub
+  //   name
+  //   tenant_id
+  //   tenant_slug
+  //   user_tenant_id
+  //   exp
+  //
+  // Por lo tanto podemos identificar al usuario directamente
+  // desde el token.
+  //
+  // La consulta GET /users solamente debe realizarse cuando
+  // alguna funcionalidad realmente necesite listar usuarios
+  // y tenga el permiso correspondiente.
+  //
   // ==========================================================
 
   const cargarDatos =
@@ -455,12 +444,26 @@ export function AuthProvider({ children }) {
         try {
 
           // ==================================================
+          // VALIDAR TOKEN
+          // ==================================================
+
+          if (!tokenGuardado) {
+
+            limpiarEstadoSesion()
+
+            setCargando(false)
+
+            return
+
+          }
+
+
+          // ==================================================
           // TENANT ACTUAL
           // ==================================================
 
           const tenantActual =
             obtenerTenantDesdeUrl()
-
 
           setTenant(
             tenantActual
@@ -469,14 +472,13 @@ export function AuthProvider({ children }) {
 
           // ==================================================
           // VALIDAR TENANT
-          // ==================================================
+          // ==========================================================
 
           const tenantValido =
             validarTenantToken(
               tokenGuardado,
               tenantActual
             )
-
 
           if (!tenantValido) {
 
@@ -486,17 +488,12 @@ export function AuthProvider({ children }) {
 
 
             // ------------------------------------------------
-            // IMPORTANTE:
-            // NO borramos todas las sesiones.
-            //
-            // Solamente eliminamos la sesión del tenant
-            // actual si corresponde al token que estamos
-            // intentando utilizar.
+            // Solamente eliminar la sesión del tenant actual
+            // si corresponde exactamente al token utilizado.
             // ------------------------------------------------
 
             const sesiones =
               obtenerSesionesTenants()
-
 
             if (
               tenantActual &&
@@ -512,11 +509,9 @@ export function AuthProvider({ children }) {
 
             limpiarEstadoSesion()
 
-
             setMensajeSesion(
               'La sesión no corresponde a la empresa seleccionada.'
             )
-
 
             return
 
@@ -524,13 +519,29 @@ export function AuthProvider({ children }) {
 
 
           // ==================================================
-          // OBTENER USUARIOS
+          // OBTENER PAYLOAD DEL JWT
           // ==================================================
 
-          const resultado =
-            await obtenerUsuarios(
+          const payload =
+            obtenerPayloadToken(
               tokenGuardado
             )
+
+          if (!payload) {
+
+            console.warn(
+              'No fue posible obtener el payload del JWT.'
+            )
+
+            limpiarEstadoSesion()
+
+            setMensajeSesion(
+              'No fue posible validar la sesión.'
+            )
+
+            return
+
+          }
 
 
           // ==================================================
@@ -543,38 +554,40 @@ export function AuthProvider({ children }) {
 
 
           // ==================================================
-          // GUARDAR USUARIOS
+          // IDENTIFICAR USUARIO DESDE EL JWT
+          // ==================================================
+          //
+          // Ya NO hacemos:
+          //
+          // GET /users
+          //
+          // El JWT ya contiene la información necesaria.
           // ==================================================
 
-          setUsuarios(
-            resultado
-          )
+          const usuarioActual = {
+            dni:
+              payload?.sub ?? null,
+
+            name:
+              payload?.name ?? null,
+
+            tenant_id:
+              payload?.tenant_id ?? null,
+
+            tenant_slug:
+              payload?.tenant_slug ?? null,
+
+            user_tenant_id:
+              payload?.user_tenant_id ?? null,
+          }
 
 
           // ==================================================
-          // OBTENER PAYLOAD
+          // GUARDAR USUARIO LOGUEADO
           // ==================================================
-
-          const payload =
-            obtenerPayloadToken(
-              tokenGuardado
-            )
-
-
-          // ==================================================
-          // IDENTIFICAR USUARIO
-          // ==================================================
-
-          const usuarioActual =
-            resultado.find(
-              (usuario) =>
-                String(usuario.dni) ===
-                String(payload?.sub)
-            )
-
 
           setUsuarioLogueado(
-            usuarioActual || null
+            usuarioActual
           )
 
 
@@ -601,7 +614,6 @@ export function AuthProvider({ children }) {
             error
           )
 
-
           const tenantActual =
             obtenerTenantDesdeUrl()
 
@@ -626,7 +638,6 @@ export function AuthProvider({ children }) {
             const sesiones =
               obtenerSesionesTenants()
 
-
             if (
               tenantActual &&
               sesiones[tenantActual] === tokenGuardado
@@ -638,9 +649,7 @@ export function AuthProvider({ children }) {
 
             }
 
-
             limpiarEstadoSesion()
-
 
             setMensajeSesion(
               error.message ||
@@ -704,12 +713,11 @@ export function AuthProvider({ children }) {
 
           // ==================================================
           // ACTUALIZAR TENANT
-          // ==================================================
+          // ==========================================================
 
           setTenant(
             tenantActual
           )
-
 
           console.log(
             'Tenant para login:',
@@ -719,14 +727,14 @@ export function AuthProvider({ children }) {
 
           // ==================================================
           // LIMPIAR MENSAJE
-          // ==================================================
+          // ==========================================================
 
           setMensajeSesion('')
 
 
           // ==================================================
           // LOGIN MULTITENANT
-          // ==================================================
+          // ==========================================================
 
           const resultado =
             await login(
@@ -738,7 +746,7 @@ export function AuthProvider({ children }) {
 
           // ==================================================
           // VALIDAR TOKEN
-          // ==================================================
+          // ==========================================================
 
           if (
             !resultado?.access_token
@@ -765,13 +773,11 @@ export function AuthProvider({ children }) {
               tenantActual
             )
 
-
           if (!tenantTokenValido) {
 
             console.error(
               'El token recibido no corresponde al tenant solicitado.'
             )
-
 
             setLogueado(false)
 
@@ -781,11 +787,9 @@ export function AuthProvider({ children }) {
 
             setUsuarioLogueado(null)
 
-
             setMensajeSesion(
               'La sesión recibida no corresponde a la empresa seleccionada.'
             )
-
 
             throw new Error(
               'La sesión recibida no corresponde a la empresa seleccionada.'
@@ -805,7 +809,13 @@ export function AuthProvider({ children }) {
 
 
           // ==================================================
-          // CARGAR DATOS
+          // CARGAR DATOS DE SESIÓN
+          // ==================================================
+          //
+          // IMPORTANTE:
+          //
+          // cargarDatos() ya NO ejecuta GET /users.
+          //
           // ==================================================
 
           await cargarDatos(
@@ -847,7 +857,6 @@ export function AuthProvider({ children }) {
 
     const tenantActual =
       obtenerTenantDesdeUrl()
-
 
     setTenant(
       tenantActual
@@ -901,7 +910,6 @@ export function AuthProvider({ children }) {
     // ========================================================
 
     setCargando(true)
-
 
     cargarDatos(
       tokenTenant
@@ -1003,7 +1011,6 @@ export function useAuth() {
       AuthContext
     )
 
-
   if (!context) {
 
     throw new Error(
@@ -1011,7 +1018,6 @@ export function useAuth() {
     )
 
   }
-
 
   return context
 

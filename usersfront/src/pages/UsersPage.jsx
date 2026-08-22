@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from 'react'
 
@@ -7,6 +8,7 @@ import {
 } from '../contexts/AuthContext'
 
 import {
+  obtenerUsuarios,
   exportarUsuariosExcel,
 } from '../services/api'
 
@@ -32,6 +34,22 @@ function UsersPage() {
     setUsuarios,
     manejarSesionExpirada,
   } = useAuth()
+
+
+  // ============================================================
+  // ESTADOS
+  // ============================================================
+
+  const [
+    cargandoUsuarios,
+    setCargandoUsuarios,
+  ] = useState(true)
+
+
+  const [
+    mensajeUsuarios,
+    setMensajeUsuarios,
+  ] = useState(null)
 
 
   // ============================================================
@@ -81,6 +99,154 @@ function UsersPage() {
     setMensajeExportacion,
   ] = useState(null)
 
+
+  // ============================================================
+  // CARGAR USUARIOS
+  // ============================================================
+
+  useEffect(() => {
+
+    let componenteActivo = true
+
+
+    const cargarUsuarios = async () => {
+
+      if (!token) {
+
+        if (componenteActivo) {
+
+          setUsuarios([])
+          setCargandoUsuarios(false)
+
+        }
+
+        return
+
+      }
+
+
+      try {
+
+        setCargandoUsuarios(true)
+        setMensajeUsuarios(null)
+
+
+        // ======================================================
+        // AQUÍ ES DONDE AHORA SE HACE GET /users
+        // ======================================================
+
+        const resultado =
+          await obtenerUsuarios(
+            token
+          )
+
+
+        if (!componenteActivo) {
+          return
+        }
+
+
+        setUsuarios(
+          Array.isArray(resultado)
+            ? resultado
+            : []
+        )
+
+
+      } catch (error) {
+
+        console.error(
+          'Error obteniendo usuarios:',
+          error
+        )
+
+
+        if (!componenteActivo) {
+          return
+        }
+
+
+        // ======================================================
+        // SESIÓN EXPIRADA
+        // ======================================================
+
+        if (
+          error.status === 401
+        ) {
+
+          manejarSesionExpirada()
+
+          return
+
+        }
+
+
+        // ======================================================
+        // SIN PERMISOS
+        // ======================================================
+
+        if (
+          error.status === 403
+        ) {
+
+          setUsuarios([])
+
+          setMensajeUsuarios({
+            tipo: 'danger',
+            texto:
+              'No tienes permisos para consultar los usuarios.',
+          })
+
+          return
+
+        }
+
+
+        // ======================================================
+        // OTROS ERRORES
+        // ======================================================
+
+        setUsuarios([])
+
+        setMensajeUsuarios({
+          tipo: 'danger',
+          texto:
+            error.message ||
+            'No fue posible obtener los usuarios.',
+        })
+
+      } finally {
+
+        if (componenteActivo) {
+
+          setCargandoUsuarios(false)
+
+        }
+
+      }
+
+    }
+
+
+    cargarUsuarios()
+
+
+    return () => {
+
+      componenteActivo = false
+
+    }
+
+  }, [
+    token,
+    setUsuarios,
+    manejarSesionExpirada,
+  ])
+
+
+  // ============================================================
+  // EXPORTAR EXCEL
+  // ============================================================
 
   const descargarExcel = async () => {
 
@@ -142,7 +308,8 @@ function UsersPage() {
 
       setMensajeExportacion({
         tipo: 'success',
-        texto: 'Excel generado correctamente.',
+        texto:
+          'Excel generado correctamente.',
       })
 
 
@@ -158,11 +325,14 @@ function UsersPage() {
       // SESIÓN EXPIRADA
       // ========================================================
 
-      if (error.status === 401) {
+      if (
+        error.status === 401
+      ) {
 
         manejarSesionExpirada()
 
         return
+
       }
 
 
@@ -170,7 +340,9 @@ function UsersPage() {
       // SIN PERMISOS
       // ========================================================
 
-      if (error.status === 403) {
+      if (
+        error.status === 403
+      ) {
 
         setMensajeExportacion({
           tipo: 'danger',
@@ -179,6 +351,7 @@ function UsersPage() {
         })
 
         return
+
       }
 
 
@@ -348,7 +521,7 @@ function UsersPage() {
     <>
 
       {/* ====================================================== */}
-      {/* VIGILAR SESIÓN */}
+      {/* VIGILAR SESIÓN                                        */}
       {/* ====================================================== */}
 
       <SessionManager
@@ -360,7 +533,7 @@ function UsersPage() {
 
 
       {/* ====================================================== */}
-      {/* TÍTULO DE LA PÁGINA */}
+      {/* TÍTULO DE LA PÁGINA                                    */}
       {/* ====================================================== */}
 
       <div className="mb-4">
@@ -377,80 +550,144 @@ function UsersPage() {
 
 
       {/* ====================================================== */}
-      {/* MENSAJE EXPORTACIÓN */}
+      {/* MENSAJE CARGA / ERROR USUARIOS                        */}
       {/* ====================================================== */}
 
-      {mensajeExportacion && (
+      {mensajeUsuarios && (
 
         <div
-          className={`
-            alert
-            alert-${mensajeExportacion.tipo}
-            alert-dismissible
-            fade
-            show
-          `}
+          className={`alert alert-${mensajeUsuarios.tipo}`}
           role="alert"
         >
-
-          {mensajeExportacion.texto}
-
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Cerrar"
-            onClick={() =>
-              setMensajeExportacion(null)
-            }
-          />
-
+          {mensajeUsuarios.texto}
         </div>
 
       )}
 
 
       {/* ====================================================== */}
-      {/* DASHBOARD */}
+      {/* CARGANDO USUARIOS                                      */}
       {/* ====================================================== */}
 
-      <Dashboard
-        usuarios={
-          usuarios
-        }
-        onExportarExcel={
-          descargarExcel
-        }
-        exportandoExcel={
-          exportandoExcel
-        }
-      />
+      {cargandoUsuarios ? (
+
+        <div
+          className="
+            card
+            shadow-sm
+            border-0
+            mb-3
+          "
+        >
+
+          <div
+            className="
+              card-body
+              text-center
+              py-4
+            "
+          >
+
+            <div
+              className="
+                spinner-border
+                text-primary
+                mb-2
+              "
+              role="status"
+            />
+
+            <div className="text-muted">
+              Cargando usuarios...
+            </div>
+
+          </div>
+
+        </div>
+
+      ) : (
+
+        <>
+
+          {/* ================================================== */}
+          {/* MENSAJE EXPORTACIÓN                               */}
+          {/* ================================================== */}
+
+          {mensajeExportacion && (
+
+            <div
+              className={`
+                alert
+                alert-${mensajeExportacion.tipo}
+                alert-dismissible
+                fade
+                show
+              `}
+              role="alert"
+            >
+
+              {mensajeExportacion.texto}
+
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Cerrar"
+                onClick={() =>
+                  setMensajeExportacion(null)
+                }
+              />
+
+            </div>
+
+          )}
+
+
+          {/* ================================================== */}
+          {/* DASHBOARD                                         */}
+          {/* ================================================== */}
+
+          <Dashboard
+            usuarios={
+              usuarios
+            }
+            onExportarExcel={
+              descargarExcel
+            }
+            exportandoExcel={
+              exportandoExcel
+            }
+          />
+
+
+          {/* ================================================== */}
+          {/* TABLA                                             */}
+          {/* ================================================== */}
+
+          <UserTable
+            usuarios={
+              usuarios
+            }
+            onNuevoUsuario={
+              abrirFormulario
+            }
+            onEditarUsuario={
+              editarUsuario
+            }
+            onEliminarUsuario={
+              eliminarUsuario
+            }
+            onAdministrarRoles={
+              administrarRoles
+            }
+          />
+
+        </>
+
+      )}
 
 
       {/* ====================================================== */}
-      {/* TABLA */}
-      {/* ====================================================== */}
-
-      <UserTable
-        usuarios={
-          usuarios
-        }
-        onNuevoUsuario={
-          abrirFormulario
-        }
-        onEditarUsuario={
-          editarUsuario
-        }
-        onEliminarUsuario={
-          eliminarUsuario
-        }
-        onAdministrarRoles={
-          administrarRoles
-        }
-      />
-
-
-      {/* ====================================================== */}
-      {/* NUEVO USUARIO */}
+      {/* NUEVO USUARIO                                          */}
       {/* ====================================================== */}
 
       {mostrarFormulario && (
@@ -469,7 +706,7 @@ function UsersPage() {
 
 
       {/* ====================================================== */}
-      {/* EDITAR USUARIO */}
+      {/* EDITAR USUARIO                                         */}
       {/* ====================================================== */}
 
       {usuarioEditando && (
@@ -491,7 +728,7 @@ function UsersPage() {
 
 
       {/* ====================================================== */}
-      {/* ELIMINAR USUARIO */}
+      {/* ELIMINAR USUARIO                                       */}
       {/* ====================================================== */}
 
       {usuarioEliminando && (
@@ -513,7 +750,7 @@ function UsersPage() {
 
 
       {/* ====================================================== */}
-      {/* ADMINISTRAR ROLES */}
+      {/* ADMINISTRAR ROLES                                      */}
       {/* ====================================================== */}
 
       {usuarioAdministrandoRoles && (
