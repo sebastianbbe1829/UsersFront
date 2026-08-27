@@ -12,6 +12,7 @@ import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
+import SuperBootstrapPage from '../pages/SuperBootstrapPage'
 
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
@@ -30,60 +31,27 @@ import {
 // ============================================================
 
 function RutasProtegidas() {
-
   const {
     logueado,
     cargando,
   } = useAuth()
 
-
   if (cargando) {
-
     return (
-      <div
-        className="
-          min-vh-100
-          d-flex
-          align-items-center
-          justify-content-center
-        "
-      >
+      <div className="min-vh-100 d-flex align-items-center justify-content-center">
         <div className="text-center">
-          <div
-            className="
-              spinner-border
-              text-primary
-              mb-3
-            "
-            role="status"
-          />
-
-          <div className="text-muted">
-            Validando sesión...
-          </div>
+          <div className="spinner-border text-primary mb-3" role="status" />
+          <div className="text-muted">Validando sesión...</div>
         </div>
       </div>
     )
-
   }
-
 
   if (!logueado) {
-
-    return (
-      <Navigate
-        to="login"
-        replace
-      />
-    )
-
+    return <Navigate to="login" replace />
   }
 
-
-  return (
-    <MainLayout />
-  )
-
+  return <MainLayout />
 }
 
 
@@ -92,129 +60,51 @@ function RutasProtegidas() {
 // ============================================================
 
 function AppRoutes() {
-
-  const tenant =
-    obtenerTenantDesdeUrl()
-
+  const tenant = obtenerTenantDesdeUrl()
 
   if (!tenant) {
-
-    return (
-      <TenantRequired />
-    )
-
+    return <TenantRequired />
   }
 
-
   return (
-
     <Routes>
-
-      {/* ====================================================== */}
       {/* ACTIVACIÓN DE USUARIO */}
-      {/* ====================================================== */}
-
       <Route
         path="/:tenant/users/activate/:dni/:token"
-        element={
-          <ActivateUser />
-        }
+        element={<ActivateUser />}
       />
 
+      {/* CONFIGURACIÓN INICIAL SUPER */}
+      <Route
+        path="/:tenant/super/bootstrap"
+        element={<SuperBootstrapPage />}
+      />
 
-      {/* ====================================================== */}
       {/* LOGIN */}
-      {/* ====================================================== */}
-
       <Route
         path="/:tenant/login"
-        element={
-          <LoginPage />
-        }
+        element={<LoginPage />}
       />
 
-
-      {/* ====================================================== */}
       {/* APLICACIÓN PROTEGIDA */}
-      {/* ====================================================== */}
-
       <Route
         path="/:tenant"
-        element={
-          <RutasProtegidas />
-        }
+        element={<RutasProtegidas />}
       >
-
-        {/* INICIO */}
-
-        <Route
-          index
-          element={
-            <WelcomePage />
-          }
-        />
-
-
-        {/* USUARIOS */}
-
-        <Route
-          path="usuarios"
-          element={
-            <UsersPage />
-          }
-        />
-
-
-        {/* ROLES */}
-
-        <Route
-          path="roles"
-          element={
-            <RolesPage />
-          }
-        />
-
-
-        {/* PERMISOS */}
-
-        <Route
-          path="permisos"
-          element={
-            <PermisosPage />
-          }
-        />
-
-
-        {/* ADMINISTRACIÓN DEL TENANT */}
-
-        <Route
-          path="administracion-tenant"
-          element={
-            <TenantAdminPage />
-          }
-        />
-
+        <Route index element={<WelcomePage />} />
+        <Route path="usuarios" element={<UsersPage />} />
+        <Route path="roles" element={<RolesPage />} />
+        <Route path="permisos" element={<PermisosPage />} />
+        <Route path="administracion-tenant" element={<TenantAdminPage />} />
       </Route>
 
-
-      {/* ====================================================== */}
       {/* RUTA DESCONOCIDA */}
-      {/* ====================================================== */}
-
       <Route
         path="*"
-        element={
-          <Navigate
-            to={`/${tenant}`}
-            replace
-          />
-        }
+        element={<Navigate to={`/${tenant}`} replace />}
       />
-
     </Routes>
-
   )
-
 }
 
 
