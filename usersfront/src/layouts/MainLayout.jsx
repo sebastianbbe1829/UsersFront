@@ -13,6 +13,10 @@ import {
   useAuth,
 } from '../contexts/AuthContext'
 
+import {
+  obtenerPayloadToken,
+} from '../services/api'
+
 
 function MainLayout() {
 
@@ -24,7 +28,19 @@ function MainLayout() {
     usuarioLogueado,
     cerrarSesion,
     tenant,
+    token,
   } = useAuth()
+
+
+  // ============================================================
+  // IDENTIDAD SUPER
+  // ============================================================
+
+  const payload =
+    obtenerPayloadToken(token)
+
+  const esSuper =
+    payload?.user_type === 'SUPER'
 
 
   // ============================================================
@@ -180,6 +196,18 @@ function MainLayout() {
     }
 
 
+    if (
+      ruta.includes('/administracion-tenant')
+    ) {
+
+      return {
+        icono: '🏢',
+        titulo: 'Administración del tenant',
+      }
+
+    }
+
+
     return {
       icono: '🏠',
       titulo: 'Panel de administración',
@@ -236,10 +264,6 @@ function MainLayout() {
       }}
     >
 
-      {/* ====================================================== */}
-      {/* MENÚ LATERAL */}
-      {/* ====================================================== */}
-
       <aside
         className={
           modoOscuro
@@ -286,13 +310,10 @@ function MainLayout() {
                 text-nowrap
               "
             >
-
               👥 Gestión de Usuarios
-
             </div>
 
           )}
-
 
           <button
             type="button"
@@ -313,11 +334,7 @@ function MainLayout() {
                 : 'Ocultar menú'
             }
           >
-
-            {menuColapsado
-              ? '☰'
-              : '✕'}
-
+            {menuColapsado ? '☰' : '✕'}
           </button>
 
         </div>
@@ -334,18 +351,13 @@ function MainLayout() {
           "
         >
 
-          {/* ================================================== */}
           {/* USUARIOS */}
-          {/* ================================================== */}
 
           <NavLink
             to="usuarios"
-            className={
-              obtenerClaseMenu
-            }
+            className={obtenerClaseMenu}
             title="Usuarios"
           >
-
             <span
               style={{
                 fontSize: '21px',
@@ -356,30 +368,19 @@ function MainLayout() {
               👥
             </span>
 
-
             {!menuColapsado && (
-
-              <span className="ms-3">
-                Usuarios
-              </span>
-
+              <span className="ms-3">Usuarios</span>
             )}
-
           </NavLink>
 
 
-          {/* ================================================== */}
           {/* ROLES */}
-          {/* ================================================== */}
 
           <NavLink
             to="roles"
-            className={
-              obtenerClaseMenu
-            }
+            className={obtenerClaseMenu}
             title="Roles"
           >
-
             <span
               style={{
                 fontSize: '21px',
@@ -390,30 +391,19 @@ function MainLayout() {
               🛡️
             </span>
 
-
             {!menuColapsado && (
-
-              <span className="ms-3">
-                Roles
-              </span>
-
+              <span className="ms-3">Roles</span>
             )}
-
           </NavLink>
 
 
-          {/* ================================================== */}
           {/* PERMISOS */}
-          {/* ================================================== */}
 
           <NavLink
             to="permisos"
-            className={
-              obtenerClaseMenu
-            }
+            className={obtenerClaseMenu}
             title="Permisos"
           >
-
             <span
               style={{
                 fontSize: '21px',
@@ -424,16 +414,41 @@ function MainLayout() {
               🔐
             </span>
 
-
             {!menuColapsado && (
+              <span className="ms-3">Permisos</span>
+            )}
+          </NavLink>
 
-              <span className="ms-3">
-                Permisos
+
+          {/* ================================================== */}
+          {/* ADMINISTRACIÓN DEL TENANT - SOLO SUPER */}
+          {/* ================================================== */}
+
+          {esSuper && (
+
+            <NavLink
+              to="administracion-tenant"
+              className={obtenerClaseMenu}
+              title="Administración del tenant"
+            >
+              <span
+                style={{
+                  fontSize: '21px',
+                  minWidth: '24px',
+                  textAlign: 'center',
+                }}
+              >
+                🏢
               </span>
 
-            )}
+              {!menuColapsado && (
+                <span className="ms-3">
+                  Administración del tenant
+                </span>
+              )}
+            </NavLink>
 
-          </NavLink>
+          )}
 
         </nav>
 
@@ -451,9 +466,7 @@ function MainLayout() {
           "
         >
 
-          {/* ================================================== */}
           {/* MODO OSCURO */}
-          {/* ================================================== */}
 
           <button
             type="button"
@@ -468,16 +481,13 @@ function MainLayout() {
               py-3
               px-3
             "
-            onClick={
-              cambiarModoOscuro
-            }
+            onClick={cambiarModoOscuro}
             title={
               modoOscuro
                 ? 'Cambiar a modo claro'
                 : 'Cambiar a modo oscuro'
             }
           >
-
             <span
               style={{
                 fontSize: '21px',
@@ -486,30 +496,18 @@ function MainLayout() {
                 textAlign: 'center',
               }}
             >
-              {modoOscuro
-                ? '☀️'
-                : '🌙'}
+              {modoOscuro ? '☀️' : '🌙'}
             </span>
 
-
             {!menuColapsado && (
-
               <span className="ms-3">
-
-                {modoOscuro
-                  ? 'Modo claro'
-                  : 'Modo oscuro'}
-
+                {modoOscuro ? 'Modo claro' : 'Modo oscuro'}
               </span>
-
             )}
-
           </button>
 
 
-          {/* ================================================== */}
           {/* CERRAR SESIÓN */}
-          {/* ================================================== */}
 
           <button
             type="button"
@@ -522,12 +520,9 @@ function MainLayout() {
               py-3
               px-3
             "
-            onClick={
-              manejarCerrarSesion
-            }
+            onClick={manejarCerrarSesion}
             title="Cerrar sesión"
           >
-
             <span
               style={{
                 fontSize: '21px',
@@ -539,15 +534,9 @@ function MainLayout() {
               🚪
             </span>
 
-
             {!menuColapsado && (
-
-              <span className="ms-3">
-                Cerrar sesión
-              </span>
-
+              <span className="ms-3">Cerrar sesión</span>
             )}
-
           </button>
 
         </div>
@@ -588,10 +577,6 @@ function MainLayout() {
           }}
         >
 
-          {/* ================================================== */}
-          {/* TÍTULO */}
-          {/* ================================================== */}
-
           <div
             className="
               d-flex
@@ -599,33 +584,15 @@ function MainLayout() {
               gap-2
             "
           >
-
-            <span
-              style={{
-                fontSize: '21px',
-              }}
-            >
+            <span style={{ fontSize: '21px' }}>
               {pagina.icono}
             </span>
 
-
-            <h5
-              className="
-                mb-0
-                fw-bold
-              "
-            >
-
+            <h5 className="mb-0 fw-bold">
               {pagina.titulo}
-
             </h5>
-
           </div>
 
-
-          {/* ================================================== */}
-          {/* INFORMACIÓN DEL USUARIO */}
-          {/* ================================================== */}
 
           <div
             className="
@@ -635,12 +602,7 @@ function MainLayout() {
             "
           >
 
-            {/* ================================================= */}
-            {/* TENANT */}
-            {/* ================================================= */}
-
             {tenant && (
-
               <div
                 className="
                   d-none
@@ -649,47 +611,18 @@ function MainLayout() {
                   gap-2
                 "
               >
-
-                <span>
-                  🏢
-                </span>
-
-                <span
-                  className="fw-semibold"
-                >
-                  {tenant}
-                </span>
-
+                <span>🏢</span>
+                <span className="fw-semibold">{tenant}</span>
               </div>
-
             )}
-
-
-            {/* ================================================= */}
-            {/* SEPARADOR */}
-            {/* ================================================= */}
 
             {tenant && usuarioLogueado && (
-
-              <span
-                className="
-                  text-muted
-                  d-none
-                  d-md-inline
-                "
-              >
+              <span className="text-muted d-none d-md-inline">
                 |
               </span>
-
             )}
 
-
-            {/* ================================================= */}
-            {/* USUARIO */}
-            {/* ================================================= */}
-
             {usuarioLogueado && (
-
               <div
                 className="
                   d-flex
@@ -697,15 +630,7 @@ function MainLayout() {
                   gap-2
                 "
               >
-
-                <span
-                  style={{
-                    fontSize: '21px',
-                  }}
-                >
-                  👤
-                </span>
-
+                <span style={{ fontSize: '21px' }}>👤</span>
 
                 <div
                   className="
@@ -714,31 +639,21 @@ function MainLayout() {
                     text-end
                   "
                 >
-
                   <div
-                    className="
-                      fw-semibold
-                      text-truncate
-                    "
-                    style={{
-                      maxWidth: '180px',
-                    }}
+                    className="fw-semibold text-truncate"
+                    style={{ maxWidth: '180px' }}
                   >
-
                     {usuarioLogueado.name}
-
                   </div>
 
+                  {esSuper && (
+                    <small className="text-primary fw-semibold">
+                      SUPER
+                    </small>
+                  )}
                 </div>
-
               </div>
-
             )}
-
-
-            {/* ================================================= */}
-            {/* ESTADO */}
-            {/* ================================================= */}
 
             <div
               className="
@@ -748,21 +663,8 @@ function MainLayout() {
               "
               title="Sesión activa"
             >
-
-              <span
-                style={{
-                  fontSize: '12px',
-                }}
-              >
-                🟢
-              </span>
-
-              <small
-                className="text-muted"
-              >
-                Activa
-              </small>
-
+              <span style={{ fontSize: '12px' }}>🟢</span>
+              <small className="text-muted">Activa</small>
             </div>
 
           </div>
@@ -774,12 +676,8 @@ function MainLayout() {
         {/* CONTENIDO DE LA PÁGINA */}
         {/* ==================================================== */}
 
-        <section
-          className="p-4"
-        >
-
+        <section className="p-4">
           <Outlet />
-
         </section>
 
       </main>
