@@ -11,6 +11,7 @@ import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
+import TenantAdminPage from '../pages/TenantAdminPage'
 
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
@@ -36,14 +37,9 @@ function RutasProtegidas() {
   } = useAuth()
 
 
-  // ==========================================================
-  // ESPERAR VALIDACIÓN DE SESIÓN
-  // ==========================================================
-
   if (cargando) {
 
     return (
-
       <div
         className="
           min-vh-100
@@ -52,9 +48,7 @@ function RutasProtegidas() {
           justify-content-center
         "
       >
-
         <div className="text-center">
-
           <div
             className="
               spinner-border
@@ -67,19 +61,12 @@ function RutasProtegidas() {
           <div className="text-muted">
             Validando sesión...
           </div>
-
         </div>
-
       </div>
-
     )
 
   }
 
-
-  // ==========================================================
-  // SIN SESIÓN
-  // ==========================================================
 
   if (!logueado) {
 
@@ -92,10 +79,6 @@ function RutasProtegidas() {
 
   }
 
-
-  // ==========================================================
-  // SESIÓN VÁLIDA
-  // ==========================================================
 
   return (
     <MainLayout />
@@ -114,10 +97,6 @@ function AppRoutes() {
     obtenerTenantDesdeUrl()
 
 
-  // ==========================================================
-  // SIN TENANT
-  // ==========================================================
-
   if (!tenant) {
 
     return (
@@ -126,10 +105,6 @@ function AppRoutes() {
 
   }
 
-
-  // ==========================================================
-  // RUTAS
-  // ==========================================================
 
   return (
 
@@ -170,9 +145,7 @@ function AppRoutes() {
         }
       >
 
-        {/* ==================================================== */}
         {/* INICIO */}
-        {/* ==================================================== */}
 
         <Route
           index
@@ -182,9 +155,7 @@ function AppRoutes() {
         />
 
 
-        {/* ==================================================== */}
         {/* USUARIOS */}
-        {/* ==================================================== */}
 
         <Route
           path="usuarios"
@@ -194,9 +165,7 @@ function AppRoutes() {
         />
 
 
-        {/* ==================================================== */}
         {/* ROLES */}
-        {/* ==================================================== */}
 
         <Route
           path="roles"
@@ -206,14 +175,22 @@ function AppRoutes() {
         />
 
 
-        {/* ==================================================== */}
         {/* PERMISOS */}
-        {/* ==================================================== */}
 
         <Route
           path="permisos"
           element={
             <PermisosPage />
+          }
+        />
+
+
+        {/* ADMINISTRACIÓN DEL TENANT */}
+
+        <Route
+          path="administracion-tenant"
+          element={
+            <TenantAdminPage />
           }
         />
 
