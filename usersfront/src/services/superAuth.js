@@ -10,7 +10,12 @@ const procesarRespuesta = async (response) => {
   return data
 }
 
-export const loginSuper = async (email, password, otp) => {
+export const loginSuper = async (
+  email,
+  password,
+  otp,
+  tenant,
+) => {
   const response = await fetch(`${API_URL}/auth/super/login`, {
     method: 'POST',
     headers: {
@@ -20,6 +25,7 @@ export const loginSuper = async (email, password, otp) => {
       email,
       password,
       otp,
+      tenant,
     }),
   })
 
