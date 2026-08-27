@@ -53,8 +53,6 @@ const procesarRespuesta = async (response) => {
       detail: resultado?.detail,
     })
 
-    // Si el servidor devuelve un mensaje detallado, úsalo
-    // De lo contrario, usa el mensaje genérico
     const mensajeError = resultado?.detail || obtenerMensajeError(response.status)
 
     const error = new Error(mensajeError)
@@ -66,6 +64,8 @@ const procesarRespuesta = async (response) => {
 
   return resultado
 }
+
+
 // ==========================
 // PROCESAR RESPUESTA DE ARCHIVO
 // ==========================
@@ -114,7 +114,9 @@ const procesarRespuestaArchivo = async (
 export const login = async (
   username,
   password,
-  tenant
+  tenant,
+  superMode = false,
+  otp = ''
 ) => {
 
   console.log(
@@ -142,6 +144,10 @@ export const login = async (
         username,
         password,
         tenant,
+        super_mode: superMode,
+        ...(superMode && otp
+          ? { otp }
+          : {}),
       }),
     }
   )
@@ -342,6 +348,7 @@ export const obtenerTiempoToken = (
   )
 }
 
+
 // ==========================
 // ACTIVAR USUARIO
 // ==========================
@@ -360,6 +367,7 @@ export const activarUsuario = async (
 
   return procesarRespuesta(response)
 }
+
 
 // ==========================
 // EXPORTAR USUARIOS A EXCEL
@@ -384,6 +392,7 @@ export const exportarUsuariosExcel = async (
     response
   )
 }
+
 
 // ==========================
 // OBTENER ROLES
@@ -438,6 +447,7 @@ export const obtenerRol = async (
 
   return procesarRespuesta(response)
 }
+
 
 // ==========================
 // CREAR ROL
@@ -598,14 +608,14 @@ export const eliminarPermisoRol = async (
       method: 'DELETE',
 
       headers: {
-        Authorization:
-          `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   )
 
   return procesarRespuesta(response)
 }
+
 
 // ==========================
 // OBTENER TENANTS DEL USUARIO
@@ -622,8 +632,7 @@ export const obtenerTenantsUsuario = async (
       method: 'GET',
 
       headers: {
-        Authorization:
-          `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   )
@@ -647,8 +656,7 @@ export const obtenerRolesUsuario = async (
       method: 'GET',
 
       headers: {
-        Authorization:
-          `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
     }
   )
@@ -718,6 +726,7 @@ export const eliminarRolUsuario = async (
   return procesarRespuesta(response)
 }
 
+
 // ==========================
 // CREAR PERMISO GLOBAL
 // ==========================
@@ -750,6 +759,7 @@ export const crearPermiso = async (
     response
   )
 }
+
 
 // ==========================
 // OBTENER PERMISOS GLOBALES
