@@ -21,6 +21,14 @@ function Login({
     useState('')
 
 
+  const [otp, setOtp] =
+    useState('')
+
+
+  const [esSuper, setEsSuper] =
+    useState(false)
+
+
   const [error, setError] =
     useState('')
 
@@ -76,7 +84,43 @@ function Login({
     }
 
 
+    if (esSuper) {
+
+      if (!otp.trim()) {
+
+        errores.otp =
+          'El código MFA es requerido'
+
+      } else if (!/^\d{6}$/.test(otp.trim())) {
+
+        errores.otp =
+          'El código MFA debe tener 6 dígitos'
+
+      }
+
+    }
+
+
     return errores
+
+  }
+
+
+  // ============================================================
+  // CAMBIAR MODO SUPER
+  // ============================================================
+
+  const cambiarModoSuper = () => {
+
+    setEsSuper(
+      (valor) => !valor
+    )
+
+    setOtp('')
+
+    setError('')
+
+    setErroresValidacion({})
 
   }
 
@@ -119,7 +163,9 @@ function Login({
 
       await onLogin(
         usuario,
-        password
+        password,
+        esSuper,
+        otp.trim()
       )
 
     } catch (error) {
@@ -415,6 +461,111 @@ function Login({
               )}
 
             </div>
+
+
+            {/* ================================================= */}
+            {/* INGRESAR COMO SUPER                               */}
+            {/* ================================================= */}
+
+            <div className="mb-3">
+
+              <div className="form-check">
+
+                <input
+                  id="ingresar-como-super"
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={esSuper}
+                  onChange={cambiarModoSuper}
+                  disabled={cargando}
+                />
+
+                <label
+                  htmlFor="ingresar-como-super"
+                  className="form-check-label fw-semibold"
+                >
+                  Ingresar como SUPER
+                </label>
+
+              </div>
+
+
+              {esSuper && (
+
+                <small className="text-muted d-block mt-1">
+                  Se requiere autenticación MFA para administrar el tenant.
+                </small>
+
+              )}
+
+            </div>
+
+
+            {/* ================================================= */}
+            {/* MFA                                                */}
+            {/* ================================================= */}
+
+            {esSuper && (
+
+              <div className="mb-3">
+
+                <label
+                  className="
+                    form-label
+                    fw-semibold
+                    mb-1
+                  "
+                >
+                  Código MFA
+                </label>
+
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className={`
+                    form-control
+                    text-center
+                    fw-bold
+                    ${
+                      erroresValidacion.otp
+                        ? 'is-invalid'
+                        : ''
+                    }
+                  `}
+                  placeholder="000000"
+                  value={otp}
+                  onChange={(event) =>
+                    setOtp(
+                      event.target.value
+                        .replace(/\D/g, '')
+                        .slice(0, 6)
+                    )
+                  }
+                  disabled={cargando}
+                  autoComplete="one-time-code"
+                />
+
+
+                {erroresValidacion.otp && (
+
+                  <div
+                    className="
+                      invalid-feedback
+                      d-block
+                    "
+                  >
+                    {
+                      erroresValidacion.otp
+                    }
+                  </div>
+
+                )}
+
+              </div>
+
+            )}
 
 
             {/* ================================================= */}

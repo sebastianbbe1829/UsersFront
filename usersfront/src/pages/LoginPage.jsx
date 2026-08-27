@@ -31,40 +31,50 @@ function LoginPage() {
 
 
   // ============================================================
-  // LOGIN
+  // LOGIN UNIFICADO
   // ============================================================
 
   const manejarLogin =
     async (
       username,
-      password
+      password,
+      esSuper,
+      otp
     ) => {
 
       // --------------------------------------------------------
-      // AUTENTICAR
+      // VALIDAR TENANT
+      // --------------------------------------------------------
+
+      if (!tenant) {
+        throw new Error(
+          'No se pudo determinar la empresa desde la URL.'
+        )
+      }
+
+      // --------------------------------------------------------
+      // AuthContext se encarga de:
+      //
+      //   - login TENANT o SUPER
+      //   - enviar MFA cuando corresponde
+      //   - validar el JWT
+      //   - guardar la sesión en el storage correcto
+      //   - reconstruir la identidad desde el JWT
       // --------------------------------------------------------
 
       await iniciarSesion(
         username,
-        password
+        password,
+        esSuper,
+        otp
       )
 
-
-      // --------------------------------------------------------
-      // NAVEGAR
-      // --------------------------------------------------------
-
-      if (tenant) {
-
-        navigate(
-          `/${tenant}/dashboard`,
-          {
-            replace: true,
-          }
-        )
-
-      }
-
+      navigate(
+        `/${tenant}`,
+        {
+          replace: true,
+        }
+      )
     }
 
 
@@ -73,18 +83,11 @@ function LoginPage() {
   // ============================================================
 
   return (
-
     <Login
-      mensajeSesion={
-        mensajeSesion
-      }
-      onLogin={
-        manejarLogin
-      }
+      mensajeSesion={mensajeSesion}
+      onLogin={manejarLogin}
     />
-
   )
-
 }
 
 
