@@ -121,6 +121,44 @@ export const login = async (
 
 
 // ==========================
+// BOOTSTRAP TENANT
+// ==========================
+
+export const bootstrapTenant = async (
+  tenantName,
+  tenantSlug,
+  adminDni,
+  adminName,
+  adminEmail,
+  adminPassword,
+  adminPhone,
+  bootstrapKey
+) => {
+  const response = await fetch(
+    `${API_URL}/bootstrap`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Bootstrap-Key': bootstrapKey,
+      },
+      body: JSON.stringify({
+        tenant_name: tenantName,
+        tenant_slug: tenantSlug,
+        admin_dni: adminDni,
+        admin_name: adminName,
+        admin_email: adminEmail,
+        admin_password: adminPassword,
+        admin_phone: adminPhone || null,
+      }),
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
 // BOOTSTRAP SUPER
 // ==========================
 
