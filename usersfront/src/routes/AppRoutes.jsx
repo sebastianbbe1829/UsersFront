@@ -13,6 +13,7 @@ import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import SuperBootstrapPage from '../pages/SuperBootstrapPage'
+import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
@@ -61,6 +62,25 @@ function RutasProtegidas() {
 
 function AppRoutes() {
   const tenant = obtenerTenantDesdeUrl()
+  const rutaActual = window.location.pathname
+
+  // ==========================================================
+  // BOOTSTRAP TÉCNICO DE TENANT
+  //
+  // Esta ruta no requiere tenant porque precisamente permite
+  // crear el primer tenant del sistema.
+  // ==========================================================
+
+  if (rutaActual === '/bootstrap/tenant') {
+    return (
+      <Routes>
+        <Route
+          path="/bootstrap/tenant"
+          element={<TenantBootstrapPage />}
+        />
+      </Routes>
+    )
+  }
 
   if (!tenant) {
     return <TenantRequired />
