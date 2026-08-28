@@ -65,10 +65,9 @@ function AppRoutes() {
   const rutaActual = window.location.pathname
 
   // ==========================================================
-  // BOOTSTRAP TÉCNICO DE TENANT
+  // BOOTSTRAPS TÉCNICOS PÚBLICOS
   //
-  // Esta ruta no requiere tenant porque precisamente permite
-  // crear el primer tenant del sistema.
+  // Ninguno de estos flujos requiere tenant ni login.
   // ==========================================================
 
   if (rutaActual === '/bootstrap/tenant') {
@@ -77,6 +76,17 @@ function AppRoutes() {
         <Route
           path="/bootstrap/tenant"
           element={<TenantBootstrapPage />}
+        />
+      </Routes>
+    )
+  }
+
+  if (rutaActual === '/bootstrap/super') {
+    return (
+      <Routes>
+        <Route
+          path="/bootstrap/super"
+          element={<SuperBootstrapPage />}
         />
       </Routes>
     )
@@ -94,7 +104,7 @@ function AppRoutes() {
         element={<ActivateUser />}
       />
 
-      {/* CONFIGURACIÓN INICIAL SUPER */}
+      {/* CONFIGURACIÓN INICIAL SUPER LEGACY */}
       <Route
         path="/:tenant/super/bootstrap"
         element={<SuperBootstrapPage />}
