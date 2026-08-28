@@ -118,6 +118,35 @@ export const login = async (
 
 
 // ==========================
+// CONFIGURACIÓN UI DEL TENANT
+// ==========================
+
+export const obtenerConfigTenant = async (token) => {
+  const response = await fetch(`${API_URL}/tenant-config`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  return procesarRespuesta(response)
+}
+
+export const actualizarConfigTenant = async (configuracion, token) => {
+  const response = await fetch(`${API_URL}/tenant-config`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(configuracion),
+  })
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
 // BOOTSTRAP TENANT
 // ==========================
 

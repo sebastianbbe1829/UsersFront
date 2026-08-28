@@ -4,7 +4,7 @@ import {
   Routes,
 } from 'react-router-dom'
 
-import MainLayout from '../layouts/MainLayout'
+import MainLayout from '../layouts/MainLayoutFixed'
 
 import LoginPage from '../pages/LoginPage'
 import WelcomePage from '../pages/WelcomePage'
@@ -12,6 +12,7 @@ import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
+import TenantConfigPage from '../pages/TenantConfigPage'
 import SuperBootstrapPage from '../pages/SuperBootstrapPage'
 import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 
@@ -119,6 +120,7 @@ function AppRoutes() {
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="permisos" element={<PermisosPage />} />
+        <Route path="configuracion-ui" element={<TenantConfigPage />} />
         <Route path="administracion-tenant" element={<TenantAdminPage />} />
       </Route>
 
