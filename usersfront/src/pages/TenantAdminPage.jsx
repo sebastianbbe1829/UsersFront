@@ -2,6 +2,7 @@ import {
   useEffect,
   useState,
 } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 import {
   useAuth,
@@ -15,6 +16,8 @@ import {
 
 
 function TenantAdminPage() {
+
+  const navigate = useNavigate()
 
   const {
     tenant,
@@ -126,6 +129,11 @@ function TenantAdminPage() {
   }
 
 
+  const crearNuevoTenant = () => {
+    navigate('/bootstrap/tenant')
+  }
+
+
   if (!esSuper) {
     return (
       <div className="alert alert-danger">
@@ -166,6 +174,28 @@ function TenantAdminPage() {
             Esta administración corresponde únicamente al tenant del contexto actual.
           </div>
 
+        </div>
+      </div>
+
+
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+          <div>
+            <h5 className="fw-bold mb-1">
+              Provisionar nuevo tenant
+            </h5>
+            <div className="text-muted">
+              Crea una nueva empresa utilizando el mismo proceso de bootstrap de tenants, incluyendo su administrador inicial, roles y permisos.
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-success text-nowrap"
+            onClick={crearNuevoTenant}
+          >
+            + Crear nuevo tenant
+          </button>
         </div>
       </div>
 
