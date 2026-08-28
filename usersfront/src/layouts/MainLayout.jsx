@@ -14,6 +14,10 @@ import {
 } from '../contexts/AuthContext'
 
 import {
+  useTenantConfig,
+} from '../contexts/TenantConfigContext'
+
+import {
   obtenerPayloadToken,
 } from '../services/api'
 
@@ -30,6 +34,10 @@ function MainLayout() {
     tenant,
     token,
   } = useAuth()
+
+  const {
+    config,
+  } = useTenantConfig()
 
 
   // ============================================================
@@ -197,6 +205,18 @@ function MainLayout() {
 
 
     if (
+      ruta.includes('/configuracion-ui')
+    ) {
+
+      return {
+        icono: '🎨',
+        titulo: 'Configuración de la interfaz',
+      }
+
+    }
+
+
+    if (
       ruta.includes('/administracion-tenant')
     ) {
 
@@ -239,7 +259,7 @@ function MainLayout() {
       w-100
       ${
         isActive
-          ? 'bg-primary text-white'
+          ? 'text-white'
           : 'bg-dark text-white'
       }
     `
@@ -306,11 +326,30 @@ function MainLayout() {
 
             <div
               className="
+                d-flex
+                align-items-center
+                gap-2
                 fw-bold
                 text-nowrap
               "
             >
-              👥 Gestión de Usuarios
+              {config.logo_url ? (
+                <img
+                  src={config.logo_url}
+                  alt="Logo"
+                  style={{
+                    maxHeight: '36px',
+                    maxWidth: '48px',
+                    objectFit: 'contain',
+                  }}
+                  onError={(event) => {
+                    event.currentTarget.style.display = 'none'
+                  }}
+                />
+              ) : (
+                <span>👥</span>
+              )}
+              <span>{config.app_title || 'Gestión de Usuarios'}</span>
             </div>
 
           )}
@@ -357,6 +396,7 @@ function MainLayout() {
             to="usuarios"
             className={obtenerClaseMenu}
             title="Usuarios"
+            style={({ isActive }) => isActive ? { backgroundColor: config.primary_color } : undefined}
           >
             <span
               style={{
@@ -380,6 +420,7 @@ function MainLayout() {
             to="roles"
             className={obtenerClaseMenu}
             title="Roles"
+            style={({ isActive }) => isActive ? { backgroundColor: config.primary_color } : undefined}
           >
             <span
               style={{
@@ -403,6 +444,7 @@ function MainLayout() {
             to="permisos"
             className={obtenerClaseMenu}
             title="Permisos"
+            style={({ isActive }) => isActive ? { backgroundColor: config.primary_color } : undefined}
           >
             <span
               style={{
@@ -420,6 +462,30 @@ function MainLayout() {
           </NavLink>
 
 
+          {/* CONFIGURACIÓN DE LA INTERFAZ */}
+
+          <NavLink
+            to="configuracion-ui"
+            className={obtenerClaseMenu}
+            title="Configuración de la interfaz"
+            style={({ isActive }) => isActive ? { backgroundColor: config.primary_color } : undefined}
+          >
+            <span
+              style={{
+                fontSize: '21px',
+                minWidth: '24px',
+                textAlign: 'center',
+              }}
+            >
+              🎨
+            </span>
+
+            {!menuColapsado && (
+              <span className="ms-3">Configuración UI</span>
+            )}
+          </NavLink>
+
+
           {/* ================================================== */}
           {/* ADMINISTRACIÓN DEL TENANT - SOLO SUPER */}
           {/* ================================================== */}
@@ -430,6 +496,7 @@ function MainLayout() {
               to="administracion-tenant"
               className={obtenerClaseMenu}
               title="Administración del tenant"
+              style={({ isActive }) => isActive ? { backgroundColor: config.primary_color } : undefined}
             >
               <span
                 style={{
@@ -574,6 +641,7 @@ function MainLayout() {
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '0 30px',
+            borderBottom: `3px solid ${config.primary_color}`,
           }}
         >
 
@@ -647,7 +715,7 @@ function MainLayout() {
                   </div>
 
                   {esSuper && (
-                    <small className="text-primary fw-semibold">
+                    <small className="fw-semibold" style={{ color: config.primary_color }}>
                       SUPER
                     </small>
                   )}
@@ -674,7 +742,7 @@ function MainLayout() {
 
         {/* ==================================================== */}
         {/* CONTENIDO DE LA PÁGINA */}
-        {/* ==================================================== */}
+        {/* ==================================================== */
 
         <section className="p-4">
           <Outlet />
