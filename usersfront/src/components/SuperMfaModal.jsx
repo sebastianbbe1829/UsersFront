@@ -4,7 +4,7 @@ function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
 
-  const enviar = (event) => {
+  const enviar = async (event) => {
     event.preventDefault()
 
     if (!/^\d{6}$/.test(otp)) {
@@ -12,8 +12,12 @@ function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
       return
     }
 
-    setError('')
-    onConfirmar(otp)
+    try {
+      setError('')
+      await onConfirmar(otp)
+    } catch (err) {
+      setError(err.message || 'No fue posible completar la operación.')
+    }
   }
 
   return (
@@ -27,9 +31,7 @@ function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
 
           <form onSubmit={enviar} autoComplete="off">
             <div className="modal-body py-3 px-3">
-              <p className="mb-3">
-                Para confirmar esta operación administrativa ingresa el código OTP de tu autenticador.
-              </p>
+              <p className="mb-3">Para confirmar esta operación administrativa ingresa el código OTP de tu autenticador.</p>
 
               {error && <div className="alert alert-danger py-2">❌ {error}</div>}
 
