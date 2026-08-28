@@ -104,12 +104,6 @@ function AppRoutes() {
         element={<ActivateUser />}
       />
 
-      {/* CONFIGURACIÓN INICIAL SUPER LEGACY */}
-      <Route
-        path="/:tenant/super/bootstrap"
-        element={<SuperBootstrapPage />}
-      />
-
       {/* LOGIN */}
       <Route
         path="/:tenant/login"
