@@ -12,6 +12,33 @@ import {
 } from '../contexts/TenantConfigContext'
 
 
+function ajustarColorParaFondo(hex, fondoOscuro) {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+    return fondoOscuro ? '#F8F9FA' : '#212529'
+  }
+
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+
+  const luminancia = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+
+  if (fondoOscuro) {
+    if (luminancia >= 0.45) {
+      return hex
+    }
+
+    return '#E9ECEF'
+  }
+
+  if (luminancia <= 0.55) {
+    return hex
+  }
+
+  return '#343A40'
+}
+
+
 function WelcomePage() {
 
   const {
@@ -63,7 +90,8 @@ function WelcomePage() {
   const secondaryColor = config?.secondary_color || '#6f42c1'
 
   const colorPrincipal = modoOscuro ? '#f8f9fa' : '#212529'
-  const colorSecundario = modoOscuro ? '#e9ecef' : '#6c757d'
+  const colorSecundario = ajustarColorParaFondo(secondaryColor, modoOscuro)
+  const colorHora = ajustarColorParaFondo(primaryColor, modoOscuro)
 
   return (
     <div
@@ -103,7 +131,7 @@ function WelcomePage() {
         className="mb-3"
         style={{
           fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
-          color: secondaryColor,
+          color: colorSecundario,
         }}
       >
         Fénix SaS
@@ -149,7 +177,7 @@ function WelcomePage() {
         className="fw-semibold"
         style={{
           fontSize: 'clamp(1.6rem, 4vw, 2rem)',
-          color: primaryColor,
+          color: colorHora,
         }}
       >
         🕐 {hora}
