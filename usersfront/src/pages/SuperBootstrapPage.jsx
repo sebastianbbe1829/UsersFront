@@ -73,8 +73,8 @@ function SuperBootstrapPage() {
     }
   }
 
-  const volverAlInicio = () => {
-    navigate(`/${window.location.pathname.split('/')[1]}/login`, {
+  const irACrearTenant = () => {
+    navigate('/bootstrap/tenant', {
       replace: true,
     })
   }
@@ -87,7 +87,7 @@ function SuperBootstrapPage() {
             <div className="fs-1 mb-2">🛡️</div>
             <h2 className="fw-bold mb-1">Configuración inicial SUPER</h2>
             <p className="text-muted mb-0">
-              Pantalla técnica para crear y configurar el primer usuario global.
+              Pantalla técnica para crear y configurar el usuario global SUPER.
             </p>
           </div>
 
@@ -107,7 +107,8 @@ function SuperBootstrapPage() {
             <form onSubmit={manejarBootstrap}>
               <div className="alert alert-warning">
                 <strong>Uso técnico.</strong><br />
-                Esta operación crea el primer usuario SUPER del sistema.
+                Esta operación crea el usuario SUPER global del sistema.
+                No requiere que exista ningún tenant.
                 El secreto de bootstrap se utiliza únicamente durante este proceso.
               </div>
 
@@ -221,14 +222,15 @@ function SuperBootstrapPage() {
               <div className="display-4 mb-3">🟢</div>
               <h4 className="fw-bold">Configuración completada</h4>
               <p className="text-muted">
-                El primer usuario SUPER ya tiene su MFA verificado y puede iniciar sesión.
+                El usuario SUPER ya tiene su MFA verificado y puede utilizarse
+                para administrar los tenants del sistema.
               </p>
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={volverAlInicio}
+                onClick={irACrearTenant}
               >
-                Ir al inicio de sesión
+                Continuar con creación de tenant
               </button>
             </div>
           )}
