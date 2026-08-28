@@ -4,14 +4,17 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './contexts/AuthContext'
+import { TenantConfigProvider } from './contexts/TenantConfigContext'
 import { BrowserRouter } from 'react-router-dom'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-  <BrowserRouter>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  </BrowserRouter>
-</StrictMode>,
+    <BrowserRouter>
+      <AuthProvider>
+        <TenantConfigProvider>
+          <App />
+        </TenantConfigProvider>
+      </AuthProvider>
+    </BrowserRouter>
+  </StrictMode>,
 )
