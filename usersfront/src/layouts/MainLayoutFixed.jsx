@@ -41,9 +41,9 @@ function MainLayoutFixed() {
 
   const obtenerTituloPagina = () => {
     const ruta = location.pathname
-    if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Gestión de usuarios' }
-    if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Gestión de roles' }
-    if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Gestión de permisos' }
+    if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Usuarios' }
+    if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Roles' }
+    if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Permisos' }
     if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
     return { icono: '🏠', titulo: 'Panel de administración' }
