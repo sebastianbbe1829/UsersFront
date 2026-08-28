@@ -11,6 +11,8 @@ import {
   obtenerConfigTenant,
 } from '../services/api'
 
+import { useAuth } from './AuthContext'
+
 const TenantConfigContext = createContext(null)
 
 const CONFIG_DEFAULT = {
@@ -49,13 +51,16 @@ function aplicarConfiguracion(config) {
 }
 
 export function TenantConfigProvider({ children }) {
+  const { token, logueado } = useAuth()
+
   const [config, setConfig] = useState(CONFIG_DEFAULT)
   const [cargandoConfig, setCargandoConfig] = useState(true)
   const [errorConfig, setErrorConfig] = useState('')
 
-  const cargarConfig = useCallback(async (token) => {
-    if (!token) {
+  const cargarConfig = useCallback(async (tokenActual) => {
+    if (!tokenActual) {
       setConfig(CONFIG_DEFAULT)
+      aplicarConfiguracion(CONFIG_DEFAULT)
       setCargandoConfig(false)
       return
     }
@@ -64,7 +69,7 @@ export function TenantConfigProvider({ children }) {
       setCargandoConfig(true)
       setErrorConfig('')
 
-      const resultado = await obtenerConfigTenant(token)
+      const resultado = await obtenerConfigTenant(tokenActual)
       const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
 
       setConfig(nuevaConfig)
@@ -79,8 +84,8 @@ export function TenantConfigProvider({ children }) {
     }
   }, [])
 
-  const guardarConfig = useCallback(async (datos, token) => {
-    const resultado = await actualizarConfigTenant(datos, token)
+  const guardarConfig = useCallback(async (datos, tokenActual = token) => {
+    const resultado = await actualizarConfigTenant(datos, tokenActual)
     const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
 
     setConfig(nuevaConfig)
@@ -88,11 +93,18 @@ export function TenantConfigProvider({ children }) {
     aplicarConfiguracion(nuevaConfig)
 
     return nuevaConfig
-  }, [])
+  }, [token])
 
   useEffect(() => {
-    aplicarConfiguracion(config)
-  }, [config])
+    if (!logueado || !token) {
+      setConfig(CONFIG_DEFAULT)
+      aplicarConfiguracion(CONFIG_DEFAULT)
+      setCargandoConfig(false)
+      return
+    }
+
+    cargarConfig(token)
+  }, [logueado, token, cargarConfig])
 
   const value = {
     config,
