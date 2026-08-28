@@ -32,6 +32,11 @@ function aplicarConfiguracion(config) {
   root.style.setProperty('--tenant-primary-color', config.primary_color)
   root.style.setProperty('--tenant-secondary-color', config.secondary_color)
 
+  // Bootstrap 5 consume estas variables para sus componentes principales.
+  root.style.setProperty('--bs-primary', config.primary_color)
+  root.style.setProperty('--bs-secondary', config.secondary_color)
+  root.style.setProperty('--bs-link-color', config.primary_color)
+
   if (config.app_title) {
     document.title = config.app_title
   }
