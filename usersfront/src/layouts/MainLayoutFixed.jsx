@@ -30,6 +30,7 @@ function MainLayoutFixed() {
     setModoOscuro((valor) => {
       const nuevoValor = !valor
       localStorage.setItem('modo_oscuro', nuevoValor)
+      window.dispatchEvent(new Event('modo-oscuro-cambiado'))
       return nuevoValor
     })
   }
@@ -76,6 +77,17 @@ function MainLayoutFixed() {
         </div>
 
         <nav className="d-flex flex-column">
+          <NavLink
+            to={tenant ? `/${tenant}` : '/'}
+            end
+            className={obtenerClaseMenu}
+            title="Inicio"
+            style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}
+          >
+            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>
+            {!menuColapsado && <span className="ms-3">Inicio</span>}
+          </NavLink>
+
           <NavLink to="usuarios" className={obtenerClaseMenu} title="Usuarios" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👥</span>
             {!menuColapsado && <span className="ms-3">Usuarios</span>}
