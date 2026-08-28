@@ -19,7 +19,7 @@ const CONFIG_DEFAULT = {
   tenant_id: null,
   name: '',
   slug: '',
-  app_title: 'Gestión de Usuarios',
+  app_title: 'Fénix SaS',
   logo_url: null,
   primary_color: '#0D6EFD',
   secondary_color: '#6C757D',

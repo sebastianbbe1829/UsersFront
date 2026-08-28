@@ -157,7 +157,7 @@ function WelcomePage() {
         }}
       >
 
-        Gestión de Usuarios
+        Fénix SaS
 
       </h4>
 
