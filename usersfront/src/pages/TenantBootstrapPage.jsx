@@ -14,7 +14,7 @@ function TenantBootstrapPage() {
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
   const [adminPhone, setAdminPhone] = useState('')
-  const [bootstrapKey, setBootstrapKey] = useState('')
+  const [bootstrapTenantKey, setBootstrapTenantKey] = useState('')
   const [resultado, setResultado] = useState(null)
   const [error, setError] = useState('')
   const [cargando, setCargando] = useState(false)
@@ -236,12 +236,12 @@ function TenantBootstrapPage() {
               <h5 className="fw-bold mb-3">Autorización técnica</h5>
 
               <div className="mb-4">
-                <label className="form-label fw-semibold">X-Bootstrap-Key</label>
+                <label className="form-label fw-semibold">X-Bootstrap-Tenant-Key</label>
                 <input
                   type="password"
                   className="form-control"
-                  value={bootstrapKey}
-                  onChange={(event) => setBootstrapKey(event.target.value)}
+                  value={bootstrapTenantKey}
+                  onChange={(event) => setBootstrapTenantKey(event.target.value)}
                   required
                   autoComplete="off"
                 />

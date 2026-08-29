@@ -164,7 +164,7 @@ export const bootstrapTenant = async (
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Bootstrap-Key': bootstrapKey,
+      'X-Bootstrap-Tenant-Key': bootstrapKey,
     },
     body: JSON.stringify({
       tenant_name: tenantName,
