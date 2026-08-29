@@ -21,6 +21,7 @@ function ActivateUser() {
   // ==========================
 
   const {
+    tenant,
     dni,
     token,
   } = useParams()
@@ -225,10 +226,10 @@ useEffect(() => {
 
 
           <Link
-            to="/"
+            to={`/${tenant}/login`}
             className="btn btn-primary mt-3"
           >
-            Ir al inicio
+            Ir al inicio de sesión
           </Link>
 
         </div>
@@ -368,7 +369,7 @@ useEffect(() => {
         {/* ========================== */}
 
         <Link
-          to="/"
+          to={`/${tenant}/login`}
           className="btn btn-primary mt-4"
         >
           Ir al inicio de sesión
