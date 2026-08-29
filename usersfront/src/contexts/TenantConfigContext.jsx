@@ -14,9 +14,9 @@ const TenantConfigContext = createContext(null)
 
 const CONFIG_DEFAULT = {
   tenant_id: null,
-  name: 'Fénix SaS',
-  slug: 'fenix',
-  app_title: 'Fénix SaS',
+  name: null,
+  slug: null,
+  app_title: null,
   logo_url: null,
   primary_color: '#0D6EFD',
   secondary_color: '#6C757D',
@@ -92,12 +92,12 @@ export function TenantConfigProvider({ children }) {
       aplicarConfiguracion(nuevaConfig)
     } catch (error) {
       console.warn(
-        'No fue posible cargar la configuración pública del tenant. Se utilizará la configuración de Fénix SaS.',
+        'No fue posible cargar la configuración pública del tenant.',
         error
       )
 
       setConfig(CONFIG_DEFAULT)
-      setErrorConfig('')
+      setErrorConfig('No fue posible cargar la configuración del tenant.')
       aplicarConfiguracion(CONFIG_DEFAULT)
     } finally {
       setCargandoConfig(false)
