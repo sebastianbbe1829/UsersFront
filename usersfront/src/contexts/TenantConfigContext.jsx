@@ -9,6 +9,7 @@ import {
 import {
   actualizarConfigTenant,
   obtenerConfigTenant,
+  obtenerConfigTenantPublica,
 } from '../services/api'
 
 import { useAuth } from './AuthContext'
@@ -32,7 +33,6 @@ function aplicarConfiguracion(config) {
   root.style.setProperty('--tenant-primary-color', config.primary_color)
   root.style.setProperty('--tenant-secondary-color', config.secondary_color)
 
-  // Bootstrap 5 consume estas variables para sus componentes principales.
   root.style.setProperty('--bs-primary', config.primary_color)
   root.style.setProperty('--bs-secondary', config.secondary_color)
   root.style.setProperty('--bs-link-color', config.primary_color)
@@ -55,17 +55,42 @@ function aplicarConfiguracion(config) {
   }
 }
 
-export function TenantConfigProvider({ children }) {
-  const { token, logueado } = useAuth()
+function PantallaCargaConfiguracion() {
+  return (
+    <div
+      className="d-flex align-items-center justify-content-center min-vh-100"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="text-center">
+        <div className="spinner-border" role="status" aria-hidden="true" />
+        <div className="mt-3">Cargando configuración...</div>
+      </div>
+    </div>
+  )
+}
 
-  const [config, setConfig] = useState(CONFIG_DEFAULT)
+function PantallaErrorConfiguracion({ mensaje }) {
+  return (
+    <div className="d-flex align-items-center justify-content-center min-vh-100 p-4">
+      <div className="alert alert-danger mb-0" role="alert">
+        {mensaje || 'No fue posible cargar la configuración de la empresa.'}
+      </div>
+    </div>
+  )
+}
+
+export function TenantConfigProvider({ children }) {
+  const { token, logueado, tenant } = useAuth()
+
+  const [config, setConfig] = useState(null)
   const [cargandoConfig, setCargandoConfig] = useState(true)
   const [errorConfig, setErrorConfig] = useState('')
 
-  const cargarConfig = useCallback(async (tokenActual) => {
-    if (!tokenActual) {
-      setConfig(CONFIG_DEFAULT)
-      aplicarConfiguracion(CONFIG_DEFAULT)
+  const cargarConfigPublica = useCallback(async (tenantSlug) => {
+    if (!tenantSlug) {
+      setConfig(null)
+      setErrorConfig('No se pudo determinar la empresa desde la URL.')
       setCargandoConfig(false)
       return
     }
@@ -74,20 +99,52 @@ export function TenantConfigProvider({ children }) {
       setCargandoConfig(true)
       setErrorConfig('')
 
-      const resultado = await obtenerConfigTenant(tokenActual)
+      const resultado = await obtenerConfigTenantPublica(tenantSlug)
       const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
 
       setConfig(nuevaConfig)
       aplicarConfiguracion(nuevaConfig)
     } catch (error) {
-      console.error('No fue posible cargar la configuración visual del tenant:', error)
-      setErrorConfig(error?.message || 'No fue posible cargar la configuración visual.')
-      setConfig(CONFIG_DEFAULT)
-      aplicarConfiguracion(CONFIG_DEFAULT)
+      console.error(
+        'No fue posible cargar la configuración pública del tenant:',
+        error
+      )
+      setConfig(null)
+      setErrorConfig(
+        error?.message ||
+        'No fue posible cargar la configuración de la empresa.'
+      )
     } finally {
       setCargandoConfig(false)
     }
   }, [])
+
+  const cargarConfigAutenticada = useCallback(async (tokenActual) => {
+    if (!tokenActual) return
+
+    try {
+      const resultado = await obtenerConfigTenant(tokenActual)
+      const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
+
+      setConfig(nuevaConfig)
+      setErrorConfig('')
+      aplicarConfiguracion(nuevaConfig)
+    } catch (error) {
+      console.error(
+        'No fue posible actualizar la configuración visual autenticada del tenant:',
+        error
+      )
+    }
+  }, [])
+
+  const cargarConfig = useCallback(async (tokenActual = token) => {
+    if (tokenActual) {
+      await cargarConfigAutenticada(tokenActual)
+      return
+    }
+
+    await cargarConfigPublica(tenant)
+  }, [token, tenant, cargarConfigAutenticada, cargarConfigPublica])
 
   const guardarConfig = useCallback(async (datos, tokenActual = token) => {
     const resultado = await actualizarConfigTenant(datos, tokenActual)
@@ -101,15 +158,14 @@ export function TenantConfigProvider({ children }) {
   }, [token])
 
   useEffect(() => {
-    if (!logueado || !token) {
-      setConfig(CONFIG_DEFAULT)
-      aplicarConfiguracion(CONFIG_DEFAULT)
-      setCargandoConfig(false)
-      return
-    }
+    cargarConfigPublica(tenant)
+  }, [tenant, cargarConfigPublica])
 
-    cargarConfig(token)
-  }, [logueado, token, cargarConfig])
+  useEffect(() => {
+    if (!logueado || !token) return
+
+    cargarConfigAutenticada(token)
+  }, [logueado, token, cargarConfigAutenticada])
 
   const value = {
     config,
@@ -117,6 +173,14 @@ export function TenantConfigProvider({ children }) {
     errorConfig,
     cargarConfig,
     guardarConfig,
+  }
+
+  if (cargandoConfig && !config) {
+    return <PantallaCargaConfiguracion />
+  }
+
+  if (errorConfig && !config) {
+    return <PantallaErrorConfiguracion mensaje={errorConfig} />
   }
 
   return (
