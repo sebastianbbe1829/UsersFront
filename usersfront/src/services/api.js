@@ -158,13 +158,13 @@ export const bootstrapTenant = async (
   adminEmail,
   adminPassword,
   adminPhone,
-  bootstrapKey
+  bootstrapTenantKey
 ) => {
   const response = await fetch(`${API_URL}/bootstrap`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Bootstrap-Tenant-Key': bootstrapKey,
+      'X-Bootstrap-Tenant-Key': bootstrapTenantKey,
     },
     body: JSON.stringify({
       tenant_name: tenantName,

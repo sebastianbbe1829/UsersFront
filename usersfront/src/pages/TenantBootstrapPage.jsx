@@ -34,7 +34,7 @@ function TenantBootstrapPage() {
         adminEmail,
         adminPassword,
         adminPhone,
-        bootstrapKey
+        bootstrapTenantKey
       )
 
       setResultado(respuesta)
