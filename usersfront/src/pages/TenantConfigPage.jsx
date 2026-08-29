@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react'
 
 import { useAuth } from '../contexts/AuthContext'
-import { useTenantConfig } from '../contexts/TenantConfigContext'
+import { obtenerPayloadToken } from '../services/api'
+import {
+  actualizarConfigTenantComoSuper,
+  obtenerConfigTenantComoSuper,
+} from '../services/tenantConfigAdminApi'
+import SuperMfaModal from '../components/SuperMfaModal'
 
 function TenantConfigPage() {
   const { token } = useAuth()
-  const {
-    config,
-    cargandoConfig,
-    errorConfig,
-    guardarConfig,
-  } = useTenantConfig()
 
+  const [config, setConfig] = useState(null)
+  const [cargandoConfig, setCargandoConfig] = useState(true)
   const [formulario, setFormulario] = useState({
     app_title: '',
     logo_url: '',
@@ -21,15 +22,45 @@ function TenantConfigPage() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [mostrarOtp, setMostrarOtp] = useState(false)
+  const [datosPendientes, setDatosPendientes] = useState(null)
+
+  const payload = obtenerPayloadToken(token)
+  const esSuper = payload?.user_type === 'SUPER'
+  const tenantId = Number(payload?.tenant_id)
+
+  const cargarConfig = async () => {
+    if (!esSuper || !token || !tenantId) {
+      setCargandoConfig(false)
+      return
+    }
+
+    try {
+      setCargandoConfig(true)
+      setError('')
+
+      const resultado = await obtenerConfigTenantComoSuper(
+        tenantId,
+        token,
+      )
+
+      setConfig(resultado)
+      setFormulario({
+        app_title: resultado.app_title || '',
+        logo_url: resultado.logo_url || '',
+        primary_color: resultado.primary_color || '#0D6EFD',
+        secondary_color: resultado.secondary_color || '#6C757D',
+      })
+    } catch (err) {
+      setError(err.message || 'No fue posible cargar la configuración.')
+    } finally {
+      setCargandoConfig(false)
+    }
+  }
 
   useEffect(() => {
-    setFormulario({
-      app_title: config.app_title || '',
-      logo_url: config.logo_url || '',
-      primary_color: config.primary_color || '#0D6EFD',
-      secondary_color: config.secondary_color || '#6C757D',
-    })
-  }, [config])
+    cargarConfig()
+  }, [esSuper, token, tenantId])
 
   const cambiarCampo = (event) => {
     const { name, value } = event.target
@@ -38,27 +69,57 @@ function TenantConfigPage() {
     setError('')
   }
 
-  const guardar = async (event) => {
+  const prepararGuardado = (event) => {
     event.preventDefault()
+
+    setDatosPendientes({
+      app_title: formulario.app_title.trim(),
+      logo_url: formulario.logo_url.trim() || null,
+      primary_color: formulario.primary_color,
+      secondary_color: formulario.secondary_color,
+    })
+    setMensaje('')
+    setError('')
+    setMostrarOtp(true)
+  }
+
+  const confirmarOtp = async (otp) => {
+    if (!datosPendientes) return
 
     try {
       setGuardando(true)
-      setMensaje('')
       setError('')
 
-      await guardarConfig({
-        app_title: formulario.app_title.trim(),
-        logo_url: formulario.logo_url.trim() || null,
-        primary_color: formulario.primary_color,
-        secondary_color: formulario.secondary_color,
-      }, token)
+      const resultado = await actualizarConfigTenantComoSuper(
+        tenantId,
+        datosPendientes,
+        otp,
+        token,
+      )
 
+      setConfig(resultado)
+      setFormulario({
+        app_title: resultado.app_title || '',
+        logo_url: resultado.logo_url || '',
+        primary_color: resultado.primary_color || '#0D6EFD',
+        secondary_color: resultado.secondary_color || '#6C757D',
+      })
       setMensaje('Configuración visual actualizada correctamente.')
+      setDatosPendientes(null)
+      setMostrarOtp(false)
     } catch (err) {
-      setError(err?.message || 'No fue posible actualizar la configuración.')
+      throw err
     } finally {
       setGuardando(false)
     }
+  }
+
+  if (!esSuper) {
+    return (
+      <div className="alert alert-danger">
+        No tienes permisos para administrar la configuración de la interfaz.
+      </div>
+    )
   }
 
   if (cargandoConfig) {
@@ -75,22 +136,22 @@ function TenantConfigPage() {
       <div className="mb-4">
         <h3 className="fw-bold mb-1">Configuración de la interfaz</h3>
         <p className="text-muted mb-0">
-          Personaliza la identidad visual de este tenant.
+          Personaliza la identidad visual del tenant. Esta administración está disponible únicamente para SUPER.
         </p>
       </div>
-
-      {errorConfig && (
-        <div className="alert alert-warning">
-          {errorConfig}
-        </div>
-      )}
 
       {mensaje && <div className="alert alert-success">{mensaje}</div>}
       {error && <div className="alert alert-danger">{error}</div>}
 
+      {config && (
+        <div className="alert alert-info">
+          <strong>Tenant:</strong> {config.name} ({config.slug})
+        </div>
+      )}
+
       <div className="card shadow-sm border-0">
         <div className="card-body p-4">
-          <form onSubmit={guardar}>
+          <form onSubmit={prepararGuardado}>
             <div className="row g-4">
               <div className="col-12">
                 <label className="form-label fw-semibold">Título de la aplicación</label>
@@ -105,9 +166,7 @@ function TenantConfigPage() {
                   required
                   disabled={guardando}
                 />
-                <div className="form-text">
-                  Se mostrará en la pestaña del navegador.
-                </div>
+                <div className="form-text">Se mostrará en la pestaña del navegador.</div>
               </div>
 
               <div className="col-12">
@@ -122,9 +181,7 @@ function TenantConfigPage() {
                   placeholder="https://..."
                   disabled={guardando}
                 />
-                <div className="form-text">
-                  Opcional. Se utilizará también como favicon.
-                </div>
+                <div className="form-text">Opcional. Se utilizará también como favicon.</div>
               </div>
 
               <div className="col-md-6">
@@ -182,24 +239,14 @@ function TenantConfigPage() {
               <div className="col-12">
                 <div
                   className="p-4 rounded border"
-                  style={{
-                    borderLeft: `6px solid ${formulario.primary_color}`,
-                  }}
+                  style={{ borderLeft: `6px solid ${formulario.primary_color}` }}
                 >
                   <div className="fw-bold mb-2">Vista previa</div>
                   <div className="d-flex flex-wrap gap-2 align-items-center">
-                    <button
-                      type="button"
-                      className="btn text-white"
-                      style={{ backgroundColor: formulario.primary_color }}
-                    >
+                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.primary_color }}>
                       Acción principal
                     </button>
-                    <button
-                      type="button"
-                      className="btn text-white"
-                      style={{ backgroundColor: formulario.secondary_color }}
-                    >
+                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.secondary_color }}>
                       Acción secundaria
                     </button>
                     {formulario.logo_url && (
@@ -207,9 +254,7 @@ function TenantConfigPage() {
                         src={formulario.logo_url}
                         alt="Logo del tenant"
                         style={{ maxHeight: '45px', maxWidth: '180px', objectFit: 'contain' }}
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none'
-                        }}
+                        onError={(event) => { event.currentTarget.style.display = 'none' }}
                       />
                     )}
                   </div>
@@ -218,24 +263,25 @@ function TenantConfigPage() {
             </div>
 
             <div className="d-flex justify-content-end mt-4">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={guardando}
-              >
-                {guardando ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Guardando...
-                  </>
-                ) : (
-                  'Guardar configuración'
-                )}
+              <button type="submit" className="btn btn-primary" disabled={guardando}>
+                Guardar configuración
               </button>
             </div>
           </form>
         </div>
       </div>
+
+      {mostrarOtp && (
+        <SuperMfaModal
+          onConfirmar={confirmarOtp}
+          onCancelar={() => {
+            if (guardando) return
+            setMostrarOtp(false)
+            setDatosPendientes(null)
+          }}
+          guardando={guardando}
+        />
+      )}
     </div>
   )
 }
