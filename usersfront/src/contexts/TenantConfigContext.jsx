@@ -18,8 +18,8 @@ const TenantConfigContext = createContext(null)
 
 const CONFIG_DEFAULT = {
   tenant_id: null,
-  name: '',
-  slug: '',
+  name: 'Fénix SaS',
+  slug: 'fenix',
   app_title: 'Fénix SaS',
   logo_url: null,
   primary_color: '#0D6EFD',
@@ -32,7 +32,6 @@ function aplicarConfiguracion(config) {
 
   root.style.setProperty('--tenant-primary-color', config.primary_color)
   root.style.setProperty('--tenant-secondary-color', config.secondary_color)
-
   root.style.setProperty('--bs-primary', config.primary_color)
   root.style.setProperty('--bs-secondary', config.secondary_color)
   root.style.setProperty('--bs-link-color', config.primary_color)
@@ -70,16 +69,6 @@ function PantallaCargaConfiguracion() {
   )
 }
 
-function PantallaErrorConfiguracion({ mensaje }) {
-  return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 p-4">
-      <div className="alert alert-danger mb-0" role="alert">
-        {mensaje || 'No fue posible cargar la configuración de la empresa.'}
-      </div>
-    </div>
-  )
-}
-
 export function TenantConfigProvider({ children }) {
   const { token, logueado, tenant } = useAuth()
 
@@ -89,8 +78,9 @@ export function TenantConfigProvider({ children }) {
 
   const cargarConfigPublica = useCallback(async (tenantSlug) => {
     if (!tenantSlug) {
-      setConfig(null)
-      setErrorConfig('No se pudo determinar la empresa desde la URL.')
+      setConfig(CONFIG_DEFAULT)
+      aplicarConfiguracion(CONFIG_DEFAULT)
+      setErrorConfig('')
       setCargandoConfig(false)
       return
     }
@@ -105,15 +95,14 @@ export function TenantConfigProvider({ children }) {
       setConfig(nuevaConfig)
       aplicarConfiguracion(nuevaConfig)
     } catch (error) {
-      console.error(
-        'No fue posible cargar la configuración pública del tenant:',
+      console.warn(
+        'No fue posible cargar la configuración pública del tenant. Se utilizará la configuración de Fénix SaS.',
         error
       )
-      setConfig(null)
-      setErrorConfig(
-        error?.message ||
-        'No fue posible cargar la configuración de la empresa.'
-      )
+
+      setConfig(CONFIG_DEFAULT)
+      setErrorConfig('')
+      aplicarConfiguracion(CONFIG_DEFAULT)
     } finally {
       setCargandoConfig(false)
     }
@@ -177,10 +166,6 @@ export function TenantConfigProvider({ children }) {
 
   if (cargandoConfig && !config) {
     return <PantallaCargaConfiguracion />
-  }
-
-  if (errorConfig && !config) {
-    return <PantallaErrorConfiguracion mensaje={errorConfig} />
   }
 
   return (
