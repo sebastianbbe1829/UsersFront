@@ -2,6 +2,7 @@ import {
   Navigate,
   Route,
   Routes,
+  useLocation,
 } from 'react-router-dom'
 
 import MainLayout from '../layouts/MainLayoutFixed'
@@ -62,8 +63,9 @@ function RutasProtegidas() {
 // ============================================================
 
 function AppRoutes() {
+  const location = useLocation()
   const tenant = obtenerTenantDesdeUrl()
-  const rutaActual = window.location.pathname
+  const rutaActual = location.pathname
 
   // ==========================================================
   // BOOTSTRAPS TÉCNICOS PÚBLICOS
