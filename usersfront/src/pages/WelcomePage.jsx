@@ -93,7 +93,8 @@ function WelcomePage() {
   const colorSecundario = ajustarColorParaFondo(secondaryColor, modoOscuro)
   const colorHora = ajustarColorParaFondo(primaryColor, modoOscuro)
   const nombreTenant = config?.name || tenant || 'su empresa'
-  const tituloAplicacion = config?.app_title || 'su sistema'
+  const tituloAplicacion = config?.app_title || nombreTenant
+  const mostrarNombreTenant = nombreTenant && nombreTenant !== tituloAplicacion
 
   return (
     <div
@@ -142,15 +143,17 @@ function WelcomePage() {
         Bienvenido a {tituloAplicacion}
       </h1>
 
-      <h4
-        className="mb-3"
-        style={{
-          fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
-          color: colorSecundario,
-        }}
-      >
-        {nombreTenant}
-      </h4>
+      {mostrarNombreTenant && (
+        <h4
+          className="mb-3"
+          style={{
+            fontSize: 'clamp(1.1rem, 2.5vw, 1.4rem)',
+            color: colorSecundario,
+          }}
+        >
+          {nombreTenant}
+        </h4>
+      )}
 
       {usuarioLogueado && (
         <p
