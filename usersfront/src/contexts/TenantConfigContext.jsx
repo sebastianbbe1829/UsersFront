@@ -6,11 +6,7 @@ import {
   useState,
 } from 'react'
 
-import {
-  actualizarConfigTenant,
-  obtenerConfigTenant,
-  obtenerConfigTenantPublica,
-} from '../services/api'
+import { obtenerConfigTenantPublica } from '../services/api'
 
 import { useAuth } from './AuthContext'
 
@@ -70,13 +66,13 @@ function PantallaCargaConfiguracion() {
 }
 
 export function TenantConfigProvider({ children }) {
-  const { token, logueado, tenant } = useAuth()
+  const { tenant } = useAuth()
 
   const [config, setConfig] = useState(null)
   const [cargandoConfig, setCargandoConfig] = useState(true)
   const [errorConfig, setErrorConfig] = useState('')
 
-  const cargarConfigPublica = useCallback(async (tenantSlug) => {
+  const cargarConfig = useCallback(async (tenantSlug = tenant) => {
     if (!tenantSlug) {
       setConfig(CONFIG_DEFAULT)
       aplicarConfiguracion(CONFIG_DEFAULT)
@@ -106,62 +102,17 @@ export function TenantConfigProvider({ children }) {
     } finally {
       setCargandoConfig(false)
     }
-  }, [])
-
-  const cargarConfigAutenticada = useCallback(async (tokenActual) => {
-    if (!tokenActual) return
-
-    try {
-      const resultado = await obtenerConfigTenant(tokenActual)
-      const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
-
-      setConfig(nuevaConfig)
-      setErrorConfig('')
-      aplicarConfiguracion(nuevaConfig)
-    } catch (error) {
-      console.error(
-        'No fue posible actualizar la configuración visual autenticada del tenant:',
-        error
-      )
-    }
-  }, [])
-
-  const cargarConfig = useCallback(async (tokenActual = token) => {
-    if (tokenActual) {
-      await cargarConfigAutenticada(tokenActual)
-      return
-    }
-
-    await cargarConfigPublica(tenant)
-  }, [token, tenant, cargarConfigAutenticada, cargarConfigPublica])
-
-  const guardarConfig = useCallback(async (datos, tokenActual = token) => {
-    const resultado = await actualizarConfigTenant(datos, tokenActual)
-    const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
-
-    setConfig(nuevaConfig)
-    setErrorConfig('')
-    aplicarConfiguracion(nuevaConfig)
-
-    return nuevaConfig
-  }, [token])
+  }, [tenant])
 
   useEffect(() => {
-    cargarConfigPublica(tenant)
-  }, [tenant, cargarConfigPublica])
-
-  useEffect(() => {
-    if (!logueado || !token) return
-
-    cargarConfigAutenticada(token)
-  }, [logueado, token, cargarConfigAutenticada])
+    cargarConfig(tenant)
+  }, [tenant, cargarConfig])
 
   const value = {
     config,
     cargandoConfig,
     errorConfig,
     cargarConfig,
-    guardarConfig,
   }
 
   if (cargandoConfig && !config) {
