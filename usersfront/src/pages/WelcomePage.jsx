@@ -92,6 +92,8 @@ function WelcomePage() {
   const colorPrincipal = modoOscuro ? '#f8f9fa' : '#212529'
   const colorSecundario = ajustarColorParaFondo(secondaryColor, modoOscuro)
   const colorHora = ajustarColorParaFondo(primaryColor, modoOscuro)
+  const nombreTenant = config?.name || tenant || 'su empresa'
+  const tituloAplicacion = config?.app_title || 'su sistema'
 
   return (
     <div
@@ -104,18 +106,31 @@ function WelcomePage() {
       }}
     >
 
-      <div
-        className="rounded-circle text-white d-flex align-items-center justify-content-center shadow mb-3"
-        style={{
-          width: '100px',
-          height: '100px',
-          fontSize: '46px',
-          flexShrink: 0,
-          backgroundColor: primaryColor,
-        }}
-      >
-        👋
-      </div>
+      {config?.logo_url ? (
+        <img
+          src={config.logo_url}
+          alt={`Logo de ${nombreTenant}`}
+          className="mb-3"
+          style={{
+            maxWidth: '180px',
+            maxHeight: '100px',
+            objectFit: 'contain',
+          }}
+        />
+      ) : (
+        <div
+          className="rounded-circle text-white d-flex align-items-center justify-content-center shadow mb-3"
+          style={{
+            width: '100px',
+            height: '100px',
+            fontSize: '46px',
+            flexShrink: 0,
+            backgroundColor: primaryColor,
+          }}
+        >
+          👋
+        </div>
+      )}
 
       <h1
         className="fw-bold mb-2"
@@ -124,7 +139,7 @@ function WelcomePage() {
           color: colorPrincipal,
         }}
       >
-        Bienvenido a su sistema
+        Bienvenido a {tituloAplicacion}
       </h1>
 
       <h4
@@ -134,7 +149,7 @@ function WelcomePage() {
           color: colorSecundario,
         }}
       >
-        Fénix SaS
+        {nombreTenant}
       </h4>
 
       {usuarioLogueado && (
