@@ -118,6 +118,26 @@ export const login = async (
 
 
 // ==========================
+// CONFIGURACIÓN UI PÚBLICA
+// ==========================
+
+export const obtenerConfigTenantPublica = async (tenantSlug) => {
+  if (!tenantSlug) {
+    throw new Error('No se pudo determinar la empresa desde la URL.')
+  }
+
+  const response = await fetch(
+    `${API_URL}/tenant-config/public/${encodeURIComponent(tenantSlug)}`,
+    {
+      method: 'GET',
+    }
+  )
+
+  return procesarRespuesta(response)
+}
+
+
+// ==========================
 // CONFIGURACIÓN UI DEL TENANT
 // ==========================
 
