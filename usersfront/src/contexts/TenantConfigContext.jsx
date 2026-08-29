@@ -6,10 +6,7 @@ import {
   useState,
 } from 'react'
 
-import {
-  actualizarConfigTenant,
-  obtenerConfigTenant,
-} from '../services/api'
+import { obtenerConfigTenantPublica } from '../services/api'
 
 import { useAuth } from './AuthContext'
 
@@ -17,8 +14,8 @@ const TenantConfigContext = createContext(null)
 
 const CONFIG_DEFAULT = {
   tenant_id: null,
-  name: '',
-  slug: '',
+  name: 'Fénix SaS',
+  slug: 'fenix',
   app_title: 'Fénix SaS',
   logo_url: null,
   primary_color: '#0D6EFD',
@@ -31,8 +28,6 @@ function aplicarConfiguracion(config) {
 
   root.style.setProperty('--tenant-primary-color', config.primary_color)
   root.style.setProperty('--tenant-secondary-color', config.secondary_color)
-
-  // Bootstrap 5 consume estas variables para sus componentes principales.
   root.style.setProperty('--bs-primary', config.primary_color)
   root.style.setProperty('--bs-secondary', config.secondary_color)
   root.style.setProperty('--bs-link-color', config.primary_color)
@@ -55,17 +50,33 @@ function aplicarConfiguracion(config) {
   }
 }
 
-export function TenantConfigProvider({ children }) {
-  const { token, logueado } = useAuth()
+function PantallaCargaConfiguracion() {
+  return (
+    <div
+      className="d-flex align-items-center justify-content-center min-vh-100"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div className="text-center">
+        <div className="spinner-border" role="status" aria-hidden="true" />
+        <div className="mt-3">Cargando configuración...</div>
+      </div>
+    </div>
+  )
+}
 
-  const [config, setConfig] = useState(CONFIG_DEFAULT)
+export function TenantConfigProvider({ children }) {
+  const { tenant } = useAuth()
+
+  const [config, setConfig] = useState(null)
   const [cargandoConfig, setCargandoConfig] = useState(true)
   const [errorConfig, setErrorConfig] = useState('')
 
-  const cargarConfig = useCallback(async (tokenActual) => {
-    if (!tokenActual) {
+  const cargarConfig = useCallback(async (tenantSlug = tenant) => {
+    if (!tenantSlug) {
       setConfig(CONFIG_DEFAULT)
       aplicarConfiguracion(CONFIG_DEFAULT)
+      setErrorConfig('')
       setCargandoConfig(false)
       return
     }
@@ -74,49 +85,38 @@ export function TenantConfigProvider({ children }) {
       setCargandoConfig(true)
       setErrorConfig('')
 
-      const resultado = await obtenerConfigTenant(tokenActual)
+      const resultado = await obtenerConfigTenantPublica(tenantSlug)
       const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
 
       setConfig(nuevaConfig)
       aplicarConfiguracion(nuevaConfig)
     } catch (error) {
-      console.error('No fue posible cargar la configuración visual del tenant:', error)
-      setErrorConfig(error?.message || 'No fue posible cargar la configuración visual.')
+      console.warn(
+        'No fue posible cargar la configuración pública del tenant. Se utilizará la configuración de Fénix SaS.',
+        error
+      )
+
       setConfig(CONFIG_DEFAULT)
+      setErrorConfig('')
       aplicarConfiguracion(CONFIG_DEFAULT)
     } finally {
       setCargandoConfig(false)
     }
-  }, [])
-
-  const guardarConfig = useCallback(async (datos, tokenActual = token) => {
-    const resultado = await actualizarConfigTenant(datos, tokenActual)
-    const nuevaConfig = { ...CONFIG_DEFAULT, ...resultado }
-
-    setConfig(nuevaConfig)
-    setErrorConfig('')
-    aplicarConfiguracion(nuevaConfig)
-
-    return nuevaConfig
-  }, [token])
+  }, [tenant])
 
   useEffect(() => {
-    if (!logueado || !token) {
-      setConfig(CONFIG_DEFAULT)
-      aplicarConfiguracion(CONFIG_DEFAULT)
-      setCargandoConfig(false)
-      return
-    }
-
-    cargarConfig(token)
-  }, [logueado, token, cargarConfig])
+    cargarConfig(tenant)
+  }, [tenant, cargarConfig])
 
   const value = {
     config,
     cargandoConfig,
     errorConfig,
     cargarConfig,
-    guardarConfig,
+  }
+
+  if (cargandoConfig && !config) {
+    return <PantallaCargaConfiguracion />
   }
 
   return (

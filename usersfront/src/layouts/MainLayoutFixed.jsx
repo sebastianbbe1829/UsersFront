@@ -54,14 +54,8 @@ function MainLayoutFixed() {
   const obtenerClaseMenu = ({ isActive }) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${isActive ? 'text-white' : 'bg-dark text-white'}`
 
   return (
-    <div
-      className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'}
-      style={{ display: 'flex' }}
-    >
-      <aside
-        className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'}
-        style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width 0.25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: 'hidden' }}
-      >
+    <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
+      <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width 0.25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: 'hidden' }}>
         <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary" style={{ height: '70px' }}>
           {!menuColapsado && (
             <div className="d-flex align-items-center gap-2 fw-bold text-nowrap">
@@ -77,13 +71,7 @@ function MainLayoutFixed() {
         </div>
 
         <nav className="d-flex flex-column">
-          <NavLink
-            to={tenant ? `/${tenant}` : '/'}
-            end
-            className={obtenerClaseMenu}
-            title="Inicio"
-            style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}
-          >
+          <NavLink to={tenant ? `/${tenant}` : '/'} end className={obtenerClaseMenu} title="Inicio" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>
             {!menuColapsado && <span className="ms-3">Inicio</span>}
           </NavLink>
@@ -100,10 +88,12 @@ function MainLayoutFixed() {
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🔐</span>
             {!menuColapsado && <span className="ms-3">Permisos</span>}
           </NavLink>
-          <NavLink to="configuracion-ui" className={obtenerClaseMenu} title="Configuración de la interfaz" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
-            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>
-            {!menuColapsado && <span className="ms-3">Configuración UI</span>}
-          </NavLink>
+          {esSuper && (
+            <NavLink to="configuracion-ui" className={obtenerClaseMenu} title="Configuración de la interfaz" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>
+              {!menuColapsado && <span className="ms-3">Configuración UI</span>}
+            </NavLink>
+          )}
           {esSuper && (
             <NavLink to="administracion-tenant" className={obtenerClaseMenu} title="Administración del tenant" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span>
@@ -125,10 +115,7 @@ function MainLayoutFixed() {
       </aside>
 
       <main style={{ marginLeft: menuColapsado ? '72px' : '250px', width: `calc(100% - ${menuColapsado ? '72px' : '250px'})`, minHeight: '100vh', transition: 'margin-left 0.25s ease, width 0.25s ease' }}>
-        <header
-          className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'}
-          style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}
-        >
+        <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}>
           <div className="d-flex align-items-center gap-2">
             <span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span>
             <h5 className="mb-0 fw-bold">{pagina.titulo}</h5>
