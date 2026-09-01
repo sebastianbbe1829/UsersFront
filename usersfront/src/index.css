@@ -9,15 +9,6 @@ body,
 
 /* ============================================================
    EXTINTORES — EXPERIENCIA MÓVIL
-   ============================================================
-   En Usuarios usamos una regla sencilla y estable:
-   - escritorio = tabla
-   - móvil = tarjetas
-
-   Las revisiones todavía nacen como tabla, por lo que aquí
-   convertimos únicamente la tabla que tiene 8 columnas en una
-   tarjeta por revisión. No dependemos de :has() sobre el menú
-   activo, que puede fallar cuando cambia la ruta o el layout.
    ============================================================ */
 @media (max-width: 767.98px) {
   /* ----------------------------------------------------------
@@ -121,46 +112,81 @@ body,
   }
 
   /* ----------------------------------------------------------
-     INVENTARIO: mantener las tarjetas con el mismo lenguaje
-     visual de UserTable y evitar cualquier desbordamiento.
+     INVENTARIO — misma jerarquía visual de UserTable
      ---------------------------------------------------------- */
-  .d-md-none .card {
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none {
+    width: 100%;
+  }
+
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card {
     width: 100%;
     max-width: 100%;
+    margin-bottom: .75rem;
     box-sizing: border-box;
     overflow: hidden;
+    border: 0 !important;
+    border-radius: .75rem;
+    box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075) !important;
   }
 
-  .d-md-none .card-body {
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card > .card-body {
+    padding: 1rem !important;
     min-width: 0;
   }
 
-  .d-md-none .card-body > div {
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card > .card-body > div {
     min-width: 0;
   }
 
-  .d-md-none .card-body .text-break,
-  .d-md-none .card-body .fw-bold,
-  .d-md-none .card-body div {
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .text-break,
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-bold,
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-semibold {
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
-  /*
-     El bloque de acciones del inventario debe comportarse como
-     UserTable: una acción debajo de otra. Nunca cuatro botones
-     en columnas estrechas.
-  */
-  .d-md-none .card-body .d-grid {
-    grid-template-columns: 1fr !important;
-    width: 100%;
+  /* Código del extintor como encabezado visual de la card. */
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-bold {
+    font-size: 1rem;
   }
 
-  .d-md-none .card-body .d-grid .btn {
+  /* Separación limpia entre datos, como en UserTable. */
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .text-muted.small {
+    font-size: .76rem;
+    line-height: 1.2;
+    margin-bottom: .15rem;
+  }
+
+  /* Acciones: siempre una columna; ningún botón se sale de la card. */
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: .4rem !important;
+    width: 100%;
+    margin-top: .75rem;
+  }
+
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
     min-width: 0;
     min-height: 42px;
+    padding: .45rem .75rem;
+    border-radius: .5rem;
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  /* Badges y alertas nunca fuerzan el ancho de la card. */
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .badge {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card hr {
+    margin: .65rem 0;
   }
 }
