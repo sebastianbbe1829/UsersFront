@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import { exportarExtintoresExcel, obtenerPayloadToken } from '../services/api'
@@ -16,8 +16,6 @@ function MainLayoutFixed() {
   const [extintoresAbiertos, setExtintoresAbiertos] = useState(() => location.pathname.includes('/extintores'))
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const [exportandoExtintores, setExportandoExtintores] = useState(false)
-  const [administracionMenuTop, setAdministracionMenuTop] = useState(null)
-  const administracionButtonRef = useRef(null)
   const primaryColor = config?.primary_color || '#0d6efd'
   const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
@@ -29,19 +27,9 @@ function MainLayoutFixed() {
     if (location.pathname.includes('/extintores')) setExtintoresAbiertos(true)
   }, [location.pathname])
 
-  useEffect(() => {
-    if (menuColapsado && administracionAbierta && administracionButtonRef.current) {
-      setAdministracionMenuTop(administracionButtonRef.current.getBoundingClientRect().top)
-    } else if (!menuColapsado) {
-      setAdministracionMenuTop(null)
-    }
-  }, [menuColapsado, administracionAbierta, extintoresAbiertos])
-
   const cambiarModoOscuro = () => { setModoOscuro((valor) => { const nuevoValor = !valor; localStorage.setItem('modo_oscuro', nuevoValor); window.dispatchEvent(new Event('modo-oscuro-cambiado')); return nuevoValor }) }
   const manejarCerrarSesion = () => { cerrarSesion(); navigate(tenant ? `/${tenant}/login` : '/login', { replace: true }) }
-  const manejarAdministracion = () => {
-    setAdministracionAbierta((valor) => !valor)
-  }
+  const manejarAdministracion = () => setAdministracionAbierta((valor) => !valor)
   const exportarExcel = async () => {
     try {
       setExportandoExtintores(true)
@@ -62,7 +50,7 @@ function MainLayoutFixed() {
   const obtenerTituloPagina = () => { const ruta = location.pathname; if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Usuarios' }; if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Roles' }; if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Permisos' }; if (ruta.includes('/extintores/items-revision')) return { icono: '🧯', titulo: 'Ítems de revisión' }; if (ruta.includes('/extintores/revisiones')) return { icono: '🧯', titulo: 'Revisiones de extintores' }; if (ruta.includes('/extintores/tipos')) return { icono: '🧯', titulo: 'Tipos de extintores' }; if (ruta.includes('/extintores')) return { icono: '🧯', titulo: 'Extintores' }; if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }; if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }; return { icono: '🏠', titulo: 'Panel de administración' } }
   const pagina = obtenerTituloPagina()
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
-  const menuColapsadoTopAdministracion = 70 + 48 + 48 + (extintoresAbiertos ? 4 * 48 : 0)
+
   return <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
     <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width .25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: menuColapsado ? 'visible' : 'hidden' }}>
       <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary" style={{ height: '70px' }}>{!menuColapsado && <div className="d-flex align-items-center gap-2 fw-bold text-nowrap">{config?.logo_url ? <img src={config.logo_url} alt="Logo" style={{ maxHeight: '36px', maxWidth: '48px', objectFit: 'contain' }} onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <span>👥</span>}<span>{appTitle}</span></div>}<button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button></div>
@@ -71,9 +59,9 @@ function MainLayoutFixed() {
         <button type="button" className={obtenerClaseMenu(location.pathname.includes('/extintores'))} onClick={() => setExtintoresAbiertos((valor) => !valor)} title="Extintores" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{extintoresAbiertos ? '▾' : '▸'}</span></>}</button>
         {extintoresAbiertos && !menuColapsado && <div className="ps-3"><NavLink to={`${rutaTenant}/extintores`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🧯</span><span className="ms-3">Inventario</span></NavLink><NavLink to={`${rutaTenant}/extintores/tipos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos de extintores"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span><span className="ms-3">Tipos de extintores</span></NavLink><NavLink to={`${rutaTenant}/extintores/revisiones`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Revisiones"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Revisiones</span></NavLink><NavLink to={`${rutaTenant}/extintores/items-revision`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ítems de revisión"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>☑️</span><span className="ms-3">Ítems de revisión</span></NavLink></div>}
         {extintoresAbiertos && menuColapsado && <div className="border-top border-secondary border-bottom border-secondary"><NavLink to={`${rutaTenant}/extintores`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🧯</span></NavLink><NavLink to={`${rutaTenant}/extintores/tipos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos de extintores"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🏷️</span></NavLink><NavLink to={`${rutaTenant}/extintores/revisiones`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Revisiones"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>📋</span></NavLink><NavLink to={`${rutaTenant}/extintores/items-revision`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ítems de revisión"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>☑️</span></NavLink></div>}
-        <button ref={administracionButtonRef} type="button" className={obtenerClaseMenu(['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta)))} onClick={manejarAdministracion} title="Administración" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{administracionAbierta ? '▾' : '▸'}</span></>}</button>
+        <button type="button" className={obtenerClaseMenu(['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta)))} onClick={manejarAdministracion} title="Administración" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{administracionAbierta ? '▾' : '▸'}</span></>}</button>
         {administracionAbierta && !menuColapsado && <div className="ps-3"><NavLink to={`${rutaTenant}/usuarios`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span><span className="ms-3">Usuarios</span></NavLink><NavLink to={`${rutaTenant}/roles`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛡️</span><span className="ms-3">Roles</span></NavLink><NavLink to={`${rutaTenant}/permisos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🔐</span><span className="ms-3">Permisos</span></NavLink></div>}
-        {administracionAbierta && menuColapsado && <div className="border-top border-secondary border-bottom border-secondary" style={{ position: 'fixed', left: '72px', top: `${administracionMenuTop ?? menuColapsadoTopAdministracion}px`, width: '190px', zIndex: 1100, boxShadow: '0 .25rem .75rem rgba(0,0,0,.25)' }}><NavLink to={`${rutaTenant}/usuarios`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>👥</span><span className="ms-3">Usuarios</span></NavLink><NavLink to={`${rutaTenant}/roles`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🛡️</span><span className="ms-3">Roles</span></NavLink><NavLink to={`${rutaTenant}/permisos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🔐</span><span className="ms-3">Permisos</span></NavLink></div>}
+        {administracionAbierta && menuColapsado && <div className="border-top border-secondary border-bottom border-secondary"><NavLink to={`${rutaTenant}/usuarios`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>👥</span></NavLink><NavLink to={`${rutaTenant}/roles`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🛡️</span></NavLink><NavLink to={`${rutaTenant}/permisos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos"><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🔐</span></NavLink></div>}
         {esSuper && <NavLink to={`${rutaTenant}/configuracion-ui`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Configuración de la interfaz"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>{!menuColapsado && <span className="ms-3">Configuración UI</span>}</NavLink>}
         {esSuper && <NavLink to={`${rutaTenant}/administracion-tenant`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración del tenant"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span>{!menuColapsado && <span className="ms-3">Administración del tenant</span>}</NavLink>}
       </nav>
