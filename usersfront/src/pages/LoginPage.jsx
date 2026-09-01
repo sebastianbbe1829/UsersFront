@@ -77,6 +77,10 @@ function LoginPage() {
       )
     }
 
+  const manejarRecuperacionPassword = () => {
+    if (!tenant) return
+    navigate(`/${tenant}/recuperar-password`)
+  }
 
   // ============================================================
   // RENDER
@@ -86,6 +90,7 @@ function LoginPage() {
     <Login
       mensajeSesion={mensajeSesion}
       onLogin={manejarLogin}
+      onForgotPassword={manejarRecuperacionPassword}
     />
   )
 }
