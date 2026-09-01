@@ -1,0 +1,59 @@
+/* Shared mobile layout safeguards for the extinguisher screens. */
+@media (max-width: 767.98px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .d-md-none {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .d-md-none .card,
+  .d-md-none .card-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .d-md-none .card {
+    overflow: hidden;
+  }
+
+  .d-md-none .row,
+  .d-md-none [class*='col-'] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .d-md-none .text-break,
+  .d-md-none .fw-bold,
+  .d-md-none .fw-semibold,
+  .d-md-none .badge {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .d-md-none .d-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .d-md-none .d-grid .btn {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

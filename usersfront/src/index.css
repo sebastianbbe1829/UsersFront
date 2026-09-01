@@ -5,53 +5,94 @@ body,
   padding: 0;
   width: 100%;
   min-height: 100%;
+  max-width: 100%;
 }
 
-/* ============================================================
-   EXTINTORES — EXPERIENCIA MÓVIL
-   ============================================================ */
+html,
+body {
+  overflow-x: hidden;
+}
+
 @media (max-width: 767.98px) {
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) { overflow: visible; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table { display: block; width: 100%; margin-bottom: 0; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > thead { display: none; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody { display: flex; flex-direction: column; gap: .75rem; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr { display: block; width: 100%; box-sizing: border-box; margin: 0; padding: .9rem; background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: .75rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; width: 100%; min-width: 0; box-sizing: border-box; padding: .55rem 0; border: 0; text-align: right; overflow-wrap: anywhere; word-break: break-word; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:not(:last-child) { border-bottom: 1px solid var(--bs-border-color-translucent); }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td::before { flex: 0 0 40%; color: var(--bs-secondary-color); font-size: .78rem; font-weight: 600; line-height: 1.25; text-align: left; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(1)::before { content: 'Fecha'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(2)::before { content: 'Extintor'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(3)::before { content: 'Revisión'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(4)::before { content: 'Resultado'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(5)::before { content: 'Hidrostática'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(6)::before { content: 'Próxima hidrostática'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(7)::before { content: 'Observaciones'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(8)::before { content: 'Acciones'; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child { display: block; padding-top: .75rem; text-align: left; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child::before { display: block; width: 100%; margin-bottom: .5rem; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child .btn { display: block; width: 100%; min-height: 44px; white-space: normal; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td[colspan] { display: block; text-align: center; }
-  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td[colspan]::before { display: none; }
+  /*
+   * Mobile cards must behave exactly like the stable UserTable pattern:
+   * one card per item, full available width, no horizontal canvas expansion.
+   */
+  .d-md-none {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
 
-  /* INVENTARIO — misma jerarquía visual de UserTable */
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none { width: 100%; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card { width: 100%; max-width: 100%; margin-bottom: .75rem; box-sizing: border-box; overflow: hidden; border: 0 !important; border-radius: .75rem; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card > .card-body { padding: 1rem !important; min-width: 0; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card > .card-body > div { min-width: 0; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .text-break,
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-bold,
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-semibold { overflow-wrap: anywhere; word-break: break-word; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .fw-bold { font-size: 1rem; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .text-muted.small { font-size: .76rem; line-height: 1.2; margin-bottom: .15rem; }
+  .d-md-none .card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+    border-radius: .375rem;
+  }
 
-  /* Acciones: estilo sólido y consistente con UserTable. */
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid { display: grid !important; grid-template-columns: 1fr !important; gap: .4rem !important; width: 100%; margin-top: .75rem; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn { display: flex; align-items: center; justify-content: center; width: 100%; min-width: 0; min-height: 42px; padding: .45rem .75rem; border-radius: .5rem; white-space: normal; overflow-wrap: anywhere; font-weight: 500; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn:nth-child(1) { color: #fff; background-color: var(--bs-primary); border-color: var(--bs-primary); }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn:nth-child(2) { color: #fff; background-color: var(--bs-info); border-color: var(--bs-info); }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn:nth-child(3) { color: #212529; background-color: var(--bs-warning); border-color: var(--bs-warning); }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn:nth-child(4) { color: #fff; background-color: var(--bs-danger); border-color: var(--bs-danger); }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .d-grid .btn:active { transform: translateY(1px); }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card .badge { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card hr { margin: .65rem 0; }
+  .d-md-none .card-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .d-md-none .row,
+  .d-md-none [class*="col-"] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .d-md-none .text-break,
+  .d-md-none .fw-bold,
+  .d-md-none .fw-semibold,
+  .d-md-none .small,
+  .d-md-none .badge {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Mobile actions: same solid Bootstrap colors used by UserTable. */
+  .d-md-none .d-grid {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .d-md-none .d-grid .btn {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* Prevent long labels/values from forcing the viewport wider. */
+  .d-md-none .btn,
+  .d-md-none .form-control,
+  .d-md-none .form-select,
+  .d-md-none input,
+  .d-md-none select,
+  .d-md-none textarea {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Extinguisher pages use compact cards rather than transformed tables. */
+  .d-md-none > .card {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  /* Never allow an action row to create a wider-than-viewport canvas. */
+  .d-md-none .btn-group {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
 }
