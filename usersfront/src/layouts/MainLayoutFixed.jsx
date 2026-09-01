@@ -36,6 +36,7 @@ function MainLayoutFixed() {
     }
 
     let slot = null
+    let grupoAcciones = null
 
     const buscarContenedor = () => {
       const encabezado = document.querySelector('section .d-flex.flex-column.flex-md-row.justify-content-between.align-items-md-center.gap-2.mb-4')
@@ -44,12 +45,21 @@ function MainLayoutFixed() {
       const botonNuevo = encabezado.querySelector('button.btn.btn-primary')
       if (!botonNuevo) return
 
-      slot = encabezado.querySelector('[data-extinguishers-export-slot]')
+      grupoAcciones = encabezado.querySelector('[data-extinguishers-action-group]')
+      if (!grupoAcciones) {
+        grupoAcciones = document.createElement('div')
+        grupoAcciones.setAttribute('data-extinguishers-action-group', 'true')
+        grupoAcciones.className = 'd-flex align-items-center gap-2 flex-wrap'
+        botonNuevo.parentNode.insertBefore(grupoAcciones, botonNuevo)
+        grupoAcciones.appendChild(botonNuevo)
+      }
+
+      slot = grupoAcciones.querySelector('[data-extinguishers-export-slot]')
       if (!slot) {
         slot = document.createElement('div')
         slot.setAttribute('data-extinguishers-export-slot', 'true')
         slot.className = 'd-flex align-items-center'
-        botonNuevo.insertAdjacentElement('afterend', slot)
+        grupoAcciones.appendChild(slot)
       }
 
       setExportContainer(slot)
@@ -64,6 +74,11 @@ function MainLayoutFixed() {
     return () => {
       observer.disconnect()
       if (slot?.parentNode) slot.parentNode.removeChild(slot)
+      if (grupoAcciones?.parentNode) {
+        const botonNuevo = grupoAcciones.querySelector('button.btn.btn-primary')
+        if (botonNuevo) grupoAcciones.parentNode.insertBefore(botonNuevo, grupoAcciones)
+        grupoAcciones.parentNode.removeChild(grupoAcciones)
+      }
       setExportContainer(null)
     }
   }, [enInventarioExtintores])
