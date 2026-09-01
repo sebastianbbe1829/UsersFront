@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 
-function Login({ mensajeSesion, onLogin }) {
+function Login({ mensajeSesion, onLogin, onForgotPassword }) {
   const { tenant } = useAuth()
   const { config } = useTenantConfig()
 
@@ -108,7 +108,7 @@ function Login({ mensajeSesion, onLogin }) {
               {erroresValidacion.usuario && <div className="invalid-feedback d-block">{erroresValidacion.usuario}</div>}
             </div>
 
-            <div className="mb-3">
+            <div className="mb-2">
               <label className="form-label fw-semibold mb-1">Contraseña</label>
               <div className="input-group">
                 <input
@@ -126,6 +126,14 @@ function Login({ mensajeSesion, onLogin }) {
               </div>
               {erroresValidacion.password && <div className="invalid-feedback d-block">{erroresValidacion.password}</div>}
             </div>
+
+            {!esSuper && onForgotPassword && (
+              <div className="text-end mb-3">
+                <button type="button" className="btn btn-link btn-sm p-0 text-decoration-none" onClick={onForgotPassword} disabled={cargando}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
 
             <div className="mb-3">
               <div className="form-check">

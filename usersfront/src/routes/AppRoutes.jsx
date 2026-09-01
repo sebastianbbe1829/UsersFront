@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import MainLayout from '../layouts/MainLayoutFixed'
 import LoginPage from '../pages/LoginPage'
+import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
@@ -35,6 +36,7 @@ function AppRoutes() {
   return <Routes>
     <Route path="/:tenant/users/activate/:dni/:token" element={<ActivateUser />} />
     <Route path="/:tenant/login" element={<LoginPage />} />
+    <Route path="/:tenant/recuperar-password" element={<PasswordRecoveryPage />} />
     <Route path="/:tenant" element={<RutasProtegidas />}>
       <Route index element={<WelcomePage />} />
       <Route path="usuarios" element={<UsersPage />} />
