@@ -5,6 +5,12 @@ import {
   validarOtpActivacion,
 } from '../services/activationApi'
 
+const obtenerFechaUTC = (valor) => {
+  if (!valor) return null
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(valor)) return new Date(valor)
+  return new Date(`${valor}Z`)
+}
+
 function ActivateUser() {
   const { tenant, dni, token } = useParams()
 
@@ -45,8 +51,9 @@ function ActivateUser() {
     if (!expiresAt) return undefined
 
     const actualizarContador = () => {
+      const fechaExpiracion = obtenerFechaUTC(expiresAt)
       const restante = Math.max(
-        Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000),
+        Math.ceil((fechaExpiracion.getTime() - Date.now()) / 1000),
         0
       )
       setSegundosRestantes(restante)
