@@ -1,0 +1,26 @@
+/* Shared mobile layout rules for the extinguisher module.
+ * Keep these rules scoped through the mobile card containers already used by
+ * the pages so the desktop tables remain unchanged.
+ */
+@media (max-width: 767.98px) {
+  .extinguisher-mobile-card,
+  .extinguisher-mobile-card * {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .extinguisher-mobile-card {
+    width: 100%;
+    overflow: hidden;
+    border-radius: .375rem;
+  }
+
+  .extinguisher-mobile-card .btn {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
