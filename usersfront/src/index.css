@@ -8,90 +8,159 @@ body,
 }
 
 /* ============================================================
-   Módulo de extintores — experiencia móvil
-   La pantalla principal, tipos e ítems ya renderizan tarjetas.
-   Esta regla transforma la tabla histórica de revisiones en
-   tarjetas sin modificar su comportamiento en escritorio.
+   EXTINTORES — EXPERIENCIA MÓVIL
+   ============================================================
+   En Usuarios usamos una regla sencilla y estable:
+   - escritorio = tabla
+   - móvil = tarjetas
+
+   Las revisiones todavía nacen como tabla, por lo que aquí
+   convertimos únicamente la tabla que tiene 8 columnas en una
+   tarjeta por revisión. No dependemos de :has() sobre el menú
+   activo, que puede fallar cuando cambia la ruta o el layout.
    ============================================================ */
 @media (max-width: 767.98px) {
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive {
+  /* ----------------------------------------------------------
+     REVISIONES: tabla de 8 columnas -> tarjetas
+     ---------------------------------------------------------- */
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) {
     overflow: visible;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table {
     display: block;
     width: 100%;
+    margin-bottom: 0;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > thead {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > thead {
     display: none;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: .75rem;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr {
     display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: .9rem;
     background: var(--bs-body-bg);
     border: 1px solid var(--bs-border-color);
     border-radius: .75rem;
-    padding: .75rem;
     box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .075);
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: .75rem;
     width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: .55rem 0;
     border: 0;
     text-align: right;
     overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:not(:last-child) {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:not(:last-child) {
     border-bottom: 1px solid var(--bs-border-color-translucent);
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td::before {
-    flex: 0 0 42%;
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td::before {
+    flex: 0 0 40%;
     color: var(--bs-secondary-color);
     font-size: .78rem;
     font-weight: 600;
+    line-height: 1.25;
     text-align: left;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(1)::before { content: 'Fecha'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(2)::before { content: 'Extintor'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(3)::before { content: 'Revisión'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(4)::before { content: 'Resultado'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(5)::before { content: 'Hidrostática'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(6)::before { content: 'Próxima hidrostática'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(7)::before { content: 'Observaciones'; }
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:nth-child(8)::before { content: 'Acciones'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(1)::before { content: 'Fecha'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(2)::before { content: 'Extintor'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(3)::before { content: 'Revisión'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(4)::before { content: 'Resultado'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(5)::before { content: 'Hidrostática'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(6)::before { content: 'Próxima hidrostática'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(7)::before { content: 'Observaciones'; }
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:nth-child(8)::before { content: 'Acciones'; }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:last-child {
-    justify-content: stretch;
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child {
+    display: block;
     padding-top: .75rem;
+    text-align: left;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td:last-child .btn {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child::before {
+    display: block;
+    width: 100%;
+    margin-bottom: .5rem;
+  }
+
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td:last-child .btn {
+    display: block;
     width: 100%;
     min-height: 44px;
-    font-size: 1rem;
+    white-space: normal;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td[colspan] {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td[colspan] {
     display: block;
     text-align: center;
   }
 
-  body:has(a[href$="/extintores/revisiones"].active) .table-responsive > table > tbody > tr > td[colspan]::before {
+  .table-responsive:has(table > tbody > tr > td:nth-child(8)) > table > tbody > tr > td[colspan]::before {
     display: none;
+  }
+
+  /* ----------------------------------------------------------
+     INVENTARIO: mantener las tarjetas con el mismo lenguaje
+     visual de UserTable y evitar cualquier desbordamiento.
+     ---------------------------------------------------------- */
+  .d-md-none .card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .d-md-none .card-body {
+    min-width: 0;
+  }
+
+  .d-md-none .card-body > div {
+    min-width: 0;
+  }
+
+  .d-md-none .card-body .text-break,
+  .d-md-none .card-body .fw-bold,
+  .d-md-none .card-body div {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /*
+     El bloque de acciones del inventario debe comportarse como
+     UserTable: una acción debajo de otra. Nunca cuatro botones
+     en columnas estrechas.
+  */
+  .d-md-none .card-body .d-grid {
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .d-md-none .card-body .d-grid .btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 42px;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
