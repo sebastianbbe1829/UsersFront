@@ -1,9 +1,8 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
-import { exportarExtintoresExcel, obtenerPayloadToken } from '../services/api'
+import { obtenerPayloadToken } from '../services/api'
 
 function MainLayoutFixed() {
   const { usuarioLogueado, cerrarSesion, tenant, token } = useAuth()
@@ -16,12 +15,9 @@ function MainLayoutFixed() {
   const [administracionAbierta, setAdministracionAbierta] = useState(() => ['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta)))
   const [extintoresAbiertos, setExtintoresAbiertos] = useState(() => location.pathname.includes('/extintores'))
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
-  const [exportandoExtintores, setExportandoExtintores] = useState(false)
-  const [exportContainer, setExportContainer] = useState(null)
   const primaryColor = config?.primary_color || '#0d6efd'
   const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
-  const enInventarioExtintores = location.pathname.endsWith('/extintores')
   const rutaTenant = tenant ? `/${tenant}` : ''
 
   useEffect(() => {
@@ -29,84 +25,29 @@ function MainLayoutFixed() {
     if (location.pathname.includes('/extintores')) setExtintoresAbiertos(true)
   }, [location.pathname])
 
-  useEffect(() => {
-    if (!enInventarioExtintores) {
-      setExportContainer(null)
-      return undefined
-    }
-
-    let slot = null
-    let grupoAcciones = null
-
-    const buscarContenedor = () => {
-      const encabezado = document.querySelector('section .d-flex.flex-column.flex-md-row.justify-content-between.align-items-md-center.gap-2.mb-4')
-      if (!encabezado) return
-
-      const botonNuevo = encabezado.querySelector('button.btn.btn-primary')
-      if (!botonNuevo) return
-
-      grupoAcciones = encabezado.querySelector('[data-extinguishers-action-group]')
-      if (!grupoAcciones) {
-        grupoAcciones = document.createElement('div')
-        grupoAcciones.setAttribute('data-extinguishers-action-group', 'true')
-        grupoAcciones.className = 'd-flex align-items-center gap-2 flex-wrap'
-        botonNuevo.parentNode.insertBefore(grupoAcciones, botonNuevo)
-        grupoAcciones.appendChild(botonNuevo)
-      }
-
-      slot = grupoAcciones.querySelector('[data-extinguishers-export-slot]')
-      if (!slot) {
-        slot = document.createElement('div')
-        slot.setAttribute('data-extinguishers-export-slot', 'true')
-        slot.className = 'd-flex align-items-center'
-        grupoAcciones.appendChild(slot)
-      }
-
-      setExportContainer(slot)
-    }
-
-    buscarContenedor()
-
-    const observer = new MutationObserver(buscarContenedor)
-    const section = document.querySelector('main section')
-    if (section) observer.observe(section, { childList: true, subtree: true })
-
-    return () => {
-      observer.disconnect()
-      if (slot?.parentNode) slot.parentNode.removeChild(slot)
-      if (grupoAcciones?.parentNode) {
-        const botonNuevo = grupoAcciones.querySelector('button.btn.btn-primary')
-        if (botonNuevo) grupoAcciones.parentNode.insertBefore(botonNuevo, grupoAcciones)
-        grupoAcciones.parentNode.removeChild(grupoAcciones)
-      }
-      setExportContainer(null)
-    }
-  }, [enInventarioExtintores])
-
-  const cambiarModoOscuro = () => { setModoOscuro((valor) => { const nuevoValor = !valor; localStorage.setItem('modo_oscuro', nuevoValor); window.dispatchEvent(new Event('modo-oscuro-cambiado')); return nuevoValor }) }
+  const cambiarModoOscuro = () => {
+    setModoOscuro((valor) => {
+      const nuevoValor = !valor
+      localStorage.setItem('modo_oscuro', nuevoValor)
+      window.dispatchEvent(new Event('modo-oscuro-cambiado'))
+      return nuevoValor
+    })
+  }
   const manejarCerrarSesion = () => { cerrarSesion(); navigate(tenant ? `/${tenant}/login` : '/login', { replace: true }) }
   const manejarAdministracion = () => setAdministracionAbierta((valor) => !valor)
-  const exportarExcel = async () => {
-    try {
-      setExportandoExtintores(true)
-      const blob = await exportarExtintoresExcel(token)
-      const url = window.URL.createObjectURL(blob)
-      const enlace = document.createElement('a')
-      enlace.href = url
-      enlace.download = `extintores_${new Date().toISOString().slice(0, 10)}.xlsx`
-      document.body.appendChild(enlace)
-      enlace.click()
-      enlace.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (error) {
-      if (error.status === 401) return manejarCerrarSesion()
-      console.error('No fue posible exportar los extintores:', error)
-    } finally { setExportandoExtintores(false) }
+  const obtenerTituloPagina = () => {
+    const ruta = location.pathname
+    if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Usuarios' }
+    if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Roles' }
+    if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Permisos' }
+    if (ruta.includes('/extintores/items-revision')) return { icono: '🧯', titulo: 'Ítems de revisión' }
+    if (ruta.includes('/extintores/revisiones')) return { icono: '🧯', titulo: 'Revisiones de extintores' }
+    if (ruta.includes('/extintores/tipos')) return { icono: '🧯', titulo: 'Tipos de extintores' }
+    if (ruta.includes('/extintores')) return { icono: '🧯', titulo: 'Extintores' }
+    if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
+    if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
+    return { icono: '🏠', titulo: 'Panel de administración' }
   }
-  const botonExportarExcel = enInventarioExtintores && exportContainer
-    ? createPortal(<button type="button" className="btn btn-outline-success btn-sm" onClick={exportarExcel} disabled={exportandoExtintores} title="Exportar todos los extintores a Excel">{exportandoExtintores ? 'Exportando...' : '📊 Exportar Excel'}</button>, exportContainer)
-    : null
-  const obtenerTituloPagina = () => { const ruta = location.pathname; if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Usuarios' }; if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Roles' }; if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Permisos' }; if (ruta.includes('/extintores/items-revision')) return { icono: '🧯', titulo: 'Ítems de revisión' }; if (ruta.includes('/extintores/revisiones')) return { icono: '🧯', titulo: 'Revisiones de extintores' }; if (ruta.includes('/extintores/tipos')) return { icono: '🧯', titulo: 'Tipos de extintores' }; if (ruta.includes('/extintores')) return { icono: '🧯', titulo: 'Extintores' }; if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }; if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }; return { icono: '🏠', titulo: 'Panel de administración' } }
   const pagina = obtenerTituloPagina()
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
 
@@ -127,10 +68,9 @@ function MainLayoutFixed() {
       <div className="position-absolute bottom-0 start-0 end-0"><button type="button" className="btn text-white border-0 rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: secondaryColor }} onClick={cambiarModoOscuro} title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>{modoOscuro ? '☀️' : '🌙'}</span>{!menuColapsado && <span className="ms-3">{modoOscuro ? 'Modo claro' : 'Modo oscuro'}</span>}</button><button type="button" className="btn text-white rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: primaryColor }} onClick={manejarCerrarSesion} title="Cerrar sesión"><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>🚪</span>{!menuColapsado && <span className="ms-3">Cerrar sesión</span>}</button></div>
     </aside>
     <main style={{ marginLeft: menuColapsado ? '72px' : '250px', width: `calc(100% - ${menuColapsado ? '72px' : '250px'})`, minHeight: '100vh', transition: 'margin-left .25s ease, width .25s ease' }}>
-      <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}><div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div><div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px' }}>👤</span><div className="d-none d-sm-block text-end"><div className="fw-semibold text-truncate" style={{ maxWidth: '180px' }}>{usuarioLogueado.name}</div>{esSuper && <small className="fw-semibold" style={{ color: primaryColor }}>SUPER</small></div></div>}<div className="d-flex align-items-center gap-1" title="Sesión activa"><span style={{ fontSize: '12px' }}>🟢</span><small className="text-muted">Activa</small></div></div></header>
+      <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}><div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div><div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px' }}>👤</span><div className="d-none d-sm-block text-end"><div className="fw-semibold text-truncate" style={{ maxWidth: '180px' }}>{usuarioLogueado.name}</div>{esSuper && <small className="fw-semibold" style={{ color: primaryColor }}>SUPER</small>}</div></div>}<div className="d-flex align-items-center gap-1" title="Sesión activa"><span style={{ fontSize: '12px' }}>🟢</span><small className="text-muted">Activa</small></div></div></header>
       <section className="p-4"><Outlet /></section>
     </main>
-    {botonExportarExcel}
   </div>
 }
 
