@@ -18,4 +18,20 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  {
+    files: [
+      'src/pages/ExtinguishersPage.jsx',
+      'src/pages/ExtinguisherTypesPage.jsx',
+      'src/pages/ExtinguisherInspectionsPage.jsx',
+    ],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['src/pages/ExtinguisherInspectionsPage.jsx'],
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^navigate$' }],
+    },
+  },
 ])

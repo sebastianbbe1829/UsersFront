@@ -1,240 +1,134 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import {
-  actualizarExtintor,
-  crearExtintor,
-  eliminarExtintor,
-  obtenerExtintores,
-  obtenerTiposExtintor,
-} from '../services/api'
+import { actualizarExtintor, crearExtintor, eliminarExtintor, obtenerExtintores, obtenerRevisiones, obtenerTiposExtintor } from '../services/api'
 
-const formularioInicial = {
-  code: '',
-  extinguisher_type_id: '',
-  capacity: '',
-  location: '',
-  last_recharge_date: '',
-  next_recharge_date: '',
-  last_hydrostatic_test_date: '',
-  next_hydrostatic_test_date: '',
-  status: 'ACTIVE',
-  is_stock: false,
-}
+const FORM_INICIAL = { code: '', extinguisher_type_id: '', capacity: '', location: '', last_recharge_date: '', next_recharge_date: '', last_hydrostatic_test_date: '', next_hydrostatic_test_date: '', status: 'ACTIVE', is_stock: false }
+const hoy = () => new Date()
 
-const prepararDatos = (formulario) => Object.fromEntries(
-  Object.entries(formulario).map(([campo, valor]) => [campo, valor === '' ? null : valor])
+const Modal = ({ title, children, footer, onClose, large = false }) => (
+  <div className="modal d-block" role="dialog" aria-modal="true" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }}>
+    <div className={`modal-dialog modal-dialog-centered ${large ? 'modal-lg' : ''}`} style={{ width: 'calc(100% - 2rem)', margin: '1rem auto' }}>
+      <div className="modal-content"><div className="modal-header"><h5 className="modal-title">{title}</h5><button type="button" className="btn-close" onClick={onClose} aria-label="Cerrar" /></div><div className="modal-body">{children}</div>{footer && <div className="modal-footer">{footer}</div>}</div>
+    </div>
+  </div>
 )
+
+const alertaRecarga = (fecha) => {
+  if (!fecha) return null
+  const fechaRecarga = new Date(`${fecha}T00:00:00`)
+  const actual = hoy(); actual.setHours(0, 0, 0, 0)
+  const dias = Math.ceil((fechaRecarga - actual) / 86400000)
+  if (dias < 0) return { clase: 'text-bg-danger', texto: 'Vencida', dias }
+  if (dias === 0) return { clase: 'text-bg-danger', texto: 'Hoy', dias }
+  if (dias <= 7) return { clase: 'text-bg-warning', texto: `En ${dias} día${dias === 1 ? '' : 's'}`, dias }
+  return { clase: 'text-bg-success', texto: 'Normal', dias }
+}
 
 function ExtinguishersPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const [extintores, setExtintores] = useState([])
-  const [tiposExtintor, setTiposExtintor] = useState([])
+  const [tipos, setTipos] = useState([])
+  const [revisiones, setRevisiones] = useState([])
   const [cargando, setCargando] = useState(true)
-  const [cargandoTipos, setCargandoTipos] = useState(true)
   const [guardando, setGuardando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [formulario, setFormulario] = useState(FORM_INICIAL)
   const [editando, setEditando] = useState(null)
-  const [extintorEliminando, setExtintorEliminando] = useState(null)
-  const [mostrarFormulario, setMostrarFormulario] = useState(false)
-  const [formulario, setFormulario] = useState(formularioInicial)
+  const [eliminandoItem, setEliminandoItem] = useState(null)
+  const [verItem, setVerItem] = useState(null)
+  const [mostrarModal, setMostrarModal] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [tipoFiltro, setTipoFiltro] = useState('todos')
   const [estadoFiltro, setEstadoFiltro] = useState('todos')
   const [stockFiltro, setStockFiltro] = useState('todos')
-  const [extintoresPorPagina, setExtintoresPorPagina] = useState(10)
-  const [paginaActual, setPaginaActual] = useState(1)
+  const [porPagina, setPorPagina] = useState(10)
+  const [pagina, setPagina] = useState(1)
 
-  const cargarExtintores = useCallback(async () => {
+  const cargar = useCallback(async () => {
     if (!token) return
     try {
       setCargando(true)
-      const resultado = await obtenerExtintores(token)
-      setExtintores(Array.isArray(resultado) ? resultado : [])
+      const [ext, cat, rev] = await Promise.all([obtenerExtintores(token), obtenerTiposExtintor(token), obtenerRevisiones(token)])
+      setExtintores(Array.isArray(ext) ? ext : [])
+      setTipos(Array.isArray(cat) ? cat.filter((x) => x.active) : [])
+      setRevisiones(Array.isArray(rev) ? rev : [])
     } catch (error) {
       if (error.status === 401) return manejarSesionExpirada()
       setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los extintores.' })
     } finally { setCargando(false) }
   }, [token, manejarSesionExpirada])
 
-  const cargarTiposExtintor = useCallback(async () => {
-    if (!token) return
-    try {
-      setCargandoTipos(true)
-      const resultado = await obtenerTiposExtintor(token)
-      setTiposExtintor(Array.isArray(resultado) ? resultado.filter((tipo) => tipo.active) : [])
-    } catch (error) {
-      if (error.status === 401) return manejarSesionExpirada()
-      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los tipos de extintor.' })
-    } finally { setCargandoTipos(false) }
-  }, [token, manejarSesionExpirada])
+  useEffect(() => { cargar() }, [cargar])
 
-  useEffect(() => { cargarExtintores(); cargarTiposExtintor() }, [cargarExtintores, cargarTiposExtintor])
-
-  const extintoresFiltrados = useMemo(() => {
-    const texto = busqueda.toLowerCase().trim()
-    return extintores.filter((extintor) => {
-      const coincideBusqueda = !texto ||
-        String(extintor.code ?? '').toLowerCase().includes(texto) ||
-        String(extintor.capacity ?? '').toLowerCase().includes(texto) ||
-        String(extintor.location ?? '').toLowerCase().includes(texto) ||
-        String(extintor.extinguisher_type?.name ?? '').toLowerCase().includes(texto)
-      const coincideTipo = tipoFiltro === 'todos' || String(extintor.extinguisher_type_id) === String(tipoFiltro)
-      const coincideEstado = estadoFiltro === 'todos' ||
-        (estadoFiltro === 'activos' && extintor.active) ||
-        (estadoFiltro === 'inactivos' && !extintor.active)
-      const coincideStock = stockFiltro === 'todos' ||
-        (stockFiltro === 'stock' && extintor.is_stock) ||
-        (stockFiltro === 'ubicados' && !extintor.is_stock)
-      return coincideBusqueda && coincideTipo && coincideEstado && coincideStock
+  const filtrados = useMemo(() => {
+    const texto = busqueda.trim().toLowerCase()
+    return extintores.filter((e) => {
+      const textoOk = !texto || [e.code, e.capacity, e.location, e.extinguisher_type?.name].some((v) => String(v ?? '').toLowerCase().includes(texto))
+      const tipoOk = tipoFiltro === 'todos' || String(e.extinguisher_type_id) === String(tipoFiltro)
+      const estadoOk = estadoFiltro === 'todos' || (estadoFiltro === 'activos' && e.active) || (estadoFiltro === 'inactivos' && !e.active)
+      const stockOk = stockFiltro === 'todos' || (stockFiltro === 'stock' && e.is_stock) || (stockFiltro === 'ubicados' && !e.is_stock)
+      return textoOk && tipoOk && estadoOk && stockOk
     })
   }, [extintores, busqueda, tipoFiltro, estadoFiltro, stockFiltro])
 
-  const totalPaginas = Math.ceil(extintoresFiltrados.length / extintoresPorPagina)
-  const paginaSegura = Math.min(paginaActual, Math.max(totalPaginas, 1))
-  const indiceInicial = (paginaSegura - 1) * extintoresPorPagina
-  const extintoresPagina = extintoresFiltrados.slice(indiceInicial, indiceInicial + extintoresPorPagina)
-  const paginas = Array.from({ length: totalPaginas }, (_, indice) => indice + 1)
-  const activos = extintores.filter((item) => item.active).length
-  const inactivos = extintores.filter((item) => !item.active).length
-  const mostrandoDesde = extintoresFiltrados.length === 0 ? 0 : indiceInicial + 1
-  const mostrandoHasta = Math.min(indiceInicial + extintoresPorPagina, extintoresFiltrados.length)
+  const totalPaginas = Math.ceil(filtrados.length / porPagina)
+  const paginaSegura = Math.min(pagina, Math.max(totalPaginas, 1))
+  const visibles = filtrados.slice((paginaSegura - 1) * porPagina, paginaSegura * porPagina)
+  const desde = filtrados.length ? (paginaSegura - 1) * porPagina + 1 : 0
+  const hasta = Math.min(paginaSegura * porPagina, filtrados.length)
+  const activos = extintores.filter((x) => x.active).length
+  const inactivos = extintores.filter((x) => !x.active).length
 
-  const cambiarBusqueda = (valor) => { setBusqueda(valor); setPaginaActual(1) }
-  const cambiarTipo = (valor) => { setTipoFiltro(valor); setPaginaActual(1) }
-  const cambiarEstado = (valor) => { setEstadoFiltro(valor); setPaginaActual(1) }
-  const cambiarStock = (valor) => { setStockFiltro(valor); setPaginaActual(1) }
-  const cambiarCantidad = (valor) => { setExtintoresPorPagina(Number(valor)); setPaginaActual(1) }
-  const cambiarPagina = (pagina) => { if (pagina >= 1 && pagina <= totalPaginas) setPaginaActual(pagina) }
-  const limpiarFiltros = () => { setBusqueda(''); setTipoFiltro('todos'); setEstadoFiltro('todos'); setStockFiltro('todos'); setPaginaActual(1) }
-
-  const abrirNuevo = () => {
-    setEditando(null)
-    setFormulario({ ...formularioInicial })
-    setMensaje(null)
-    setMostrarFormulario(true)
-  }
-
-  const cancelar = () => {
-    if (guardando) return
-    setEditando(null)
-    setFormulario({ ...formularioInicial })
-    setMostrarFormulario(false)
-  }
-
-  const editarExtintor = (extintor) => {
-    setEditando(extintor.id)
-    setFormulario({
-      code: extintor.code || '',
-      extinguisher_type_id: extintor.extinguisher_type_id ? String(extintor.extinguisher_type_id) : '',
-      capacity: extintor.capacity || '',
-      location: extintor.location || '',
-      last_recharge_date: extintor.last_recharge_date || '',
-      next_recharge_date: extintor.next_recharge_date || '',
-      last_hydrostatic_test_date: extintor.last_hydrostatic_test_date || '',
-      next_hydrostatic_test_date: extintor.next_hydrostatic_test_date || '',
-      status: extintor.status || 'ACTIVE',
-      is_stock: Boolean(extintor.is_stock),
-    })
-    setMensaje(null)
-    setMostrarFormulario(true)
-  }
-
-  const cambiarCampo = (event) => {
-    const { name, value, type, checked } = event.target
-    setFormulario((actual) => ({ ...actual, [name]: type === 'checkbox' ? checked : value }))
-  }
+  const abrirNuevo = () => { setEditando(null); setFormulario({ ...FORM_INICIAL }); setMensaje(null); setMostrarModal(true) }
+  const abrirEditar = (e) => { setEditando(e.id); setFormulario({ ...FORM_INICIAL, code: e.code || '', extinguisher_type_id: e.extinguisher_type_id ? String(e.extinguisher_type_id) : '', capacity: e.capacity || '', location: e.location || '', last_recharge_date: e.last_recharge_date || '', next_recharge_date: e.next_recharge_date || '', last_hydrostatic_test_date: e.last_hydrostatic_test_date || '', next_hydrostatic_test_date: e.next_hydrostatic_test_date || '', status: e.status || 'ACTIVE', is_stock: Boolean(e.is_stock) }); setMensaje(null); setMostrarModal(true) }
+  const cerrarModal = () => { if (guardando) return; setMostrarModal(false); setEditando(null); setFormulario({ ...FORM_INICIAL }) }
+  const cambiarCampo = (event) => { const { name, value, type, checked } = event.target; setFormulario((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value })) }
 
   const guardar = async (event) => {
     event.preventDefault()
     try {
       setGuardando(true)
-      const datos = { ...prepararDatos(formulario), extinguisher_type_id: Number(formulario.extinguisher_type_id) }
+      const datos = { ...formulario, extinguisher_type_id: Number(formulario.extinguisher_type_id) }
       const resultado = editando ? await actualizarExtintor(editando, datos, token) : await crearExtintor(datos, token)
-      setExtintores((actuales) => editando
-        ? actuales.map((item) => item.id === resultado.id ? resultado : item)
-        : [...actuales, resultado])
+      setExtintores((actuales) => editando ? actuales.map((x) => x.id === resultado.id ? resultado : x) : [...actuales, resultado])
+      setMostrarModal(false); setEditando(null); setFormulario({ ...FORM_INICIAL })
       setMensaje({ tipo: 'success', texto: editando ? 'Extintor actualizado correctamente.' : 'Extintor creado correctamente.' })
-      setMostrarFormulario(false)
-      setEditando(null)
-      setFormulario({ ...formularioInicial })
-    } catch (error) {
-      if (error.status === 401) return manejarSesionExpirada()
-      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el extintor.' })
-    } finally { setGuardando(false) }
+    } catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el extintor.' }) } finally { setGuardando(false) }
   }
 
-  const confirmarDesactivacion = async () => {
-    if (!extintorEliminando) return
+  const confirmarEliminacion = async () => {
+    if (!eliminandoItem) return
     try {
-      setEliminando(true)
-      await eliminarExtintor(extintorEliminando.id, token)
-      setExtintores((actuales) => actuales.map((item) => item.id === extintorEliminando.id
-        ? { ...item, active: false, status: 'INACTIVE' }
-        : item))
-      setExtintorEliminando(null)
-      setMensaje({ tipo: 'success', texto: 'Extintor desactivado correctamente.' })
-    } catch (error) {
-      if (error.status === 401) return manejarSesionExpirada()
-      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible desactivar el extintor.' })
-    } finally { setEliminando(false) }
+      setEliminando(true); await eliminarExtintor(eliminandoItem.id, token)
+      setExtintores((actuales) => actuales.map((x) => x.id === eliminandoItem.id ? { ...x, active: false, status: 'INACTIVE' } : x))
+      setEliminandoItem(null); setMensaje({ tipo: 'success', texto: 'Extintor desactivado correctamente.' })
+    } catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible desactivar el extintor.' }) } finally { setEliminando(false) }
   }
 
-  const campos = [
-    ['code', 'Código', 'text'],
-    ['capacity', 'Capacidad', 'text'],
-    ['location', 'Ubicación', 'text'],
-    ['last_recharge_date', 'Última recarga', 'date'],
-    ['next_recharge_date', 'Próxima recarga', 'date'],
-    ['last_hydrostatic_test_date', 'Última prueba hidrostática', 'date'],
-    ['next_hydrostatic_test_date', 'Próxima prueba hidrostática', 'date'],
-  ]
-
+  const abrirRevisiones = (e) => navigate(`../extintores/revisiones?extinguisher_id=${e.id}`)
+  const ultimaRevision = (id) => revisiones.filter((r) => Number(r.extinguisher_id) === Number(id)).sort((a, b) => String(b.inspection_date).localeCompare(String(a.inspection_date)))[0]
+  const abrirDetalle = (e) => setVerItem(e)
   const hayFiltros = Boolean(busqueda || tipoFiltro !== 'todos' || estadoFiltro !== 'todos' || stockFiltro !== 'todos')
+  const limpiarFiltros = () => { setBusqueda(''); setTipoFiltro('todos'); setEstadoFiltro('todos'); setStockFiltro('todos'); setPagina(1) }
 
-  return (
-    <>
-      <div className="mb-4">
-        <h2 className="fw-bold mb-1">Gestión de Extintores</h2>
-        <p className="text-muted mb-0">Inventario, ubicación, recargas y pruebas hidrostáticas.</p>
-      </div>
+  return <div>
+    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4"><div><h2 className="fw-bold mb-1">Gestión de Extintores</h2><p className="text-muted mb-0">Inventario, ubicación, recargas, revisiones y pruebas hidrostáticas.</p></div><button type="button" className="btn btn-primary" onClick={abrirNuevo}>＋ Nuevo extintor</button></div>
+    {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
+    {cargando ? <div className="card border-0 shadow-sm"><div className="card-body text-center py-5"><div className="spinner-border text-primary mb-2" role="status" /><div className="text-muted">Cargando extintores...</div></div></div> : <>
+      <div className="card shadow-sm border-0 mb-2"><div className="card-body py-2 px-3"><div className="row g-2 align-items-end"><div className="col-12 col-md-5"><label className="form-label fw-semibold small mb-1">Buscar extintor</label><input className="form-control form-control-sm" placeholder="Código, tipo, capacidad o ubicación..." value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setPagina(1) }} /></div><div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Tipo</label><select className="form-select form-select-sm" value={tipoFiltro} onChange={(e) => { setTipoFiltro(e.target.value); setPagina(1) }}><option value="todos">Todos</option>{tipos.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Estado</label><select className="form-select form-select-sm" value={estadoFiltro} onChange={(e) => { setEstadoFiltro(e.target.value); setPagina(1) }}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></div><div className="col-6 col-md-1"><label className="form-label fw-semibold small mb-1">Stock</label><select className="form-select form-select-sm" value={stockFiltro} onChange={(e) => { setStockFiltro(e.target.value); setPagina(1) }}><option value="todos">Todos</option><option value="stock">Stock</option><option value="ubicados">Ubicados</option></select></div><div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Mostrar</label><select className="form-select form-select-sm" value={porPagina} onChange={(e) => { setPorPagina(Number(e.target.value)); setPagina(1) }}><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div></div>{hayFiltros && <div className="mt-2"><button type="button" className="btn btn-outline-secondary btn-sm" onClick={limpiarFiltros}>× Limpiar filtros</button></div>}</div></div>
+      <div className="card shadow-sm border-0"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead className="table-dark"><tr><th>Código</th><th>Tipo</th><th>Capacidad</th><th>Ubicación</th><th>Revisiones</th><th>Próxima recarga</th><th>Estado</th><th className="text-center">Acciones</th></tr></thead><tbody>{visibles.length === 0 ? <tr><td colSpan="8" className="text-center py-4 text-muted">No se encontraron extintores.</td></tr> : visibles.map((e) => { const contador = Number(e.inspections_since_hydrostatic_test ?? 0); const requiere = Boolean(e.hydrostatic_test_required) || contador >= 4; const alerta = alertaRecarga(e.next_recharge_date); return <tr key={e.id}><td className="fw-semibold">{e.code}</td><td>{e.extinguisher_type?.name || '—'}</td><td>{e.capacity || '—'}</td><td>{e.location || '—'}</td><td><span className={`badge ${requiere ? 'text-bg-warning' : 'text-bg-primary'}`}>{contador} / 4</span>{requiere && <div className="small text-warning-emphasis fw-semibold">⚠️ Hidrostática requerida</div>}</td><td>{e.next_recharge_date ? <><span className={`badge ${alerta?.clase || 'text-bg-secondary'}`}>{e.next_recharge_date}</span>{alerta && alerta.texto !== 'Normal' && <div className="small fw-semibold">{alerta.texto === 'Hoy' ? '🚨' : '⚠️'} {alerta.texto}</div>}</> : '—'}</td><td>{e.active ? <span className="badge text-bg-success">Activo</span> : <span className="badge text-bg-secondary">Inactivo</span>}</td><td><div className="d-flex justify-content-center gap-1"><button type="button" className="btn btn-outline-primary btn-sm" title="Ver" onClick={() => abrirDetalle(e)}>👁</button><button type="button" className="btn btn-outline-info btn-sm" title="Revisiones" onClick={() => abrirRevisiones(e)}>📋</button><button type="button" className="btn btn-outline-warning btn-sm" title="Editar" onClick={() => abrirEditar(e)}>✏️</button>{e.active && <button type="button" className="btn btn-outline-danger btn-sm" title="Eliminar" onClick={() => setEliminandoItem(e)} disabled={eliminando}>🗑️</button>}</div></td></tr> })}</tbody></table></div></div>
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3"><div><small className="text-muted">Mostrando {desde} - {hasta} de {filtrados.length} extintores</small><div className="small text-muted">Total: <strong>{extintores.length}</strong> | Activos: <strong>{activos}</strong> | Inactivos: <strong>{inactivos}</strong></div></div><div className="d-flex gap-1">{Array.from({ length: totalPaginas }, (_, i) => i + 1).map((p) => <button key={p} type="button" className={`btn btn-sm ${p === paginaSegura ? 'btn-primary' : 'btn-outline-secondary'}`} onClick={() => setPagina(p)}>{p}</button>)}</div></div>
+    </>}
 
-      {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
+    {mostrarModal && <Modal title={editando ? 'Editar extintor' : 'Nuevo extintor'} onClose={cerrarModal} large footer={<><button type="button" className="btn btn-secondary" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button type="submit" form="formExtintor" className="btn btn-primary" disabled={guardando}>{guardando ? 'Guardando...' : editando ? 'Guardar cambios' : 'Crear extintor'}</button></>}><form id="formExtintor" onSubmit={guardar}><div className="row g-3"><div className="col-md-4"><label className="form-label">Código</label><input className="form-control" name="code" value={formulario.code} onChange={cambiarCampo} required /></div><div className="col-md-4"><label className="form-label">Tipo de extintor</label><select className="form-select" name="extinguisher_type_id" value={formulario.extinguisher_type_id} onChange={cambiarCampo} required><option value="">Selecciona...</option>{tipos.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div><div className="col-md-4"><label className="form-label">Capacidad</label><input className="form-control" name="capacity" value={formulario.capacity} onChange={cambiarCampo} /></div>{[['location','Ubicación','text'],['last_recharge_date','Última recarga','date'],['next_recharge_date','Próxima recarga','date'],['last_hydrostatic_test_date','Última prueba hidrostática','date'],['next_hydrostatic_test_date','Próxima prueba hidrostática','date']].map(([name,label,type]) => <div className="col-md-4" key={name}><label className="form-label">{label}</label><input type={type} className="form-control" name={name} value={formulario[name]} onChange={cambiarCampo} /></div>)}<div className="col-md-4"><label className="form-label">Estado</label><select className="form-select" name="status" value={formulario.status} onChange={cambiarCampo}><option value="ACTIVE">Activo</option><option value="INACTIVE">Inactivo</option></select></div><div className="col-md-4 d-flex align-items-end"><div className="form-check mb-2"><input className="form-check-input" type="checkbox" id="is_stock" name="is_stock" checked={formulario.is_stock} onChange={cambiarCampo} /><label className="form-check-label" htmlFor="is_stock">En stock</label></div></div></div></form></Modal>}
 
-      {cargando ? (
-        <div className="card shadow-sm border-0 mb-3"><div className="card-body text-center py-4"><div className="spinner-border text-primary mb-2" role="status" /><div className="text-muted">Cargando extintores...</div></div></div>
-      ) : (
-        <div className="container-fluid px-0 pb-3">
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
-            <div><h4 className="mb-0 fw-bold">Extintores</h4><small className="text-muted">Gestión del inventario de extintores</small></div>
-            <button type="button" className="btn btn-primary btn-sm" onClick={abrirNuevo}>+ Nuevo extintor</button>
-          </div>
+    {verItem && (() => { const ultima = ultimaRevision(verItem.id); const alerta = alertaRecarga(verItem.next_recharge_date); return <Modal title={`Ver extintor — ${verItem.code}`} onClose={() => setVerItem(null)} large footer={<button type="button" className="btn btn-secondary" onClick={() => setVerItem(null)}>Cerrar</button>}><div className="row g-3"><div className="col-md-4"><strong>Código</strong><div>{verItem.code}</div></div><div className="col-md-4"><strong>Tipo</strong><div>{verItem.extinguisher_type?.name || '—'}</div></div><div className="col-md-4"><strong>Capacidad</strong><div>{verItem.capacity || '—'}</div></div><div className="col-md-4"><strong>Ubicación</strong><div>{verItem.location || '—'}</div></div><div className="col-md-4"><strong>Última recarga</strong><div>{verItem.last_recharge_date || '—'}</div></div><div className="col-md-4"><strong>Próxima recarga</strong><div>{verItem.next_recharge_date || '—'} {alerta && alerta.dias <= 7 && <span className={`badge ms-1 ${alerta.clase}`}>{alerta.texto}</span>}</div></div><div className="col-md-4"><strong>Última revisión</strong><div className="fw-semibold">{ultima?.inspection_date || verItem.last_inspection_date || 'Sin revisiones registradas'}</div></div><div className="col-md-4"><strong>Última prueba hidrostática</strong><div>{verItem.last_hydrostatic_test_date || '—'}</div></div><div className="col-md-4"><strong>Próxima prueba hidrostática</strong><div>{verItem.next_hydrostatic_test_date || '—'}</div></div><div className="col-md-4"><strong>Ciclo de revisiones</strong><div><span className="badge text-bg-primary">{verItem.inspections_since_hydrostatic_test ?? 0} / 4</span></div></div><div className="col-md-4"><strong>Estado</strong><div>{verItem.active ? <span className="badge text-bg-success">Activo</span> : <span className="badge text-bg-secondary">Inactivo</span>}</div></div></div>{ultima && <div className="alert alert-light border mt-4 mb-0"><strong>Última revisión registrada:</strong> {ultima.inspection_date} — resultado <span className={`badge ms-1 ${String(ultima.result).toLowerCase() === 'apto' ? 'text-bg-success' : 'text-bg-danger'}`}>{ultima.result}</span></div>}</Modal>})()}
 
-          <div className="card shadow-sm border-0 mb-2"><div className="card-body py-2 px-3"><div className="row g-2 align-items-end">
-            <div className="col-12 col-md-5"><label className="form-label fw-semibold small mb-1">Buscar extintor</label><div className="input-group input-group-sm"><span className="input-group-text">🔎</span><input type="text" className="form-control" placeholder="Código, tipo, capacidad o ubicación..." value={busqueda} onChange={(e) => cambiarBusqueda(e.target.value)} /></div></div>
-            <div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Tipo</label><select className="form-select form-select-sm" value={tipoFiltro} onChange={(e) => cambiarTipo(e.target.value)}><option value="todos">Todos</option>{tiposExtintor.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.name}</option>)}</select></div>
-            <div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Estado</label><select className="form-select form-select-sm" value={estadoFiltro} onChange={(e) => cambiarEstado(e.target.value)}><option value="todos">Todos</option><option value="activos">Activos</option><option value="inactivos">Inactivos</option></select></div>
-            <div className="col-6 col-md-1"><label className="form-label fw-semibold small mb-1">Stock</label><select className="form-select form-select-sm" value={stockFiltro} onChange={(e) => cambiarStock(e.target.value)}><option value="todos">Todos</option><option value="stock">Stock</option><option value="ubicados">Ubicados</option></select></div>
-            <div className="col-6 col-md-2"><label className="form-label fw-semibold small mb-1">Mostrar</label><select className="form-select form-select-sm" value={extintoresPorPagina} onChange={(e) => cambiarCantidad(e.target.value)}><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></div>
-          </div>{hayFiltros && <div className="mt-2"><button type="button" className="btn btn-outline-secondary btn-sm py-0" onClick={limpiarFiltros}>× Limpiar filtros</button></div>}</div></div>
-
-          <div className="card shadow-sm border-0 d-none d-md-block"><div className="table-responsive"><table className="table table-hover align-middle mb-0 table-sm"><thead className="table-dark"><tr><th>Código</th><th>Tipo</th><th>Capacidad</th><th>Ubicación</th><th>Próxima recarga</th><th>Stock</th><th>Estado</th><th className="text-center">Acciones</th></tr></thead><tbody>
-            {extintoresPagina.length === 0 ? <tr><td colSpan="8" className="text-center py-4 text-muted">No se encontraron extintores.</td></tr> : extintoresPagina.map((extintor) => <tr key={extintor.id}><td className="fw-semibold">{extintor.code}</td><td>{extintor.extinguisher_type?.name || '—'}</td><td>{extintor.capacity || '—'}</td><td>{extintor.location || '—'}</td><td>{extintor.next_recharge_date || '—'}</td><td>{extintor.is_stock ? 'Sí' : 'No'}</td><td>{extintor.active ? <span className="badge bg-success">Activo</span> : <span className="badge bg-secondary">Inactivo</span>}</td><td><div className="d-flex justify-content-center align-items-center gap-1"><button type="button" className="btn btn-warning btn-sm py-0 px-2" title="Editar extintor" onClick={() => editarExtintor(extintor)}>✏️</button>{extintor.active && <button type="button" className="btn btn-danger btn-sm py-0 px-2" title="Desactivar extintor" onClick={() => setExtintorEliminando(extintor)} disabled={eliminando}>🗑️</button>}</div></td></tr>)}
-          </tbody></table></div></div>
-
-          <div className="d-md-none">{extintoresPagina.length === 0 ? <div className="card shadow-sm text-center py-4"><div className="text-muted">No se encontraron extintores.</div></div> : extintoresPagina.map((extintor) => <div className="card shadow-sm mb-2" key={extintor.id}><div className="card-body py-3"><div className="mb-2"><div className="text-muted small">Código</div><div className="fw-bold">{extintor.code}</div></div><div className="mb-2"><div className="text-muted small">Tipo</div><div>{extintor.extinguisher_type?.name || '—'}</div></div><div className="mb-2"><div className="text-muted small">Capacidad</div><div>{extintor.capacity || '—'}</div></div><div className="mb-2"><div className="text-muted small">Ubicación</div><div>{extintor.location || '—'}</div></div><div className="mb-2"><div className="text-muted small">Próxima recarga</div><div>{extintor.next_recharge_date || '—'}</div></div><div className="mb-2"><div className="text-muted small">Estado</div>{extintor.active ? <span className="badge bg-success">Activo</span> : <span className="badge bg-secondary">Inactivo</span>}</div><div className="d-grid gap-1"><button type="button" className="btn btn-warning btn-sm" onClick={() => editarExtintor(extintor)}>✏️ Editar</button>{extintor.active && <button type="button" className="btn btn-danger btn-sm" onClick={() => setExtintorEliminando(extintor)} disabled={eliminando}>🗑️ Desactivar</button>}</div></div></div>)}</div>
-
-          <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-2"><small className="text-muted">Mostrando {mostrandoDesde} - {mostrandoHasta} de {extintoresFiltrados.length} extintores</small>{totalPaginas > 1 && <nav aria-label="Paginación de extintores"><ul className="pagination pagination-sm mb-0"><li className={`page-item ${paginaSegura === 1 ? 'disabled' : ''}`}><button type="button" className="page-link" onClick={() => cambiarPagina(paginaSegura - 1)} disabled={paginaSegura === 1}>Anterior</button></li>{paginas.map((pagina) => <li key={pagina} className={`page-item ${pagina === paginaSegura ? 'active' : ''}`}><button type="button" className="page-link" onClick={() => cambiarPagina(pagina)}>{pagina}</button></li>)}<li className={`page-item ${paginaSegura === totalPaginas ? 'disabled' : ''}`}><button type="button" className="page-link" onClick={() => cambiarPagina(paginaSegura + 1)} disabled={paginaSegura === totalPaginas}>Siguiente</button></li></ul></nav>}</div>
-          <div className="mt-2 text-muted small">Total: <strong>{extintores.length}</strong> | Activos: <strong>{activos}</strong> | Inactivos: <strong>{inactivos}</strong></div>
-        </div>
-      )}
-
-      {mostrarFormulario && <div className="modal d-block" role="dialog" aria-modal="true" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2000, overflow: 'hidden' }}><div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '700px', width: 'calc(100% - 2rem)', margin: '1rem auto' }}><div className="modal-content" style={{ maxHeight: 'calc(100vh - 2rem)' }}><div className="modal-header py-2 px-3"><h5 className="modal-title mb-0">{editando ? 'Editar extintor' : 'Nuevo extintor'}</h5><button type="button" className="btn-close" onClick={cancelar} disabled={guardando} /></div><form onSubmit={guardar} autoComplete="off"><div className="modal-body py-3 px-3" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 150px)' }}><div className="row g-3">{campos.map(([campo, etiqueta, tipo]) => <div className="col-md-6" key={campo}><label className="form-label mb-1">{etiqueta}</label><input className="form-control" name={campo} type={tipo} value={formulario[campo] || ''} onChange={cambiarCampo} required={campo === 'code'} disabled={guardando} /></div>)}<div className="col-md-6"><label className="form-label mb-1">Tipo de extintor</label><select className="form-select" name="extinguisher_type_id" value={formulario.extinguisher_type_id} onChange={cambiarCampo} required disabled={guardando || cargandoTipos}><option value="">{cargandoTipos ? 'Cargando tipos...' : 'Seleccione un tipo de extintor...'}</option>{tiposExtintor.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.name}</option>)}</select></div><div className="col-md-6"><label className="form-label mb-1">Estado</label><select className="form-select" name="status" value={formulario.status} onChange={cambiarCampo} disabled={guardando}><option value="ACTIVE">ACTIVO</option><option value="INACTIVE">INACTIVO</option></select></div><div className="col-md-6 d-flex align-items-end"><div className="form-check mb-2"><input className="form-check-input" id="is_stock" name="is_stock" type="checkbox" checked={formulario.is_stock} onChange={cambiarCampo} disabled={guardando} /><label className="form-check-label" htmlFor="is_stock">Es inventario en stock</label></div></div></div></div><div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cancelar} disabled={guardando}>Cancelar</button><button type="submit" className="btn btn-primary" disabled={guardando || cargandoTipos}>{guardando ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Guardando...</> : editando ? 'Guardar cambios' : 'Crear extintor'}</button></div></form></div></div></div>}
-
-      {extintorEliminando && <div className="modal d-block" role="dialog" aria-modal="true" aria-labelledby="eliminarExtintorTitulo" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2100, overflowY: 'auto' }}><div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px', width: 'calc(100% - 2rem)', margin: '1rem auto' }}><div className="modal-content"><div className="modal-header"><h5 id="eliminarExtintorTitulo" className="modal-title">Eliminar extintor</h5><button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setExtintorEliminando(null)} disabled={eliminando} /></div><div className="modal-body"><p className="mb-2">¿Estás seguro de que deseas desactivar este extintor?</p><div className="alert alert-warning mb-0"><strong>{extintorEliminando.code}</strong>{extintorEliminando.extinguisher_type?.name && <> — {extintorEliminando.extinguisher_type.name}</>}<div className="small mt-1">El extintor se desactivará y conservará su información histórica.</div></div></div><div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={() => setExtintorEliminando(null)} disabled={eliminando}>Cancelar</button><button type="button" className="btn btn-danger" onClick={confirmarDesactivacion} disabled={eliminando}>{eliminando ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Desactivando...</> : 'Desactivar'}</button></div></div></div></div>}
-    </>
-  )
+    {eliminandoItem && <Modal title="Desactivar extintor" onClose={() => !eliminando && setEliminandoItem(null)} footer={<><button type="button" className="btn btn-secondary" onClick={() => setEliminandoItem(null)} disabled={eliminando}>Cancelar</button><button type="button" className="btn btn-danger" onClick={confirmarEliminacion} disabled={eliminando}>{eliminando ? 'Desactivando...' : 'Desactivar'}</button></>}><p className="mb-0">¿Deseas desactivar el extintor <strong>{eliminandoItem.code}</strong>? El histórico de revisiones se conservará.</p></Modal>}
+  </div>
 }
 
 export default ExtinguishersPage

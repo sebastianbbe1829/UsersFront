@@ -6,6 +6,7 @@ const obtenerMensajeError = (status) => {
     case 401: return 'La sesión ha expirado. Inicia sesión nuevamente.'
     case 403: return 'No tienes permisos para realizar esta acción.'
     case 404: return 'No se encontró el recurso solicitado.'
+    case 409: return 'La operación no puede realizarse porque existe un conflicto con el estado actual.'
     case 422: return 'Los datos enviados no son válidos.'
     case 500: return 'Ocurrió un error interno en el servidor.'
     default: return 'Ocurrió un error inesperado.'
@@ -253,5 +254,35 @@ export const actualizarExtintor = async (id, datos, token) => {
 
 export const eliminarExtintor = async (id, token) => {
   const response = await fetch(`${API_URL}/extinguishers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+// ==========================
+// REVISIONES DE EXTINTORES
+// ==========================
+
+export const obtenerItemsRevisionExtintor = async (token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/items`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const obtenerRevisionesExtintor = async (extinguisherId, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${extinguisherId}/inspections`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const obtenerRevisiones = async (token, extinguisherId = null) => {
+  const query = extinguisherId ? `?extinguisher_id=${encodeURIComponent(extinguisherId)}` : ''
+  const response = await fetch(`${API_URL}/extinguisher-inspections${query}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const obtenerRevisionExtintor = async (inspectionId, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/${inspectionId}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const crearRevisionExtintor = async (extinguisherId, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${extinguisherId}/inspections`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
   return procesarRespuesta(response)
 }
