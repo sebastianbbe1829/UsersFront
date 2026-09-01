@@ -117,8 +117,8 @@ function ExtinguishersPage() {
                     {campos.map(([campo, etiqueta, tipo]) => <div className="col-md-6" key={campo}><label className="form-label mb-1">{etiqueta}</label><input className="form-control" name={campo} type={tipo} value={formulario[campo] || ''} onChange={cambiarCampo} required={campo === 'code'} disabled={guardando} /></div>)}
                     <div className="col-md-6">
                       <label className="form-label mb-1">Tipo de extintor</label>
-                      <select className="form-select" name="extinguisher_type_id" value={formulario.extinguisher_type_id} onChange={cambiarCampo} required disabled={guardando || cargandoTiposExtintor}>
-                        <option value="">{cargandoTiposExtintor ? 'Cargando tipos...' : 'Seleccione un tipo de extintor...'}</option>
+                      <select className="form-select" name="extinguisher_type_id" value={formulario.extinguisher_type_id} onChange={cambiarCampo} required disabled={guardando || cargandoTipos}>
+                        <option value="">{cargandoTipos ? 'Cargando tipos...' : 'Seleccione un tipo de extintor...'}</option>
                         {tiposExtintor.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.name}</option>)}
                       </select>
                     </div>
@@ -126,7 +126,7 @@ function ExtinguishersPage() {
                     <div className="col-md-6 d-flex align-items-end"><div className="form-check mb-2"><input className="form-check-input" id="is_stock" name="is_stock" type="checkbox" checked={formulario.is_stock} onChange={cambiarCampo} disabled={guardando} /><label className="form-check-label" htmlFor="is_stock">Es inventario en stock</label></div></div>
                   </div>
                 </div>
-                <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cancelar} disabled={guardando}>Cancelar</button><button type="submit" className="btn btn-primary" disabled={guardando || cargandoTiposExtintor}>{guardando ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Guardando...</> : (editando ? 'Guardar cambios' : 'Crear extintor')}</button></div>
+                <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cancelar} disabled={guardando}>Cancelar</button><button type="submit" className="btn btn-primary" disabled={guardando || cargandoTipos}>{guardando ? <><span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />Guardando...</> : (editando ? 'Guardar cambios' : 'Crear extintor')}</button></div>
               </form>
             </div>
           </div>
