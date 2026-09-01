@@ -114,10 +114,10 @@ function ExtinguishersPage() {
   const hayFiltros = Boolean(busqueda || tipoFiltro !== 'todos' || estadoFiltro !== 'todos' || stockFiltro !== 'todos')
   const limpiarFiltros = () => { setBusqueda(''); setTipoFiltro('todos'); setEstadoFiltro('todos'); setStockFiltro('todos'); setPagina(1) }
 
-  // En móvil usamos los mismos colores sólidos de acciones que Usuarios:
-  // azul = acción principal, amarillo = editar, rojo = desactivar.
+  // En móvil los botones siguen exactamente el patrón visual de Usuarios:
+  // acciones sólidas, una debajo de otra y ocupando todo el ancho disponible.
   const renderAcciones = (e, mobile = false) => (
-    <div className={mobile ? 'd-grid gap-2' : 'd-flex justify-content-center gap-1'} style={mobile ? { gridTemplateColumns: e.active ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)' } : undefined}>
+    <div className={mobile ? 'd-grid gap-1' : 'd-flex justify-content-center gap-1'}>
       <button type="button" className={`btn ${mobile ? 'btn-primary' : 'btn-outline-primary'} btn-sm`} title="Ver" onClick={() => abrirDetalle(e)}>{mobile ? '👁 Ver' : '👁'}</button>
       <button type="button" className={`btn ${mobile ? 'btn-primary' : 'btn-outline-info'} btn-sm`} title="Revisiones" onClick={() => abrirRevisiones(e)}>{mobile ? '📋 Revisiones' : '📋'}</button>
       <button type="button" className={`btn ${mobile ? 'btn-warning' : 'btn-outline-warning'} btn-sm`} title="Editar" onClick={() => abrirEditar(e)}>{mobile ? '✏️ Editar' : '✏️'}</button>
