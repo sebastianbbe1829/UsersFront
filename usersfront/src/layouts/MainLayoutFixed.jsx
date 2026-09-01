@@ -5,7 +5,7 @@ import {
   useNavigate,
 } from 'react-router-dom'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
@@ -20,11 +20,20 @@ function MainLayoutFixed() {
   const location = useLocation()
 
   const [menuColapsado, setMenuColapsado] = useState(false)
+  const [administracionAbierta, setAdministracionAbierta] = useState(() => {
+    return ['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta))
+  })
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
 
   const primaryColor = config?.primary_color || '#0d6efd'
   const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
+
+  useEffect(() => {
+    if (['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta))) {
+      setAdministracionAbierta(true)
+    }
+  }, [location.pathname])
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
@@ -45,13 +54,14 @@ function MainLayoutFixed() {
     if (ruta.includes('/usuarios')) return { icono: '👥', titulo: 'Usuarios' }
     if (ruta.includes('/roles')) return { icono: '🛡️', titulo: 'Roles' }
     if (ruta.includes('/permisos')) return { icono: '🔐', titulo: 'Permisos' }
+    if (ruta.includes('/extintores')) return { icono: '🧯', titulo: 'Extintores' }
     if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
     return { icono: '🏠', titulo: 'Panel de administración' }
   }
 
   const pagina = obtenerTituloPagina()
-  const obtenerClaseMenu = ({ isActive }) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${isActive ? 'text-white' : 'bg-dark text-white'}`
+  const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
 
   return (
     <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
@@ -71,31 +81,59 @@ function MainLayoutFixed() {
         </div>
 
         <nav className="d-flex flex-column">
-          <NavLink to={tenant ? `/${tenant}` : '/'} end className={obtenerClaseMenu} title="Inicio" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+          <NavLink to={tenant ? `/${tenant}` : '/'} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inicio" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>
             {!menuColapsado && <span className="ms-3">Inicio</span>}
           </NavLink>
 
-          <NavLink to="usuarios" className={obtenerClaseMenu} title="Usuarios" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
-            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👥</span>
-            {!menuColapsado && <span className="ms-3">Usuarios</span>}
+          <NavLink to="extintores" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Extintores" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>
+            {!menuColapsado && <span className="ms-3">Extintores</span>}
           </NavLink>
-          <NavLink to="roles" className={obtenerClaseMenu} title="Roles" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
-            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛡️</span>
-            {!menuColapsado && <span className="ms-3">Roles</span>}
-          </NavLink>
-          <NavLink to="permisos" className={obtenerClaseMenu} title="Permisos" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
-            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🔐</span>
-            {!menuColapsado && <span className="ms-3">Permisos</span>}
-          </NavLink>
+
+          <button type="button" className={obtenerClaseMenu(['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta)))} onClick={() => setAdministracionAbierta((valor) => !valor)} title="Administración" style={{ background: 'transparent' }}>
+            <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>
+            {!menuColapsado && (
+              <>
+                <span className="ms-3 flex-grow-1 text-start">Administración</span>
+                <span>{administracionAbierta ? '▾' : '▸'}</span>
+              </>
+            )}
+          </button>
+
+          {administracionAbierta && !menuColapsado && (
+            <div className="ps-3">
+              <NavLink to="usuarios" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+                <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span>
+                <span className="ms-3">Usuarios</span>
+              </NavLink>
+              <NavLink to="roles" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+                <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛡️</span>
+                <span className="ms-3">Roles</span>
+              </NavLink>
+              <NavLink to="permisos" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+                <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🔐</span>
+                <span className="ms-3">Permisos</span>
+              </NavLink>
+            </div>
+          )}
+
+          {menuColapsado && administracionAbierta && (
+            <div className="border-top border-secondary border-bottom border-secondary">
+              <NavLink to="usuarios" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>👥</span></NavLink>
+              <NavLink to="roles" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🛡️</span></NavLink>
+              <NavLink to="permisos" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}><span style={{ fontSize: '20px', minWidth: '24px', textAlign: 'center' }}>🔐</span></NavLink>
+            </div>
+          )}
+
           {esSuper && (
-            <NavLink to="configuracion-ui" className={obtenerClaseMenu} title="Configuración de la interfaz" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+            <NavLink to="configuracion-ui" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Configuración de la interfaz" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>
               {!menuColapsado && <span className="ms-3">Configuración UI</span>}
             </NavLink>
           )}
           {esSuper && (
-            <NavLink to="administracion-tenant" className={obtenerClaseMenu} title="Administración del tenant" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
+            <NavLink to="administracion-tenant" className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración del tenant" style={({ isActive }) => isActive ? { backgroundColor: primaryColor } : undefined}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span>
               {!menuColapsado && <span className="ms-3">Administración del tenant</span>}
             </NavLink>

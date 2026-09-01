@@ -1,319 +1,114 @@
 const API_URL = import.meta.env.VITE_API_URL
 
-
-// ==========================
-// MENSAJES DE ERROR
-// ==========================
-
 const obtenerMensajeError = (status) => {
   switch (status) {
-    case 400:
-      return 'La solicitud no es válida.'
-    case 401:
-      return 'La sesión ha expirado. Inicia sesión nuevamente.'
-    case 403:
-      return 'No tienes permisos para realizar esta acción.'
-    case 404:
-      return 'No se encontró el recurso solicitado.'
-    case 422:
-      return 'Los datos enviados no son válidos.'
-    case 500:
-      return 'Ocurrió un error interno en el servidor.'
-    default:
-      return 'Ocurrió un error inesperado.'
+    case 400: return 'La solicitud no es válida.'
+    case 401: return 'La sesión ha expirado. Inicia sesión nuevamente.'
+    case 403: return 'No tienes permisos para realizar esta acción.'
+    case 404: return 'No se encontró el recurso solicitado.'
+    case 422: return 'Los datos enviados no son válidos.'
+    case 500: return 'Ocurrió un error interno en el servidor.'
+    default: return 'Ocurrió un error inesperado.'
   }
 }
-
-
-// ==========================
-// PROCESAR RESPUESTA
-// ==========================
 
 const procesarRespuesta = async (response) => {
   let resultado = null
-
-  try {
-    resultado = await response.json()
-  } catch {
-    resultado = null
-  }
-
+  try { resultado = await response.json() } catch { resultado = null }
   if (!response.ok) {
-    console.error('Error API:', {
-      status: response.status,
-      statusText: response.statusText,
-      detail: resultado?.detail,
-    })
-
-    const mensajeError = resultado?.detail || obtenerMensajeError(response.status)
-    const error = new Error(mensajeError)
+    console.error('Error API:', { status: response.status, statusText: response.statusText, detail: resultado?.detail })
+    const error = new Error(resultado?.detail || obtenerMensajeError(response.status))
     error.status = response.status
     throw error
   }
-
   return resultado
 }
-
-
-// ==========================
-// PROCESAR RESPUESTA DE ARCHIVO
-// ==========================
 
 const procesarRespuestaArchivo = async (response) => {
   if (!response.ok) {
     let resultado = null
-
-    try {
-      resultado = await response.json()
-    } catch {
-      resultado = null
-    }
-
-    console.error('Error API:', {
-      status: response.status,
-      statusText: response.statusText,
-      detail: resultado?.detail,
-    })
-
-    const mensajeError = resultado?.detail || obtenerMensajeError(response.status)
-    const error = new Error(mensajeError)
+    try { resultado = await response.json() } catch { resultado = null }
+    const error = new Error(resultado?.detail || obtenerMensajeError(response.status))
     error.status = response.status
     throw error
   }
-
   return await response.blob()
 }
 
-
-// ==========================
-// LOGIN
-// ==========================
-
-export const login = async (
-  username,
-  password,
-  tenant,
-  superMode = false,
-  otp = ''
-) => {
-  console.log('Intentando login contra:', `${API_URL}/auth/login`)
-  console.log('Tenant seleccionado:', tenant)
-
+export const login = async (username, password, tenant, superMode = false, otp = '') => {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      username,
-      password,
-      tenant,
-      super_mode: superMode,
-      ...(superMode && otp ? { otp } : {}),
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, tenant, super_mode: superMode, ...(superMode && otp ? { otp } : {}) }),
   })
-
   return procesarRespuesta(response)
 }
-
-
-// ==========================
-// CONFIGURACIÓN UI PÚBLICA
-// ==========================
 
 export const obtenerConfigTenantPublica = async (tenantSlug) => {
-  if (!tenantSlug) {
-    throw new Error('No se pudo determinar la empresa desde la URL.')
-  }
-
-  const response = await fetch(
-    `${API_URL}/tenant-config/public/${encodeURIComponent(tenantSlug)}`,
-    {
-      method: 'GET',
-    }
-  )
-
+  if (!tenantSlug) throw new Error('No se pudo determinar la empresa desde la URL.')
+  const response = await fetch(`${API_URL}/tenant-config/public/${encodeURIComponent(tenantSlug)}`, { method: 'GET' })
   return procesarRespuesta(response)
 }
 
-
-// ==========================
-// CONFIGURACIÓN UI DEL TENANT
-// ==========================
-
 export const obtenerConfigTenant = async (token) => {
-  const response = await fetch(`${API_URL}/tenant-config`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
+  const response = await fetch(`${API_URL}/tenant-config`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
 
 export const actualizarConfigTenant = async (configuracion, token) => {
-  const response = await fetch(`${API_URL}/tenant-config`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(configuracion),
-  })
-
+  const response = await fetch(`${API_URL}/tenant-config`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(configuracion) })
   return procesarRespuesta(response)
 }
 
-
-// ==========================
-// BOOTSTRAP TENANT
-// ==========================
-
-export const bootstrapTenant = async (
-  tenantName,
-  tenantSlug,
-  adminDni,
-  adminName,
-  adminEmail,
-  adminPassword,
-  adminPhone,
-  bootstrapTenantKey
-) => {
+export const bootstrapTenant = async (tenantName, tenantSlug, adminDni, adminName, adminEmail, adminPassword, adminPhone, bootstrapTenantKey) => {
   const response = await fetch(`${API_URL}/bootstrap`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Bootstrap-Tenant-Key': bootstrapTenantKey,
-    },
-    body: JSON.stringify({
-      tenant_name: tenantName,
-      tenant_slug: tenantSlug,
-      admin_dni: adminDni,
-      admin_name: adminName,
-      admin_email: adminEmail,
-      admin_password: adminPassword,
-      admin_phone: adminPhone || null,
-    }),
+    headers: { 'Content-Type': 'application/json', 'X-Bootstrap-Tenant-Key': bootstrapTenantKey },
+    body: JSON.stringify({ tenant_name: tenantName, tenant_slug: tenantSlug, admin_dni: adminDni, admin_name: adminName, admin_email: adminEmail, admin_password: adminPassword, admin_phone: adminPhone || null }),
   })
-
   return procesarRespuesta(response)
 }
-
-
-// ==========================
-// BOOTSTRAP SUPER
-// ==========================
 
 export const bootstrapSuperUser = async (email, password, bootstrapSecret) => {
-  const response = await fetch(`${API_URL}/auth/super/bootstrap`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Super-Bootstrap-Secret': bootstrapSecret,
-    },
-    body: JSON.stringify({ email, password }),
-  })
-
+  const response = await fetch(`${API_URL}/auth/super/bootstrap`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Super-Bootstrap-Secret': bootstrapSecret }, body: JSON.stringify({ email, password }) })
   return procesarRespuesta(response)
 }
-
-
-// ==========================
-// VERIFICAR MFA DEL BOOTSTRAP SUPER
-// ==========================
 
 export const verificarBootstrapMfa = async (userId, otp, bootstrapSecret) => {
-  const response = await fetch(`${API_URL}/auth/super/bootstrap/verify-mfa`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Super-Bootstrap-Secret': bootstrapSecret,
-    },
-    body: JSON.stringify({ user_id: userId, otp }),
-  })
-
+  const response = await fetch(`${API_URL}/auth/super/bootstrap/verify-mfa`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Super-Bootstrap-Secret': bootstrapSecret }, body: JSON.stringify({ user_id: userId, otp }) })
   return procesarRespuesta(response)
 }
 
-
-// ==========================
-// OBTENER TENANT ACTUAL
-// ==========================
-
 export const obtenerTenantActual = async (token) => {
-  const response = await fetch(`${API_URL}/tenants`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
+  const response = await fetch(`${API_URL}/tenants`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   const resultado = await procesarRespuesta(response)
   return Array.isArray(resultado) ? resultado[0] || null : resultado
 }
 
-
-// ==========================
-// ACTUALIZAR TENANT
-// ==========================
-
 export const actualizarTenant = async (tenantId, tenant, token) => {
-  const response = await fetch(`${API_URL}/tenants/${tenantId}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(tenant),
-  })
-
+  const response = await fetch(`${API_URL}/tenants/${tenantId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(tenant) })
   return procesarRespuesta(response)
 }
 
-
-// ==========================
-// OBTENER USUARIOS
-// ==========================
-
 export const obtenerUsuarios = async (token) => {
-  const response = await fetch(`${API_URL}/users`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await fetch(`${API_URL}/users`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
 
 export const crearUsuario = async (usuario, token) => {
-  const response = await fetch(`${API_URL}/users`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(usuario),
-  })
+  const response = await fetch(`${API_URL}/users`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(usuario) })
   return procesarRespuesta(response)
 }
 
 export const actualizarUsuario = async (dni, usuario, token) => {
-  const response = await fetch(`${API_URL}/users/${dni}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(usuario),
-  })
+  const response = await fetch(`${API_URL}/users/${dni}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(usuario) })
   return procesarRespuesta(response)
 }
 
 export const eliminarUsuario = async (dni, token) => {
-  const response = await fetch(`${API_URL}/users/${dni}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await fetch(`${API_URL}/users/${dni}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
-
-
-// ==========================
-// OBTENER PAYLOAD DEL JWT
-// ==========================
 
 export const obtenerPayloadToken = (token) => {
   try {
@@ -338,23 +133,13 @@ export const obtenerTiempoToken = (token) => {
   return Math.max(payload.exp - Math.floor(Date.now() / 1000), 0)
 }
 
-
-// ==========================
-// ACTIVAR USUARIO
-// ==========================
-
 export const activarUsuario = async (dni, token) => {
-  const response = await fetch(`${API_URL}/users/activate/${dni}/${token}/`, {
-    method: 'POST',
-  })
+  const response = await fetch(`${API_URL}/users/activate/${dni}/${token}/`, { method: 'POST' })
   return procesarRespuesta(response)
 }
 
 export const exportarUsuariosExcel = async (token) => {
-  const response = await fetch(`${API_URL}/users/export`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await fetch(`${API_URL}/users/export`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuestaArchivo(response)
 }
 
@@ -427,5 +212,34 @@ export const crearPermiso = async (permiso, token) => {
 
 export const obtenerPermisos = async (token) => {
   const response = await fetch(`${API_URL}/permission`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+// ==========================
+// EXTINTORES
+// ==========================
+
+export const obtenerExtintores = async (token) => {
+  const response = await fetch(`${API_URL}/extinguishers`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const crearExtintor = async (datos, token) => {
+  const response = await fetch(`${API_URL}/extinguishers`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const obtenerExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const actualizarExtintor = async (id, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const eliminarExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
