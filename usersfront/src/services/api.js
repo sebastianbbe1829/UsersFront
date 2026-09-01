@@ -220,212 +220,64 @@ export const bootstrapSuperUser = async (email, password, bootstrapSecret) => {
 
 
 // ==========================
-// VERIFICAR MFA DEL BOOTSTRAP SUPER
+// EXTINTORES
 // ==========================
 
-export const verificarBootstrapMfa = async (userId, otp, bootstrapSecret) => {
-  const response = await fetch(`${API_URL}/auth/super/bootstrap/verify-mfa`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Super-Bootstrap-Secret': bootstrapSecret,
-    },
-    body: JSON.stringify({ user_id: userId, otp }),
-  })
-
-  return procesarRespuesta(response)
-}
-
-
-// ==========================
-// OBTENER TENANT ACTUAL
-// ==========================
-
-export const obtenerTenantActual = async (token) => {
-  const response = await fetch(`${API_URL}/tenants`, {
+export const obtenerExtintores = async (token) => {
+  const response = await fetch(`${API_URL}/extinguishers`, {
     method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
     },
   })
 
-  const resultado = await procesarRespuesta(response)
-  return Array.isArray(resultado) ? resultado[0] || null : resultado
+  return procesarRespuesta(response)
 }
 
+export const crearExtintor = async (datos, token) => {
+  const response = await fetch(`${API_URL}/extinguishers`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(datos),
+  })
 
-// ==========================
-// ACTUALIZAR TENANT
-// ==========================
+  return procesarRespuesta(response)
+}
 
-export const actualizarTenant = async (tenantId, tenant, token) => {
-  const response = await fetch(`${API_URL}/tenants/${tenantId}`, {
+export const obtenerExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  return procesarRespuesta(response)
+}
+
+export const actualizarExtintor = async (id, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(tenant),
+    body: JSON.stringify(datos),
   })
 
   return procesarRespuesta(response)
 }
 
-
-// ==========================
-// OBTENER USUARIOS
-// ==========================
-
-export const obtenerUsuarios = async (token) => {
-  const response = await fetch(`${API_URL}/users`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  return procesarRespuesta(response)
-}
-
-export const crearUsuario = async (usuario, token) => {
-  const response = await fetch(`${API_URL}/users`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(usuario),
-  })
-  return procesarRespuesta(response)
-}
-
-export const actualizarUsuario = async (dni, usuario, token) => {
-  const response = await fetch(`${API_URL}/users/${dni}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify(usuario),
-  })
-  return procesarRespuesta(response)
-}
-
-export const eliminarUsuario = async (dni, token) => {
-  const response = await fetch(`${API_URL}/users/${dni}`, {
+export const eliminarExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguishers/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   })
-  return procesarRespuesta(response)
-}
 
-
-// ==========================
-// OBTENER PAYLOAD DEL JWT
-// ==========================
-
-export const obtenerPayloadToken = (token) => {
-  try {
-    const partes = token.split('.')
-    if (partes.length !== 3) return null
-    return JSON.parse(atob(partes[1].replace(/-/g, '+').replace(/_/g, '/')))
-  } catch (error) {
-    console.error('No fue posible leer el JWT:', error)
-    return null
-  }
-}
-
-export const tokenEstaExpirado = (token) => {
-  const payload = obtenerPayloadToken(token)
-  if (!payload?.exp) return true
-  return payload.exp <= Math.floor(Date.now() / 1000)
-}
-
-export const obtenerTiempoToken = (token) => {
-  const payload = obtenerPayloadToken(token)
-  if (!payload?.exp) return 0
-  return Math.max(payload.exp - Math.floor(Date.now() / 1000), 0)
-}
-
-
-// ==========================
-// ACTIVAR USUARIO
-// ==========================
-
-export const activarUsuario = async (dni, token) => {
-  const response = await fetch(`${API_URL}/users/activate/${dni}/${token}/`, {
-    method: 'POST',
-  })
-  return procesarRespuesta(response)
-}
-
-export const exportarUsuariosExcel = async (token) => {
-  const response = await fetch(`${API_URL}/users/export`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  return procesarRespuestaArchivo(response)
-}
-
-export const obtenerRoles = async (token, statusFilter = null) => {
-  let url = `${API_URL}/roles`
-  if (statusFilter !== null && statusFilter !== undefined) url += `?status_filter=${statusFilter}`
-  const response = await fetch(url, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const obtenerRol = async (roleId, token) => {
-  const response = await fetch(`${API_URL}/roles/${roleId}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const crearRol = async (rol, token) => {
-  const response = await fetch(`${API_URL}/roles`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(rol) })
-  return procesarRespuesta(response)
-}
-
-export const actualizarRol = async (roleId, rol, token) => {
-  const response = await fetch(`${API_URL}/roles/${roleId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(rol) })
-  return procesarRespuesta(response)
-}
-
-export const eliminarRol = async (roleId, token) => {
-  const response = await fetch(`${API_URL}/roles/${roleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const obtenerPermisosRol = async (roleId, token) => {
-  const response = await fetch(`${API_URL}/role-permissions/role/${roleId}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const asignarPermisoRol = async (roleId, permissionId, token) => {
-  const response = await fetch(`${API_URL}/role-permissions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ role_id: roleId, permission_id: permissionId }) })
-  return procesarRespuesta(response)
-}
-
-export const eliminarPermisoRol = async (rolePermissionId, token) => {
-  const response = await fetch(`${API_URL}/role-permissions/${rolePermissionId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const obtenerTenantsUsuario = async (userId, token) => {
-  const response = await fetch(`${API_URL}/user-tenants/user/${userId}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const obtenerRolesUsuario = async (userTenantId, token) => {
-  const response = await fetch(`${API_URL}/user-tenant-roles/user/${userTenantId}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const asignarRolUsuario = async (userTenantId, roleId, token) => {
-  const response = await fetch(`${API_URL}/user-tenant-roles`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ user_tenant_id: userTenantId, role_id: roleId }) })
-  return procesarRespuesta(response)
-}
-
-export const eliminarRolUsuario = async (userTenantRoleId, token) => {
-  const response = await fetch(`${API_URL}/user-tenant-roles/${userTenantRoleId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
-  return procesarRespuesta(response)
-}
-
-export const crearPermiso = async (permiso, token) => {
-  const response = await fetch(`${API_URL}/permission`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(permiso) })
-  return procesarRespuesta(response)
-}
-
-export const obtenerPermisos = async (token) => {
-  const response = await fetch(`${API_URL}/permission`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
