@@ -13,6 +13,7 @@ import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import ExtinguishersPage from '../pages/ExtinguishersPage'
+import ExtinguisherTypesPage from '../pages/ExtinguisherTypesPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
 import SuperBootstrapPage from '../pages/SuperBootstrapPage'
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="roles" element={<RolesPage />} />
         <Route path="permisos" element={<PermisosPage />} />
         <Route path="extintores" element={<ExtinguishersPage />} />
+        <Route path="extintores/tipos" element={<ExtinguisherTypesPage />} />
         <Route path="configuracion-ui" element={<TenantConfigPage />} />
         <Route path="administracion-tenant" element={<TenantAdminPage />} />
       </Route>

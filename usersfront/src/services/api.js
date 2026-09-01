@@ -36,11 +36,7 @@ const procesarRespuestaArchivo = async (response) => {
 }
 
 export const login = async (username, password, tenant, superMode = false, otp = '') => {
-  const response = await fetch(`${API_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, tenant, super_mode: superMode, ...(superMode && otp ? { otp } : {}) }),
-  })
+  const response = await fetch(`${API_URL}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password, tenant, super_mode: superMode, ...(superMode && otp ? { otp } : {}) }) })
   return procesarRespuesta(response)
 }
 
@@ -61,11 +57,7 @@ export const actualizarConfigTenant = async (configuracion, token) => {
 }
 
 export const bootstrapTenant = async (tenantName, tenantSlug, adminDni, adminName, adminEmail, adminPassword, adminPhone, bootstrapTenantKey) => {
-  const response = await fetch(`${API_URL}/bootstrap`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Bootstrap-Tenant-Key': bootstrapTenantKey },
-    body: JSON.stringify({ tenant_name: tenantName, tenant_slug: tenantSlug, admin_dni: adminDni, admin_name: adminName, admin_email: adminEmail, admin_password: adminPassword, admin_phone: adminPhone || null }),
-  })
+  const response = await fetch(`${API_URL}/bootstrap`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Bootstrap-Tenant-Key': bootstrapTenantKey }, body: JSON.stringify({ tenant_name: tenantName, tenant_slug: tenantSlug, admin_dni: adminDni, admin_name: adminName, admin_email: adminEmail, admin_password: adminPassword, admin_phone: adminPhone || null }) })
   return procesarRespuesta(response)
 }
 
@@ -218,6 +210,26 @@ export const obtenerPermisos = async (token) => {
 // ==========================
 // EXTINTORES
 // ==========================
+
+export const obtenerTiposExtintor = async (token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const crearTipoExtintor = async (datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const actualizarTipoExtintor = async (id, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const eliminarTipoExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
 
 export const obtenerExtintores = async (token) => {
   const response = await fetch(`${API_URL}/extinguishers`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
