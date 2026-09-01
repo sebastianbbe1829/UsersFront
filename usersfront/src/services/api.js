@@ -221,6 +221,16 @@ export const crearTipoExtintor = async (datos, token) => {
   return procesarRespuesta(response)
 }
 
+export const actualizarTipoExtintor = async (id, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const eliminarTipoExtintor = async (id, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-types/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
 export const obtenerExtintores = async (token) => {
   const response = await fetch(`${API_URL}/extinguishers`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
