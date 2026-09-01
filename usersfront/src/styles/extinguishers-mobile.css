@@ -1,6 +1,0 @@
-@media (max-width: 767.98px) {
-  .extinguisher-mobile-card,
-  .extinguisher-mobile-card * { box-sizing: border-box; min-width: 0; max-width: 100%; }
-  .extinguisher-mobile-card { width: 100%; overflow: hidden; }
-  .extinguisher-mobile-card .btn { width: 100%; max-width: 100%; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
-}
