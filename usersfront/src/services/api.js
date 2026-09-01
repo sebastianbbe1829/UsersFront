@@ -257,6 +257,11 @@ export const eliminarExtintor = async (id, token) => {
   return procesarRespuesta(response)
 }
 
+export const exportarExtintoresExcel = async (token) => {
+  const response = await fetch(`${API_URL}/extinguishers/export`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuestaArchivo(response)
+}
+
 // ==========================
 // REVISIONES DE EXTINTORES
 // ==========================
