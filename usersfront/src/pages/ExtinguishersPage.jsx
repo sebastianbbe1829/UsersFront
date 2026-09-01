@@ -91,7 +91,14 @@ function ExtinguishersPage() {
     event.preventDefault()
     try {
       setGuardando(true)
-      const datos = { ...formulario, extinguisher_type_id: Number(formulario.extinguisher_type_id) }
+      const datos = {
+        ...formulario,
+        extinguisher_type_id: Number(formulario.extinguisher_type_id),
+        last_recharge_date: formulario.last_recharge_date || null,
+        next_recharge_date: formulario.next_recharge_date || null,
+        last_hydrostatic_test_date: formulario.last_hydrostatic_test_date || null,
+        next_hydrostatic_test_date: formulario.next_hydrostatic_test_date || null,
+      }
       const resultado = editando ? await actualizarExtintor(editando, datos, token) : await crearExtintor(datos, token)
       setExtintores((actuales) => editando ? actuales.map((x) => x.id === resultado.id ? resultado : x) : [...actuales, resultado])
       setMostrarModal(false); setEditando(null); setFormulario({ ...FORM_INICIAL })
