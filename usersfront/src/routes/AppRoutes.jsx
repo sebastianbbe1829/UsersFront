@@ -12,6 +12,7 @@ import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
+import ExtinguishersPage from '../pages/ExtinguishersPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
 import SuperBootstrapPage from '../pages/SuperBootstrapPage'
@@ -20,24 +21,11 @@ import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
 
-import {
-  obtenerTenantDesdeUrl,
-} from '../utils/tenant'
-
-import {
-  useAuth,
-} from '../contexts/AuthContext'
-
-
-// ============================================================
-// RUTAS PROTEGIDAS
-// ============================================================
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
+import { useAuth } from '../contexts/AuthContext'
 
 function RutasProtegidas() {
-  const {
-    logueado,
-    cargando,
-  } = useAuth()
+  const { logueado, cargando } = useAuth()
 
   if (cargando) {
     return (
@@ -50,90 +38,43 @@ function RutasProtegidas() {
     )
   }
 
-  if (!logueado) {
-    return <Navigate to="login" replace />
-  }
-
+  if (!logueado) return <Navigate to="login" replace />
   return <MainLayout />
 }
-
-
-// ============================================================
-// APP ROUTES
-// ============================================================
 
 function AppRoutes() {
   const location = useLocation()
   const tenant = obtenerTenantDesdeUrl()
   const rutaActual = location.pathname
 
-  // ==========================================================
-  // BOOTSTRAPS TÉCNICOS PÚBLICOS
-  //
-  // Ninguno de estos flujos requiere tenant ni login.
-  // ==========================================================
-
   if (rutaActual === '/bootstrap/tenant') {
-    return (
-      <Routes>
-        <Route
-          path="/bootstrap/tenant"
-          element={<TenantBootstrapPage />}
-        />
-      </Routes>
-    )
+    return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   }
 
   if (rutaActual === '/bootstrap/super') {
-    return (
-      <Routes>
-        <Route
-          path="/bootstrap/super"
-          element={<SuperBootstrapPage />}
-        />
-      </Routes>
-    )
+    return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   }
 
-  if (!tenant) {
-    return <TenantRequired />
-  }
+  if (!tenant) return <TenantRequired />
 
   return (
     <Routes>
-      {/* ACTIVACIÓN DE USUARIO */}
-      <Route
-        path="/:tenant/users/activate/:dni/:token"
-        element={<ActivateUser />}
-      />
+      <Route path="/:tenant/users/activate/:dni/:token" element={<ActivateUser />} />
+      <Route path="/:tenant/login" element={<LoginPage />} />
 
-      {/* LOGIN */}
-      <Route
-        path="/:tenant/login"
-        element={<LoginPage />}
-      />
-
-      {/* APLICACIÓN PROTEGIDA */}
-      <Route
-        path="/:tenant"
-        element={<RutasProtegidas />}
-      >
+      <Route path="/:tenant" element={<RutasProtegidas />}>
         <Route index element={<WelcomePage />} />
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="roles" element={<RolesPage />} />
         <Route path="permisos" element={<PermisosPage />} />
+        <Route path="extintores" element={<ExtinguishersPage />} />
         <Route path="configuracion-ui" element={<TenantConfigPage />} />
         <Route path="administracion-tenant" element={<TenantAdminPage />} />
       </Route>
 
-      {/* RUTA DESCONOCIDA */}
-      <Route
-        path="*"
-        element={<Navigate to={`/${tenant}`} replace />}
-      />
+      <Route path="*" element={<Navigate to={`/${tenant}`} replace />} />
     </Routes>
   )
 }
-
 
 export default AppRoutes
