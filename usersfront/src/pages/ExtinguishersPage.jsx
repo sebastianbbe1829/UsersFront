@@ -3,7 +3,15 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { actualizarExtintor, crearExtintor, eliminarExtintor, obtenerExtintores } from '../services/api'
 
-const formularioInicial = { code: '', extinguisher_type: 'POLVO_QUIMICO_SECO', capacity: '', location: '', last_recharge_date: '', next_recharge_date: '', last_hydrostatic_test_date: '', next_hydrostatic_test_date: '', status: 'ACTIVE', is_stock: false }
+const TIPOS_EXTINTOR = [
+  { value: 'POLVO_QUIMICO_SECO', label: 'Polvo químico seco (PQS)' },
+  { value: 'CO2', label: 'Dióxido de carbono (CO₂)' },
+  { value: 'AGUA', label: 'Agua' },
+  { value: 'ESPUMA', label: 'Espuma' },
+  { value: 'AGENTE_LIMPIO', label: 'Agente limpio' },
+]
+
+const formularioInicial = { code: '', extinguisher_type: '', capacity: '', location: '', last_recharge_date: '', next_recharge_date: '', last_hydrostatic_test_date: '', next_hydrostatic_test_date: '', status: 'ACTIVE', is_stock: false }
 
 const prepararDatos = (formulario) => Object.fromEntries(Object.entries(formulario).map(([campo, valor]) => [campo, valor === '' ? null : valor]))
 
@@ -73,7 +81,7 @@ function ExtinguishersPage() {
     }
   }
 
-  const campos = [['code', 'Código', 'text'], ['extinguisher_type', 'Tipo de extintor', 'text'], ['capacity', 'Capacidad', 'text'], ['location', 'Ubicación', 'text'], ['last_recharge_date', 'Última recarga', 'date'], ['next_recharge_date', 'Próxima recarga', 'date'], ['last_hydrostatic_test_date', 'Última prueba hidrostática', 'date'], ['next_hydrostatic_test_date', 'Próxima prueba hidrostática', 'date']]
+  const campos = [['code', 'Código', 'text'], ['extinguisher_type', 'Tipo de extintor', 'select'], ['capacity', 'Capacidad', 'text'], ['location', 'Ubicación', 'text'], ['last_recharge_date', 'Última recarga', 'date'], ['next_recharge_date', 'Próxima recarga', 'date'], ['last_hydrostatic_test_date', 'Última prueba hidrostática', 'date'], ['next_hydrostatic_test_date', 'Próxima prueba hidrostática', 'date']]
 
   return (
     <div>
@@ -89,7 +97,7 @@ function ExtinguishersPage() {
       </div>
 
       {mostrarFormulario && <div className="card border-0 shadow-sm mb-4"><div className="card-body"><h5 className="fw-bold mb-3">{editando ? 'Editar extintor' : 'Nuevo extintor'}</h5><form onSubmit={guardar}><div className="row g-3">
-        {campos.map(([campo, etiqueta, tipo]) => <div className="col-md-6" key={campo}><label className="form-label">{etiqueta}</label><input className="form-control" name={campo} type={tipo} value={formulario[campo] || ''} onChange={cambiarCampo} required={['code', 'extinguisher_type'].includes(campo)} /></div>)}
+        {campos.map(([campo, etiqueta, tipo]) => <div className="col-md-6" key={campo}><label className="form-label">{etiqueta}</label>{tipo === 'select' ? <select className="form-select" name={campo} value={formulario[campo]} onChange={cambiarCampo} required><option value="">Seleccione un tipo de extintor...</option>{TIPOS_EXTINTOR.map((opcion) => <option key={opcion.value} value={opcion.value}>{opcion.label}</option>)}</select> : <input className="form-control" name={campo} type={tipo} value={formulario[campo] || ''} onChange={cambiarCampo} required={campo === 'code'} />}</div>)}
         <div className="col-md-6"><label className="form-label">Estado</label><select className="form-select" name="status" value={formulario.status} onChange={cambiarCampo}><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></div>
         <div className="col-md-6 d-flex align-items-end"><div className="form-check mb-2"><input className="form-check-input" id="is_stock" name="is_stock" type="checkbox" checked={formulario.is_stock} onChange={cambiarCampo} /><label className="form-check-label" htmlFor="is_stock">Es inventario en stock</label></div></div>
       </div><div className="d-flex gap-2 mt-4"><button className="btn btn-primary" disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar'}</button><button type="button" className="btn btn-outline-secondary" onClick={cancelar}>Cancelar</button></div></form></div></div>}
