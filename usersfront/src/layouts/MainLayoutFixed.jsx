@@ -38,15 +38,18 @@ function MainLayoutFixed() {
     let slot = null
 
     const buscarContenedor = () => {
-      const resumen = document.querySelector('section .d-flex.flex-column.flex-md-row.justify-content-between.align-items-md-center.gap-2.mt-3 > div:first-child')
-      if (!resumen) return
+      const encabezado = document.querySelector('section .d-flex.flex-column.flex-md-row.justify-content-between.align-items-md-center.gap-2.mb-4')
+      if (!encabezado) return
 
-      slot = resumen.querySelector('[data-extinguishers-export-slot]')
+      const botonNuevo = encabezado.querySelector('button.btn.btn-primary')
+      if (!botonNuevo) return
+
+      slot = encabezado.querySelector('[data-extinguishers-export-slot]')
       if (!slot) {
         slot = document.createElement('div')
         slot.setAttribute('data-extinguishers-export-slot', 'true')
-        slot.className = 'd-inline-flex align-items-center ms-md-3 mt-2 mt-md-0'
-        resumen.appendChild(slot)
+        slot.className = 'd-flex align-items-center'
+        botonNuevo.insertAdjacentElement('afterend', slot)
       }
 
       setExportContainer(slot)
@@ -109,7 +112,7 @@ function MainLayoutFixed() {
       <div className="position-absolute bottom-0 start-0 end-0"><button type="button" className="btn text-white border-0 rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: secondaryColor }} onClick={cambiarModoOscuro} title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>{modoOscuro ? '☀️' : '🌙'}</span>{!menuColapsado && <span className="ms-3">{modoOscuro ? 'Modo claro' : 'Modo oscuro'}</span>}</button><button type="button" className="btn text-white rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: primaryColor }} onClick={manejarCerrarSesion} title="Cerrar sesión"><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>🚪</span>{!menuColapsado && <span className="ms-3">Cerrar sesión</span>}</button></div>
     </aside>
     <main style={{ marginLeft: menuColapsado ? '72px' : '250px', width: `calc(100% - ${menuColapsado ? '72px' : '250px'})`, minHeight: '100vh', transition: 'margin-left .25s ease, width .25s ease' }}>
-      <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}><div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div><div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px' }}>👤</span><div className="d-none d-sm-block text-end"><div className="fw-semibold text-truncate" style={{ maxWidth: '180px' }}>{usuarioLogueado.name}</div>{esSuper && <small className="fw-semibold" style={{ color: primaryColor }}>SUPER</small>}</div></div>}<div className="d-flex align-items-center gap-1" title="Sesión activa"><span style={{ fontSize: '12px' }}>🟢</span><small className="text-muted">Activa</small></div></div></header>
+      <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}><div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div><div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px' }}>👤</span><div className="d-none d-sm-block text-end"><div className="fw-semibold text-truncate" style={{ maxWidth: '180px' }}>{usuarioLogueado.name}</div>{esSuper && <small className="fw-semibold" style={{ color: primaryColor }}>SUPER</small></div></div>}<div className="d-flex align-items-center gap-1" title="Sesión activa"><span style={{ fontSize: '12px' }}>🟢</span><small className="text-muted">Activa</small></div></div></header>
       <section className="p-4"><Outlet /></section>
     </main>
     {botonExportarExcel}
