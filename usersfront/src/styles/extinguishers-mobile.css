@@ -1,9 +1,0 @@
-/* Estilo móvil de Extintores alineado con UserTable. */
-@media (max-width: 767.98px) {
-  .card.shadow-sm.border-0.d-none.d-md-block + .d-md-none > .card {
-    border: 0 !important;
-    border-radius: .75rem;
-    box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
-    overflow: hidden;
-  }
-}
