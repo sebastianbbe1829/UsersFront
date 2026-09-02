@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -156,7 +157,7 @@ function RolesPage() {
   // CARGAR ROLES
   // ============================================================
 
-  const cargarRoles = async () => {
+  const cargarRoles = useCallback(async () => {
 
     try {
 
@@ -218,7 +219,7 @@ function RolesPage() {
 
     }
 
-  }
+  }, [token, manejarSesionExpirada])
 
 
   // ============================================================
@@ -231,9 +232,13 @@ function RolesPage() {
       return
     }
 
-    cargarRoles()
+    const cargar = async () => {
+      await cargarRoles()
+    }
 
-  }, [token])
+    void cargar()
+
+  }, [cargarRoles])
 
 
   // ============================================================
