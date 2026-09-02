@@ -238,7 +238,7 @@ function RolesPage() {
 
     void cargar()
 
-  }, [cargarRoles])
+  }, [token, cargarRoles])
 
 
   // ============================================================
