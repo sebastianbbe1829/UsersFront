@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { actualizarItemRevisionExtintor, crearItemRevisionExtintor, eliminarItemRevisionExtintor, obtenerItemsRevisionExtintorAdmin } from '../services/inspectionItemsApi'
 
@@ -8,8 +8,29 @@ const Modal = ({ title, children, onClose, footer }) => <div className="modal d-
 function ExtinguisherInspectionItemsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const [items, setItems] = useState([]), [cargando, setCargando] = useState(true), [guardando, setGuardando] = useState(false), [mensaje, setMensaje] = useState(null), [mostrarModal, setMostrarModal] = useState(false), [editando, setEditando] = useState(null), [formulario, setFormulario] = useState(FORM_INICIAL), [busqueda, setBusqueda] = useState(''), [estado, setEstado] = useState('todos'), [porPagina, setPorPagina] = useState(10), [pagina, setPagina] = useState(1)
-  const cargar = useCallback(async () => { if (!token) return; try { setCargando(true); const resultado = await obtenerItemsRevisionExtintorAdmin(token); setItems(Array.isArray(resultado) ? resultado : []) } catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los ítems de revisión.' }) } finally { setCargando(false) } }, [token, manejarSesionExpirada])
-  useEffect(() => { cargar() }, [cargar])
+  useEffect(() => {
+    let activo = true
+    const cargar = async () => {
+      if (!token) {
+        if (activo) setCargando(false)
+        return
+      }
+      try {
+        const resultado = await obtenerItemsRevisionExtintorAdmin(token)
+        if (activo) setItems(Array.isArray(resultado) ? resultado : [])
+      } catch (error) {
+        if (error.status === 401) {
+          manejarSesionExpirada()
+          return
+        }
+        if (activo) setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los ítems de revisión.' })
+      } finally {
+        if (activo) setCargando(false)
+      }
+    }
+    void cargar()
+    return () => { activo = false }
+  }, [token, manejarSesionExpirada])
   const filtrados = useMemo(() => { const texto = busqueda.trim().toLowerCase(); return items.filter((item) => { const textoOk = !texto || [item.code, item.name, item.display_order].some((v) => String(v ?? '').toLowerCase().includes(texto)); const estadoOk = estado === 'todos' || (estado === 'activos' ? item.active : !item.active); return textoOk && estadoOk }) }, [items, busqueda, estado])
   const totalPaginas = Math.ceil(filtrados.length / porPagina)
   const paginaSegura = Math.min(pagina, Math.max(totalPaginas, 1))
