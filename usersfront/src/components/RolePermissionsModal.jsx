@@ -56,7 +56,11 @@ function RolePermissionsModal({
   }, [onSesionExpirada, rol.id, token])
 
   useEffect(() => {
-    void cargarDatos()
+    const cargar = async () => {
+      await cargarDatos()
+    }
+
+    void cargar()
   }, [cargarDatos])
 
   const permisosAsignados = useMemo(
