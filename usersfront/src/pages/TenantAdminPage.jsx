@@ -103,8 +103,6 @@ function TenantAdminPage() {
       setTenantEditando(null)
       setDatosPendientes(null)
       await cargarTenants()
-    } catch (err) {
-      throw err
     } finally {
       setGuardando(false)
     }
