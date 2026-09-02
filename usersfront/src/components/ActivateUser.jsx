@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   solicitarOtpActivacion,
@@ -25,7 +25,7 @@ function ActivateUser() {
 
   const solicitudInicial = useRef(false)
 
-  const solicitarCodigo = async () => {
+  const solicitarCodigo = useCallback(async () => {
     try {
       setEnviando(true)
       setError(null)
@@ -39,13 +39,13 @@ function ActivateUser() {
       setEnviando(false)
       setCargando(false)
     }
-  }
+  }, [dni, token])
 
   useEffect(() => {
     if (solicitudInicial.current) return
     solicitudInicial.current = true
-    solicitarCodigo()
-  }, [dni, token])
+    void solicitarCodigo()
+  }, [solicitarCodigo])
 
   useEffect(() => {
     if (!expiresAt) return undefined
