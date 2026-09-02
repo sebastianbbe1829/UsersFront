@@ -29,7 +29,6 @@ function UsersPage() {
 
   const {
     token,
-    usuarioLogueado,
     usuarios,
     setUsuarios,
     manejarSesionExpirada,
