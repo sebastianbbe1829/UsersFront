@@ -25,7 +25,6 @@ function ExtinguisherTypesPage() {
     if (!token) return
     try {
       const resultado = await obtenerTiposExtintor(token)
-      setCargando(true)
       setTipos(Array.isArray(resultado) ? resultado : [])
       setMensaje(null)
     } catch (error) {
@@ -36,7 +35,12 @@ function ExtinguisherTypesPage() {
     }
   }, [token, manejarSesionExpirada])
 
-  useEffect(() => { cargarTipos() }, [cargarTipos])
+  useEffect(() => {
+    const cargar = async () => {
+      await cargarTipos()
+    }
+    void cargar()
+  }, [cargarTipos])
   const cambiarCampo = (event) => { const { name, value } = event.target; setFormulario((actual) => ({ ...actual, [name]: value })) }
   const abrirNuevo = () => { setTipoEditando(null); setFormulario({ ...formularioInicial }); setMensaje(null); setMostrarModal(true) }
   const abrirEditar = (tipo) => { setTipoEditando(tipo); setFormulario({ code: tipo.code || '', name: tipo.name || '' }); setMensaje(null); setMostrarModal(true) }
