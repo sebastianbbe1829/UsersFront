@@ -4,7 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import './index.css'
 import './styles/extinguishers-mobile.css'
 import App from './App.jsx'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthProvider'
 import { TenantConfigProvider } from './contexts/TenantConfigProvider'
 import { BrowserRouter } from 'react-router-dom'
 
