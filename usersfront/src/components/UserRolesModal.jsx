@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -101,7 +102,7 @@ function UserRolesModal({
   // CARGAR INFORMACIÓN
   // ============================================================
 
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
 
     try {
 
@@ -241,7 +242,7 @@ function UserRolesModal({
 
     }
 
-  }
+  }, [usuario.id, token, onSesionExpirada])
 
 
   // ============================================================
@@ -249,10 +250,12 @@ function UserRolesModal({
   // ============================================================
 
   useEffect(() => {
+    const cargar = async () => {
+      await cargarDatos()
+    }
 
-    cargarDatos()
-
-  }, [])
+    void cargar()
+  }, [cargarDatos])
 
 
   // ============================================================
