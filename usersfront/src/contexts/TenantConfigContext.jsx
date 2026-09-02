@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useEffect,
   useState,
 } from 'react'
@@ -9,8 +7,7 @@ import {
 import { obtenerConfigTenantPublica } from '../services/api'
 
 import { useAuth } from './AuthContext'
-
-const TenantConfigContext = createContext(null)
+import { TenantConfigContext } from './TenantConfigContextValue'
 
 const CONFIG_DEFAULT = {
   tenant_id: null,
@@ -105,7 +102,11 @@ export function TenantConfigProvider({ children }) {
   }, [tenant])
 
   useEffect(() => {
-    cargarConfig(tenant)
+    const cargar = async () => {
+      await cargarConfig(tenant)
+    }
+
+    void cargar()
   }, [tenant, cargarConfig])
 
   const value = {
@@ -124,14 +125,4 @@ export function TenantConfigProvider({ children }) {
       {children}
     </TenantConfigContext.Provider>
   )
-}
-
-export function useTenantConfig() {
-  const context = useContext(TenantConfigContext)
-
-  if (!context) {
-    throw new Error('useTenantConfig debe utilizarse dentro de TenantConfigProvider')
-  }
-
-  return context
 }
