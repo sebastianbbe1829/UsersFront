@@ -2,8 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL
 
 const request = async (url, options = {}) => {
   const response = await fetch(url, options)
-  let data = null
-  try { data = await response.json() } catch { data = null }
+  const data = await response.json().catch(() => null)
   if (!response.ok) {
     const error = new Error(data?.detail || 'No fue posible completar la operación.')
     error.status = response.status
