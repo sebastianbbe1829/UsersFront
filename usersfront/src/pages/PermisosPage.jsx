@@ -175,7 +175,7 @@ function PermisosPage() {
     }
 
     void cargar()
-  }, [cargarPermisos])
+  }, [token, cargarPermisos])
 
   return (
     <>
