@@ -1,13 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL
 
 const procesarRespuesta = async (response) => {
-  let resultado = null
-
-  try {
-    resultado = await response.json()
-  } catch {
-    resultado = null
-  }
+  const resultado = await response.json().catch(() => null)
 
   if (!response.ok) {
     const error = new Error(

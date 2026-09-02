@@ -62,7 +62,12 @@ function ExtinguishersPage() {
     } finally { setCargando(false) }
   }, [token, manejarSesionExpirada])
 
-  useEffect(() => { cargar() }, [cargar])
+  useEffect(() => {
+    const cargarDatos = async () => {
+      await cargar()
+    }
+    void cargarDatos()
+  }, [cargar])
 
   const filtrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()

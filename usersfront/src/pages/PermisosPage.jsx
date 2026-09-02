@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -26,83 +27,45 @@ import PermissionForm from '../components/PermissionForm'
 
 function PermisosPage() {
 
-  // ============================================================
-  // CONTEXT
-  // ============================================================
-
   const {
     token,
     manejarSesionExpirada,
   } = useAuth()
-
-
-  // ============================================================
-  // PERMISOS
-  // ============================================================
 
   const [
     permisos,
     setPermisos,
   ] = useState([])
 
-
-  // ============================================================
-  // CARGANDO
-  // ============================================================
-
   const [
     cargando,
     setCargando,
   ] = useState(true)
-
-
-  // ============================================================
-  // GUARDANDO
-  // ============================================================
 
   const [
     guardando,
     setGuardando,
   ] = useState(false)
 
-
-  // ============================================================
-  // MOSTRAR FORMULARIO
-  // ============================================================
-
   const [
     mostrarFormulario,
     setMostrarFormulario,
   ] = useState(false)
-
-
-  // ============================================================
-  // MENSAJE
-  // ============================================================
 
   const [
     mensaje,
     setMensaje,
   ] = useState(null)
 
-
-  // ============================================================
-  // CARGAR PERMISOS
-  // ============================================================
-
-  const cargarPermisos = async () => {
-
+  const cargarPermisos = useCallback(async () => {
     try {
-
       setCargando(true)
       setMensaje(null)
-
 
       const resultado =
         await obtenerPermisos(
           token
         )
-
 
       setPermisos(
         Array.isArray(resultado)
@@ -111,44 +74,24 @@ function PermisosPage() {
       )
 
     } catch (error) {
-
       console.error(
         'Error obteniendo permisos:',
         error
       )
 
-
-      // ========================================================
-      // SESIÓN EXPIRADA
-      // ========================================================
-
       if (error.status === 401) {
-
         manejarSesionExpirada()
-
         return
       }
 
-
-      // ========================================================
-      // SIN PERMISOS
-      // ========================================================
-
       if (error.status === 403) {
-
         setMensaje({
           tipo: 'danger',
           texto:
             'No tienes permisos para consultar los permisos.',
         })
-
         return
       }
-
-
-      // ========================================================
-      // OTROS ERRORES
-      // ========================================================
 
       setMensaje({
         tipo: 'danger',
@@ -158,38 +101,22 @@ function PermisosPage() {
       })
 
     } finally {
-
       setCargando(false)
-
     }
-
-  }
-
-
-  // ============================================================
-  // CREAR PERMISO
-  // ============================================================
+  }, [token, manejarSesionExpirada])
 
   const guardarPermiso = async (
     datos
   ) => {
-
     try {
-
       setGuardando(true)
       setMensaje(null)
-
 
       const nuevoPermiso =
         await crearPermiso(
           datos,
           token
         )
-
-
-      // ========================================================
-      // AGREGAR EL NUEVO PERMISO A LA LISTA
-      // ========================================================
 
       setPermisos(
         (actuales) => [
@@ -198,17 +125,7 @@ function PermisosPage() {
         ]
       )
 
-
-      // ========================================================
-      // CERRAR FORMULARIO
-      // ========================================================
-
       setMostrarFormulario(false)
-
-
-      // ========================================================
-      // MENSAJE DE ÉXITO
-      // ========================================================
 
       setMensaje({
         tipo: 'success',
@@ -217,44 +134,24 @@ function PermisosPage() {
       })
 
     } catch (error) {
-
       console.error(
         'Error creando permiso:',
         error
       )
 
-
-      // ========================================================
-      // SESIÓN EXPIRADA
-      // ========================================================
-
       if (error.status === 401) {
-
         manejarSesionExpirada()
-
         return
       }
 
-
-      // ========================================================
-      // SIN PERMISOS
-      // ========================================================
-
       if (error.status === 403) {
-
         setMensaje({
           tipo: 'danger',
           texto:
             'No tienes permisos para crear permisos.',
         })
-
         return
       }
-
-
-      // ========================================================
-      // OTROS ERRORES
-      // ========================================================
 
       setMensaje({
         tipo: 'danger',
@@ -264,41 +161,24 @@ function PermisosPage() {
       })
 
     } finally {
-
       setGuardando(false)
-
     }
-
   }
 
-
-  // ============================================================
-  // CARGA INICIAL
-  // ============================================================
-
   useEffect(() => {
-
     if (!token) {
       return
     }
 
-    cargarPermisos()
+    const cargar = async () => {
+      await cargarPermisos()
+    }
 
-  }, [token])
-
-
-  // ============================================================
-  // RENDER
-  // ============================================================
+    void cargar()
+  }, [token, cargarPermisos])
 
   return (
-
     <>
-
-      {/* ====================================================== */}
-      {/* VIGILAR SESIÓN                                        */}
-      {/* ====================================================== */}
-
       <SessionManager
         token={token}
         onSesionExpirada={
@@ -306,30 +186,16 @@ function PermisosPage() {
         }
       />
 
-
-      {/* ====================================================== */}
-      {/* TÍTULO                                                 */}
-      {/* ====================================================== */}
-
       <div className="mb-4">
-
         <h2 className="fw-bold mb-1">
           Gestión de Permisos
         </h2>
-
         <p className="text-muted mb-0">
           Permisos globales disponibles para asignar a los roles.
         </p>
-
       </div>
 
-
-      {/* ====================================================== */}
-      {/* MENSAJE                                                */}
-      {/* ====================================================== */}
-
       {mensaje && (
-
         <div
           className={`
             alert
@@ -340,9 +206,7 @@ function PermisosPage() {
           `}
           role="alert"
         >
-
           {mensaje.texto}
-
           <button
             type="button"
             className="btn-close"
@@ -351,18 +215,10 @@ function PermisosPage() {
               setMensaje(null)
             }
           />
-
         </div>
-
       )}
 
-
-      {/* ====================================================== */}
-      {/* CARGANDO                                               */}
-      {/* ====================================================== */}
-
       {cargando ? (
-
         <div
           className="
             card
@@ -370,7 +226,6 @@ function PermisosPage() {
             border-0
           "
         >
-
           <div
             className="
               card-body
@@ -378,7 +233,6 @@ function PermisosPage() {
               py-5
             "
           >
-
             <div
               className="
                 spinner-border
@@ -387,17 +241,12 @@ function PermisosPage() {
               "
               role="status"
             />
-
             <div className="text-muted">
               Cargando permisos...
             </div>
-
           </div>
-
         </div>
-
       ) : (
-
         <PermissionTable
           permisos={permisos}
           onNuevoPermiso={() => {
@@ -405,49 +254,31 @@ function PermisosPage() {
             setMostrarFormulario(true)
           }}
         />
-
       )}
 
-
-      {/* ====================================================== */}
-      {/* FORMULARIO NUEVO PERMISO                              */}
-      {/* ====================================================== */}
-
       {mostrarFormulario && (
-
         <PermissionForm
           onGuardar={
             guardarPermiso
           }
-
           onCancelar={() => {
-
             if (guardando) {
               return
             }
-
             setMostrarFormulario(false)
-
           }}
-
           guardando={
             guardando
           }
-
           error={
             mensaje?.tipo === 'danger'
               ? mensaje.texto
               : ''
           }
         />
-
       )}
-
     </>
-
   )
-
 }
-
 
 export default PermisosPage

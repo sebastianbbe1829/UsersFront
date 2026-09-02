@@ -23,12 +23,24 @@ function ExtinguisherTypesPage() {
 
   const cargarTipos = useCallback(async () => {
     if (!token) return
-    try { setCargando(true); const resultado = await obtenerTiposExtintor(token); setTipos(Array.isArray(resultado) ? resultado : []); setMensaje(null) }
-    catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los tipos de extintor.' }) }
-    finally { setCargando(false) }
+    try {
+      const resultado = await obtenerTiposExtintor(token)
+      setTipos(Array.isArray(resultado) ? resultado : [])
+      setMensaje(null)
+    } catch (error) {
+      if (error.status === 401) return manejarSesionExpirada()
+      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los tipos de extintor.' })
+    } finally {
+      setCargando(false)
+    }
   }, [token, manejarSesionExpirada])
 
-  useEffect(() => { cargarTipos() }, [cargarTipos])
+  useEffect(() => {
+    const cargar = async () => {
+      await cargarTipos()
+    }
+    void cargar()
+  }, [cargarTipos])
   const cambiarCampo = (event) => { const { name, value } = event.target; setFormulario((actual) => ({ ...actual, [name]: value })) }
   const abrirNuevo = () => { setTipoEditando(null); setFormulario({ ...formularioInicial }); setMensaje(null); setMostrarModal(true) }
   const abrirEditar = (tipo) => { setTipoEditando(tipo); setFormulario({ code: tipo.code || '', name: tipo.name || '' }); setMensaje(null); setMostrarModal(true) }

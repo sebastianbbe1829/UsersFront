@@ -14,8 +14,7 @@ const obtenerMensajeError = (status) => {
 }
 
 const procesarRespuesta = async (response) => {
-  let resultado = null
-  try { resultado = await response.json() } catch { resultado = null }
+  const resultado = await response.json().catch(() => null)
   if (!response.ok) {
     console.error('Error API:', { status: response.status, statusText: response.statusText, detail: resultado?.detail })
     const error = new Error(resultado?.detail || obtenerMensajeError(response.status))
@@ -27,8 +26,7 @@ const procesarRespuesta = async (response) => {
 
 const procesarRespuestaArchivo = async (response) => {
   if (!response.ok) {
-    let resultado = null
-    try { resultado = await response.json() } catch { resultado = null }
+    const resultado = await response.json().catch(() => null)
     const error = new Error(resultado?.detail || obtenerMensajeError(response.status))
     error.status = response.status
     throw error
@@ -296,4 +294,34 @@ export const obtenerRevisionExtintor = async (inspectionId, token) => {
 export const crearRevisionExtintor = async (extinguisherId, datos, token) => {
   const response = await fetch(`${API_URL}/extinguishers/${extinguisherId}/inspections`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
   return procesarRespuesta(response)
+}
+
+export const actualizarRevisionExtintor = async (inspectionId, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/${inspectionId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const eliminarRevisionExtintor = async (inspectionId, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/${inspectionId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const crearItemRevisionExtintor = async (datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/items`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const actualizarItemRevisionExtintor = async (itemId, datos, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/items/${itemId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
+  return procesarRespuesta(response)
+}
+
+export const eliminarItemRevisionExtintor = async (itemId, token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/items/${itemId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const exportarRevisionesExcel = async (token) => {
+  const response = await fetch(`${API_URL}/extinguisher-inspections/export`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuestaArchivo(response)
 }
