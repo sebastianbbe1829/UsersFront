@@ -237,6 +237,12 @@ export const obtenerExtintores = async (token) => {
   return procesarRespuesta(response)
 }
 
+export const buscarExtintores = async (search, token, limit = 20) => {
+  const query = new URLSearchParams({ search, limit: String(limit) })
+  const response = await fetch(`${API_URL}/extinguishers/search?${query.toString()}`, { method: 'GET', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
 export const crearExtintor = async (datos, token) => {
   const response = await fetch(`${API_URL}/extinguishers`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(datos) })
   return procesarRespuesta(response)

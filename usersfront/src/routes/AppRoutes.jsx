@@ -8,7 +8,7 @@ import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import ExtinguishersPage from '../pages/ExtinguishersPage'
 import ExtinguisherTypesPage from '../pages/ExtinguisherTypesPage'
-import ExtinguisherInspectionsPage from '../pages/ExtinguisherInspectionsPage'
+import ExtinguisherInspectionsSearchPage from '../pages/ExtinguisherInspectionsSearchPage'
 import ExtinguisherInspectionItemsPage from '../pages/ExtinguisherInspectionItemsPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -44,7 +44,7 @@ function AppRoutes() {
       <Route path="permisos" element={<PermisosPage />} />
       <Route path="extintores" element={<ExtinguishersPage />} />
       <Route path="extintores/tipos" element={<ExtinguisherTypesPage />} />
-      <Route path="extintores/revisiones" element={<ExtinguisherInspectionsPage />} />
+      <Route path="extintores/revisiones" element={<ExtinguisherInspectionsSearchPage />} />
       <Route path="extintores/items-revision" element={<ExtinguisherInspectionItemsPage />} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
