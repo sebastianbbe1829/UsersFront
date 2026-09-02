@@ -1,3 +1,5 @@
+import Can from './Can'
+
 function Dashboard({
   usuarios,
   onExportarExcel,
@@ -293,45 +295,47 @@ function Dashboard({
                   </div>
 
 
-                  <button
-                    type="button"
-                    className="
-                      btn
-                      btn-success
-                      btn-sm
-                    "
-                    onClick={
-                      onExportarExcel
-                    }
-                    disabled={
-                      exportandoExcel
-                    }
-                    title="Exportar usuarios a Excel"
-                  >
+                  <Can permission="USER_EXPORT">
+                    <button
+                      type="button"
+                      className="
+                        btn
+                        btn-success
+                        btn-sm
+                      "
+                      onClick={
+                        onExportarExcel
+                      }
+                      disabled={
+                        exportandoExcel
+                      }
+                      title="Exportar usuarios a Excel"
+                    >
 
-                    {exportandoExcel ? (
+                      {exportandoExcel ? (
 
-                      <span
-                        className="
-                          spinner-border
-                          spinner-border-sm
-                        "
-                        role="status"
-                        aria-hidden="true"
-                      />
+                        <span
+                          className="
+                            spinner-border
+                            spinner-border-sm
+                          "
+                          role="status"
+                          aria-hidden="true"
+                        />
 
-                    ) : (
+                      ) : (
 
-                      <>
-                        📊
-                        <span className="ms-1 d-none d-lg-inline">
-                          Excel
-                        </span>
-                      </>
+                        <>
+                          📊
+                          <span className="ms-1 d-none d-lg-inline">
+                            Excel
+                          </span>
+                        </>
 
-                    )}
+                      )}
 
-                  </button>
+                    </button>
+                  </Can>
 
                 </div>
 

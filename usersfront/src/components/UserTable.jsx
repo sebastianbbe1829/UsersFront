@@ -2,6 +2,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import Can from './Can'
 
 
 function UserTable({
@@ -279,19 +280,21 @@ function UserTable({
         </div>
 
 
-        <button
-          type="button"
-          className="
-            btn
-            btn-primary
-            btn-sm
-          "
-          onClick={
-            onNuevoUsuario
-          }
-        >
-          + Nuevo usuario
-        </button>
+        <Can permission="USER_CREATE">
+          <button
+            type="button"
+            className="
+              btn
+              btn-primary
+              btn-sm
+            "
+            onClick={
+              onNuevoUsuario
+            }
+          >
+            + Nuevo usuario
+          </button>
+        </Can>
 
       </div>
 
@@ -663,71 +666,77 @@ function UserTable({
 
                           {/* EDITAR */}
 
-                          <button
-                            type="button"
-                            className="
-                              btn
-                              btn-warning
-                              btn-sm
-                              py-0
-                              px-2
-                            "
-                            title="Editar usuario"
-                            aria-label={`Editar usuario ${usuario.name}`}
-                            onClick={() =>
-                              onEditarUsuario(
-                                usuario
-                              )
-                            }
-                          >
-                            ✏️
-                          </button>
+                          <Can permission="USER_UPDATE">
+                            <button
+                              type="button"
+                              className="
+                                btn
+                                btn-warning
+                                btn-sm
+                                py-0
+                                px-2
+                              "
+                              title="Editar usuario"
+                              aria-label={`Editar usuario ${usuario.name}`}
+                              onClick={() =>
+                                onEditarUsuario(
+                                  usuario
+                                )
+                              }
+                            >
+                              ✏️
+                            </button>
+                          </Can>
 
 
                           {/* ELIMINAR */}
 
-                          <button
-                            type="button"
-                            className="
-                              btn
-                              btn-danger
-                              btn-sm
-                              py-0
-                              px-2
-                            "
-                            title="Eliminar usuario"
-                            aria-label={`Eliminar usuario ${usuario.name}`}
-                            onClick={() =>
-                              onEliminarUsuario(
-                                usuario
-                              )
-                            }
-                          >
-                            🗑️
-                          </button>
+                          <Can permission="USER_DELETE">
+                            <button
+                              type="button"
+                              className="
+                                btn
+                                btn-danger
+                                btn-sm
+                                py-0
+                                px-2
+                              "
+                              title="Eliminar usuario"
+                              aria-label={`Eliminar usuario ${usuario.name}`}
+                              onClick={() =>
+                                onEliminarUsuario(
+                                  usuario
+                                )
+                              }
+                            >
+                              🗑️
+                            </button>
+                          </Can>
 
 
                           {/* ROLES */}
 
-                          <button
-                            type="button"
-                            className="
-                              btn
-                              btn-primary
-                              btn-sm
-                              py-0
-                              px-2
-                            "
-                            title="Administrar roles"
-                            aria-label={`Administrar roles de ${usuario.name}`}
-                            onClick={() =>
-                              onAdministrarRoles(
-                                usuario
-                              )
-                            }
-                          >
-                            👥
-                          </button>
+                          <Can permission="USER_UPDATE">
+                            <button
+                              type="button"
+                              className="
+                                btn
+                                btn-primary
+                                btn-sm
+                                py-0
+                                px-2
+                              "
+                              title="Administrar roles"
+                              aria-label={`Administrar roles de ${usuario.name}`}
+                              onClick={() =>
+                                onAdministrarRoles(
+                                  usuario
+                                )
+                              }
+                            >
+                              👥
+                            </button>
+                          </Can>
 
                         </div>
 
@@ -932,59 +941,65 @@ function UserTable({
 
                     {/* EDITAR */}
 
-                    <button
-                      type="button"
-                      className="
-                        btn
-                        btn-warning
-                        btn-sm
-                      "
-                      onClick={() =>
-                        onEditarUsuario(
-                          usuario
-                        )
-                      }
-                    >
-                      ✏️ Editar
-                    </button>
+                    <Can permission="USER_UPDATE">
+                      <button
+                        type="button"
+                        className="
+                          btn
+                          btn-warning
+                          btn-sm
+                        "
+                        onClick={() =>
+                          onEditarUsuario(
+                            usuario
+                          )
+                        }
+                      >
+                        ✏️ Editar
+                      </button>
+                    </Can>
 
 
                     {/* ROLES */}
 
-                    <button
-                      type="button"
-                      className="
-                        btn
-                        btn-primary
-                        btn-sm
-                      "
-                      onClick={() =>
-                        onAdministrarRoles(
-                          usuario
-                        )
-                      }
-                    >
-                      👥 Administrar roles
-                    </button>
+                    <Can permission="USER_UPDATE">
+                      <button
+                        type="button"
+                        className="
+                          btn
+                          btn-primary
+                          btn-sm
+                        "
+                        onClick={() =>
+                          onAdministrarRoles(
+                            usuario
+                          )
+                        }
+                      >
+                        👥 Administrar roles
+                      </button>
+                    </Can>
 
 
                     {/* ELIMINAR */}
 
-                    <button
-                      type="button"
-                      className="
-                        btn
-                        btn-danger
-                        btn-sm
-                      "
-                      onClick={() =>
-                        onEliminarUsuario(
-                          usuario
-                        )
-                      }
-                    >
-                      🗑️ Eliminar
-                    </button>
+                    <Can permission="USER_DELETE">
+                      <button
+                        type="button"
+                        className="
+                          btn
+                          btn-danger
+                          btn-sm
+                        "
+                        onClick={() =>
+                          onEliminarUsuario(
+                            usuario
+                          )
+                        }
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </Can>
 
                   </div>
 
