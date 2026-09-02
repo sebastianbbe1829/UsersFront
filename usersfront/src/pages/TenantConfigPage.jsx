@@ -59,7 +59,11 @@ function TenantConfigPage() {
   }
 
   useEffect(() => {
-    cargarConfig()
+    const cargar = async () => {
+      await cargarConfig()
+    }
+
+    void cargar()
   }, [esSuper, token, tenantId])
 
   const cambiarCampo = (event) => {
@@ -107,8 +111,6 @@ function TenantConfigPage() {
       setMensaje('Configuración visual actualizada correctamente.')
       setDatosPendientes(null)
       setMostrarOtp(false)
-    } catch (err) {
-      throw err
     } finally {
       setGuardando(false)
     }
@@ -155,117 +157,41 @@ function TenantConfigPage() {
             <div className="row g-4">
               <div className="col-12">
                 <label className="form-label fw-semibold">Título de la aplicación</label>
-                <input
-                  type="text"
-                  name="app_title"
-                  className="form-control"
-                  value={formulario.app_title}
-                  onChange={cambiarCampo}
-                  minLength="2"
-                  maxLength="150"
-                  required
-                  disabled={guardando}
-                />
+                <input type="text" name="app_title" className="form-control" value={formulario.app_title} onChange={cambiarCampo} minLength="2" maxLength="150" required disabled={guardando} />
                 <div className="form-text">Se mostrará en la pestaña del navegador.</div>
               </div>
-
               <div className="col-12">
                 <label className="form-label fw-semibold">URL del logo</label>
-                <input
-                  type="url"
-                  name="logo_url"
-                  className="form-control"
-                  value={formulario.logo_url}
-                  onChange={cambiarCampo}
-                  maxLength="500"
-                  placeholder="https://..."
-                  disabled={guardando}
-                />
+                <input type="url" name="logo_url" className="form-control" value={formulario.logo_url} onChange={cambiarCampo} maxLength="500" placeholder="https://..." disabled={guardando} />
                 <div className="form-text">Opcional. Se utilizará también como favicon.</div>
               </div>
-
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Color principal</label>
                 <div className="input-group">
-                  <input
-                    type="color"
-                    className="form-control form-control-color"
-                    value={formulario.primary_color}
-                    onChange={cambiarCampo}
-                    name="primary_color"
-                    title="Seleccionar color principal"
-                    disabled={guardando}
-                  />
-                  <input
-                    type="text"
-                    className="form-control text-uppercase"
-                    value={formulario.primary_color}
-                    onChange={cambiarCampo}
-                    name="primary_color"
-                    maxLength="7"
-                    pattern="#[0-9A-Fa-f]{6}"
-                    required
-                    disabled={guardando}
-                  />
+                  <input type="color" className="form-control form-control-color" value={formulario.primary_color} onChange={cambiarCampo} name="primary_color" title="Seleccionar color principal" disabled={guardando} />
+                  <input type="text" className="form-control text-uppercase" value={formulario.primary_color} onChange={cambiarCampo} name="primary_color" maxLength="7" pattern="#[0-9A-Fa-f]{6}" required disabled={guardando} />
                 </div>
               </div>
-
               <div className="col-md-6">
                 <label className="form-label fw-semibold">Color secundario</label>
                 <div className="input-group">
-                  <input
-                    type="color"
-                    className="form-control form-control-color"
-                    value={formulario.secondary_color}
-                    onChange={cambiarCampo}
-                    name="secondary_color"
-                    title="Seleccionar color secundario"
-                    disabled={guardando}
-                  />
-                  <input
-                    type="text"
-                    className="form-control text-uppercase"
-                    value={formulario.secondary_color}
-                    onChange={cambiarCampo}
-                    name="secondary_color"
-                    maxLength="7"
-                    pattern="#[0-9A-Fa-f]{6}"
-                    required
-                    disabled={guardando}
-                  />
+                  <input type="color" className="form-control form-control-color" value={formulario.secondary_color} onChange={cambiarCampo} name="secondary_color" title="Seleccionar color secundario" disabled={guardando} />
+                  <input type="text" className="form-control text-uppercase" value={formulario.secondary_color} onChange={cambiarCampo} name="secondary_color" maxLength="7" pattern="#[0-9A-Fa-f]{6}" required disabled={guardando} />
                 </div>
               </div>
-
               <div className="col-12">
-                <div
-                  className="p-4 rounded border"
-                  style={{ borderLeft: `6px solid ${formulario.primary_color}` }}
-                >
+                <div className="p-4 rounded border" style={{ borderLeft: `6px solid ${formulario.primary_color}` }}>
                   <div className="fw-bold mb-2">Vista previa</div>
                   <div className="d-flex flex-wrap gap-2 align-items-center">
-                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.primary_color }}>
-                      Acción principal
-                    </button>
-                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.secondary_color }}>
-                      Acción secundaria
-                    </button>
-                    {formulario.logo_url && (
-                      <img
-                        src={formulario.logo_url}
-                        alt="Logo del tenant"
-                        style={{ maxHeight: '45px', maxWidth: '180px', objectFit: 'contain' }}
-                        onError={(event) => { event.currentTarget.style.display = 'none' }}
-                      />
-                    )}
+                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.primary_color }}>Acción principal</button>
+                    <button type="button" className="btn text-white" style={{ backgroundColor: formulario.secondary_color }}>Acción secundaria</button>
+                    {formulario.logo_url && <img src={formulario.logo_url} alt="Logo del tenant" style={{ maxHeight: '45px', maxWidth: '180px', objectFit: 'contain' }} onError={(event) => { event.currentTarget.style.display = 'none' }} />}
                   </div>
                 </div>
               </div>
             </div>
-
             <div className="d-flex justify-content-end mt-4">
-              <button type="submit" className="btn btn-primary" disabled={guardando}>
-                Guardar configuración
-              </button>
+              <button type="submit" className="btn btn-primary" disabled={guardando}>Guardar configuración</button>
             </div>
           </form>
         </div>
