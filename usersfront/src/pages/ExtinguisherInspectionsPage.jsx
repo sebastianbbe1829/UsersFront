@@ -10,7 +10,13 @@ import {
   obtenerTiposExtintor,
 } from '../services/api'
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+const hoy = () => {
+  const fecha = new Date()
+  const year = fecha.getFullYear()
+  const month = String(fecha.getMonth() + 1).padStart(2, '0')
+  const day = String(fecha.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 const FORM_INICIAL = {
   extinguisherId: '',
@@ -315,6 +321,7 @@ function ExtinguisherInspectionsPage() {
 
     setFormulario({
       ...FORM_INICIAL,
+      inspectionDate: hoy(),
       extinguisherId: extintorId
         ? String(extintorId)
         : '',
