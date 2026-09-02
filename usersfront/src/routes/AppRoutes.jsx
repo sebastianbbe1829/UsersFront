@@ -16,6 +16,7 @@ import SuperBootstrapPage from '../pages/SuperBootstrapPage'
 import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
+import PermissionRoute from '../components/PermissionRoute'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -24,6 +25,14 @@ function RutasProtegidas() {
   if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Validando sesión...</div></div></div>
   if (!logueado) return <Navigate to="login" replace />
   return <MainLayout />
+}
+
+function RutaConPermiso({ permission, children }) {
+  return (
+    <PermissionRoute permission={permission}>
+      {children}
+    </PermissionRoute>
+  )
 }
 
 function AppRoutes() {
@@ -39,13 +48,13 @@ function AppRoutes() {
     <Route path="/:tenant/recuperar-password" element={<PasswordRecoveryPage />} />
     <Route path="/:tenant" element={<RutasProtegidas />}>
       <Route index element={<WelcomePage />} />
-      <Route path="usuarios" element={<UsersPage />} />
-      <Route path="roles" element={<RolesPage />} />
-      <Route path="permisos" element={<PermisosPage />} />
-      <Route path="extintores" element={<ExtinguishersPage />} />
-      <Route path="extintores/tipos" element={<ExtinguisherTypesPage />} />
-      <Route path="extintores/revisiones" element={<ExtinguisherInspectionsSearchPage />} />
-      <Route path="extintores/items-revision" element={<ExtinguisherInspectionItemsPage />} />
+      <Route path="usuarios" element={<RutaConPermiso permission="USER_READ"><UsersPage /></RutaConPermiso>} />
+      <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
+      <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
+      <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
+      <Route path="extintores/tipos" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherTypesPage /></RutaConPermiso>} />
+      <Route path="extintores/revisiones" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionsSearchPage /></RutaConPermiso>} />
+      <Route path="extintores/items-revision" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionItemsPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
     </Route>
