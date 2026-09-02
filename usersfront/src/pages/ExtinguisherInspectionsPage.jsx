@@ -15,6 +15,7 @@ const hoy = () => {
   const year = fecha.getFullYear()
   const month = String(fecha.getMonth() + 1).padStart(2, '0')
   const day = String(fecha.getDate()).padStart(2, '0')
+
   return `${year}-${month}-${day}`
 }
 
@@ -202,7 +203,11 @@ function ExtinguisherInspectionsPage() {
   }, [token, manejarSesionExpirada])
 
   useEffect(() => {
-    cargar()
+    const cargarDatos = async () => {
+      await cargar()
+    }
+
+    void cargarDatos()
   }, [cargar])
 
   /*
@@ -214,9 +219,6 @@ function ExtinguisherInspectionsPage() {
    *
    * El parámetro solo sirve para filtrar.
    */
-  useEffect(() => {
-    setPagina(1)
-  }, [extinguisherIdFiltro])
 
   const extintoresMap = useMemo(
     () =>
