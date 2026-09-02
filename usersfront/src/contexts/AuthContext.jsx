@@ -560,6 +560,22 @@ export function AuthProvider({ children }) {
 
 
   // ==========================================================
+  // PERMISOS DEL JWT
+  // ==========================================================
+
+  const payloadActual = obtenerPayloadToken(token)
+
+  const permissions = Array.isArray(payloadActual?.permissions)
+    ? payloadActual.permissions
+    : []
+
+  const hasPermission = useCallback((permission) => (
+    typeof permission === 'string' &&
+    permissions.includes(permission)
+  ), [permissions])
+
+
+  // ==========================================================
   // VALOR DEL CONTEXT
   // ==========================================================
 
@@ -577,6 +593,8 @@ export function AuthProvider({ children }) {
     manejarSesionExpirada,
     cargarDatos,
     setMensajeSesion,
+    permissions,
+    hasPermission,
   }
 
 
