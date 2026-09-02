@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerPayloadToken } from '../services/api'
@@ -27,7 +27,7 @@ function TenantAdminPage() {
   const esSuper = payload?.user_type === 'SUPER'
   const tenantActualId = Number(payload?.tenant_id)
 
-  const cargarTenants = async () => {
+  const cargarTenants = useCallback(async () => {
     if (!esSuper || !token) {
       setCargando(false)
       return
@@ -43,11 +43,15 @@ function TenantAdminPage() {
     } finally {
       setCargando(false)
     }
-  }
+  }, [esSuper, token])
 
   useEffect(() => {
-    cargarTenants()
-  }, [esSuper, token])
+    const cargar = async () => {
+      await cargarTenants()
+    }
+
+    void cargar()
+  }, [cargarTenants])
 
   const abrirCrear = () => {
     setMensaje('')
