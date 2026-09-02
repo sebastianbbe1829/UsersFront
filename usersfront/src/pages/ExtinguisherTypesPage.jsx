@@ -23,9 +23,17 @@ function ExtinguisherTypesPage() {
 
   const cargarTipos = useCallback(async () => {
     if (!token) return
-    try { setCargando(true); const resultado = await obtenerTiposExtintor(token); setTipos(Array.isArray(resultado) ? resultado : []); setMensaje(null) }
-    catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los tipos de extintor.' }) }
-    finally { setCargando(false) }
+    try {
+      const resultado = await obtenerTiposExtintor(token)
+      setCargando(true)
+      setTipos(Array.isArray(resultado) ? resultado : [])
+      setMensaje(null)
+    } catch (error) {
+      if (error.status === 401) return manejarSesionExpirada()
+      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible consultar los tipos de extintor.' })
+    } finally {
+      setCargando(false)
+    }
   }, [token, manejarSesionExpirada])
 
   useEffect(() => { cargarTipos() }, [cargarTipos])
