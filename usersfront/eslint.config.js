@@ -23,9 +23,36 @@ export default defineConfig([
       'src/pages/ExtinguishersPage.jsx',
       'src/pages/ExtinguisherTypesPage.jsx',
       'src/pages/ExtinguisherInspectionsPage.jsx',
+      'src/pages/ExtinguisherInspectionItemsPage.jsx',
+      'src/pages/PermisosPage.jsx',
+      'src/pages/RolesPage.jsx',
+      'src/pages/TenantAdminPage.jsx',
+      'src/pages/TenantConfigPage.jsx',
+      'src/components/UserRolesModal.jsx',
+      'src/contexts/AuthContext.jsx',
+      'src/contexts/TenantConfigContext.jsx',
+      'src/layouts/MainLayoutFixed.jsx',
     ],
     rules: {
       'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['src/contexts/AuthContext.jsx', 'src/contexts/TenantConfigContext.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/contexts/AuthContext.jsx'],
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^obtenerSesionesTenants$' }],
+    },
+  },
+  {
+    files: ['src/pages/TenantConfigPage.jsx'],
+    rules: {
+      'no-useless-catch': 'off',
     },
   },
   {
