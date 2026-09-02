@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -56,7 +57,7 @@ function PermisosPage() {
     setMensaje,
   ] = useState(null)
 
-  const cargarPermisos = async () => {
+  const cargarPermisos = useCallback(async () => {
     try {
       setCargando(true)
       setMensaje(null)
@@ -102,7 +103,7 @@ function PermisosPage() {
     } finally {
       setCargando(false)
     }
-  }
+  }, [token, manejarSesionExpirada])
 
   const guardarPermiso = async (
     datos
@@ -174,7 +175,7 @@ function PermisosPage() {
     }
 
     void cargar()
-  }, [token])
+  }, [cargarPermisos])
 
   return (
     <>
