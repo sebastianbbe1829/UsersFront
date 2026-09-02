@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerPayloadToken } from '../services/api'
@@ -29,7 +29,7 @@ function TenantConfigPage() {
   const esSuper = payload?.user_type === 'SUPER'
   const tenantId = Number(payload?.tenant_id)
 
-  const cargarConfig = async () => {
+  const cargarConfig = useCallback(async () => {
     if (!esSuper || !token || !tenantId) {
       setCargandoConfig(false)
       return
@@ -56,7 +56,7 @@ function TenantConfigPage() {
     } finally {
       setCargandoConfig(false)
     }
-  }
+  }, [esSuper, token, tenantId])
 
   useEffect(() => {
     const cargar = async () => {
@@ -64,7 +64,7 @@ function TenantConfigPage() {
     }
 
     void cargar()
-  }, [esSuper, token, tenantId])
+  }, [cargarConfig])
 
   const cambiarCampo = (event) => {
     const { name, value } = event.target
