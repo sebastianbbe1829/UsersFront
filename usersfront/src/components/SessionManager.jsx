@@ -1,83 +1,55 @@
 import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 
 import {
   tokenEstaExpirado,
   obtenerTiempoToken,
 } from '../services/api'
 
+let ultimaFirmaRegistrada = ''
 
 function SessionManager({
   token,
   onSesionExpirada,
 }) {
+  const location = useLocation()
 
   useEffect(() => {
-
     if (!token) {
       return
     }
 
-
-    // ==========================
-    // VALIDACIÓN INICIAL
-    // ==========================
-
     if (tokenEstaExpirado(token)) {
-
       onSesionExpirada()
-
       return
     }
 
+    const segundosRestantes = obtenerTiempoToken(token)
+    const firmaActual = `${location.pathname}|${token}`
 
-    // ==========================
-    // TIEMPO RESTANTE
-    // ==========================
-
-    const segundosRestantes =
-      obtenerTiempoToken(token)
-
-
-    console.log(
-      `Token válido. Expira en ${segundosRestantes} segundos.`
-    )
-
-
-    // ==========================
-    // PROGRAMAR LOGOUT
-    // ==========================
-
-    const tiempoMilisegundos =
-      segundosRestantes * 1000
-
-
-    const timer = setTimeout(() => {
-
+    if (firmaActual !== ultimaFirmaRegistrada) {
+      ultimaFirmaRegistrada = firmaActual
       console.log(
-        'El token ha expirado. Cerrando sesión.'
+        `[AUTH] Ruta ${location.pathname}. Token válido. Expira en ${segundosRestantes} segundos.`
       )
+    }
 
+    const tiempoMilisegundos = segundosRestantes * 1000
+    const timer = setTimeout(() => {
+      console.log('[AUTH] El token ha expirado. Cerrando sesión.')
       onSesionExpirada()
-
     }, tiempoMilisegundos)
-
-
-    // ==========================
-    // LIMPIAR TIMER
-    // ==========================
 
     return () => {
       clearTimeout(timer)
     }
-
   }, [
     token,
+    location.pathname,
     onSesionExpirada,
   ])
 
-
   return null
 }
-
 
 export default SessionManager
