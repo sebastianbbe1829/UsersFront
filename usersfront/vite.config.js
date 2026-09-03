@@ -27,6 +27,9 @@ export default defineConfig({
       '/bootstrap': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
+        // /bootstrap/super y /bootstrap/tenant son rutas del SPA.
+        // Solo las peticiones de la API de bootstrap deben ir al backend.
+        filter: (pathname, req) => req.method !== 'GET',
       },
       '/roles': {
         target: 'http://127.0.0.1:8000',
