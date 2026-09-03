@@ -275,6 +275,11 @@ export function AuthProvider({ children }) {
 
     renovandoSesionRef.current = true
 
+    const segundosRestantes = Math.max(payload.exp - ahora, 0)
+    console.info(
+      `[AUTH] Renovación de sesión iniciada. Token actual: ${segundosRestantes} segundos restantes.`
+    )
+
     try {
       const resultado = await renovarSesion(token)
 
@@ -283,6 +288,7 @@ export function AuthProvider({ children }) {
       }
 
       const nuevoToken = resultado.access_token
+      const nuevoPayload = obtenerPayloadToken(nuevoToken)
       const tenantActual = obtenerTenantDesdeUrl()
       const esSuper = payload?.user_type === 'SUPER'
 
@@ -294,8 +300,15 @@ export function AuthProvider({ children }) {
 
       setToken(nuevoToken)
       ultimaActividadRef.current = Date.now()
+
+      const nuevosSegundosRestantes = nuevoPayload?.exp
+        ? Math.max(nuevoPayload.exp - Math.floor(Date.now() / 1000), 0)
+        : 0
+      console.info(
+        `[AUTH] Refresh exitoso. Nuevo token válido por ${nuevosSegundosRestantes} segundos.`
+      )
     } catch (error) {
-      console.error('Error renovando sesión:', error)
+      console.error('[AUTH] Error renovando sesión:', error)
       if (error?.status === 401) {
         manejarSesionExpirada()
       }
