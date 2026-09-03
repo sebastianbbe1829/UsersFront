@@ -4,9 +4,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import { obtenerPayloadToken } from '../services/api'
 import Can from '../components/Can'
+import SessionManager from '../components/SessionManager'
 
 function MainLayoutFixed() {
-  const { usuarioLogueado, cerrarSesion, tenant, token } = useAuth()
+  const { usuarioLogueado, cerrarSesion, manejarSesionExpirada, tenant, token } = useAuth()
   const { config } = useTenantConfig()
   const payload = obtenerPayloadToken(token)
   const esSuper = payload?.user_type === 'SUPER'
@@ -53,6 +54,7 @@ function MainLayoutFixed() {
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
 
   return <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
+    <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
     <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width .25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: menuColapsado ? 'visible' : 'hidden' }}>
       <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary" style={{ height: '70px' }}>{!menuColapsado && <div className="d-flex align-items-center gap-2 fw-bold text-nowrap">{config?.logo_url ? <img src={config.logo_url} alt="Logo" style={{ maxHeight: '36px', maxWidth: '48px', objectFit: 'contain' }} onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <span>👥</span>}<span>{appTitle}</span></div>}<button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button></div>
       <nav className="d-flex flex-column">
