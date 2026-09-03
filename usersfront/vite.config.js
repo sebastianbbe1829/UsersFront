@@ -25,12 +25,12 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
-      '/bootstrap': {
+      // Solo /bootstrap es API. Las rutas /bootstrap/super y
+      // /bootstrap/tenant pertenecen al SPA y deben llegar a index.html.
+      // La clave regex evita que Vite haga proxy por prefijo.
+      '^/bootstrap$': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        // Solo /bootstrap (POST) es API. Las rutas /bootstrap/super y
-        // /bootstrap/tenant pertenecen al SPA y deben llegar a index.html.
-        filter: (pathname, req) => pathname === '/bootstrap' && req.method !== 'GET',
       },
       '/roles': {
         target: 'http://127.0.0.1:8000',
