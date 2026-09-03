@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 // tanto desde localhost como desde la IP LAN del PC.
 export default defineConfig({
   plugins: [react()],
+  appType: 'spa',
   server: {
     host: '0.0.0.0',
     proxy: {
@@ -24,7 +25,10 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
-      '/bootstrap': {
+      // Solo /bootstrap es API. Las rutas /bootstrap/super y
+      // /bootstrap/tenant pertenecen al SPA y deben llegar a index.html.
+      // La clave regex evita que Vite haga proxy por prefijo.
+      '^/bootstrap$': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
       },
