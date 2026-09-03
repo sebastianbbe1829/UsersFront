@@ -25,7 +25,6 @@ const SUPER_SESSIONS_KEY = 'super_sessions'
 const ACTIVITY_CHECK_INTERVAL_MS = 30 * 1000
 const ACTIVITY_THROTTLE_MS = 10 * 1000
 const RECENT_ACTIVITY_WINDOW_MS = 5 * 60 * 1000
-const REFRESH_THRESHOLD_SECONDS = 60
 
 export function AuthProvider({ children }) {
   const tenant = obtenerTenantDesdeUrl()
@@ -269,10 +268,10 @@ export function AuthProvider({ children }) {
     if (Date.now() - ultimaActividadRef.current > RECENT_ACTIVITY_WINDOW_MS) return
 
     const payload = obtenerPayloadToken(token)
-    if (!payload?.exp) return
+    if (!payload?.exp || !payload?.refresh_at) return
 
-    const segundosRestantes = payload.exp - Math.floor(Date.now() / 1000)
-    if (segundosRestantes > REFRESH_THRESHOLD_SECONDS) return
+    const ahora = Math.floor(Date.now() / 1000)
+    if (ahora < payload.refresh_at) return
 
     renovandoSesionRef.current = true
 
