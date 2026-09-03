@@ -39,6 +39,12 @@ export const login = async (username, password, tenant, superMode = false, otp =
   return procesarRespuesta(response)
 }
 
+export const logout = async (token) => {
+  if (!token) return null
+  const response = await fetch(`${API_URL}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
 export const obtenerConfigTenantPublica = async (tenantSlug) => {
   if (!tenantSlug) throw new Error('No se pudo determinar la empresa desde la URL.')
   const response = await fetch(`${API_URL}/tenant-config/public/${encodeURIComponent(tenantSlug)}`, { method: 'GET' })
