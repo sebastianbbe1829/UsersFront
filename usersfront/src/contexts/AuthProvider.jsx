@@ -9,6 +9,7 @@ import {
   obtenerPayloadToken,
   tokenEstaExpirado,
   login,
+  logout,
 } from '../services/api'
 
 import {
@@ -102,13 +103,21 @@ export function AuthProvider({ children }) {
     setUsuarioLogueado(null)
   }, [])
 
-  const cerrarSesion = useCallback(() => {
+  const cerrarSesion = useCallback(async () => {
     const tenantActual = obtenerTenantDesdeUrl()
-    eliminarSesionTenant(tenantActual)
-    eliminarSesionSuper(tenantActual)
-    limpiarEstadoSesion()
-    setMensajeSesion('')
-  }, [eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
+    const tokenActual = token
+
+    try {
+      await logout(tokenActual)
+    } catch (error) {
+      console.error('Error cerrando sesión en el servidor:', error)
+    } finally {
+      eliminarSesionTenant(tenantActual, tokenActual)
+      eliminarSesionSuper(tenantActual, tokenActual)
+      limpiarEstadoSesion()
+      setMensajeSesion('')
+    }
+  }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
   const manejarSesionExpirada = useCallback(() => {
     const tenantActual = obtenerTenantDesdeUrl()
