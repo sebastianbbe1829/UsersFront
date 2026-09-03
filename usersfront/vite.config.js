@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 // tanto desde localhost como desde la IP LAN del PC.
 export default defineConfig({
   plugins: [react()],
+  appType: 'spa',
   server: {
     host: '0.0.0.0',
     proxy: {
@@ -27,9 +28,9 @@ export default defineConfig({
       '/bootstrap': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
-        // /bootstrap/super y /bootstrap/tenant son rutas del SPA.
-        // Solo las peticiones de la API de bootstrap deben ir al backend.
-        filter: (pathname, req) => req.method !== 'GET',
+        // Solo /bootstrap (POST) es API. Las rutas /bootstrap/super y
+        // /bootstrap/tenant pertenecen al SPA y deben llegar a index.html.
+        filter: (pathname, req) => pathname === '/bootstrap' && req.method !== 'GET',
       },
       '/roles': {
         target: 'http://127.0.0.1:8000',
