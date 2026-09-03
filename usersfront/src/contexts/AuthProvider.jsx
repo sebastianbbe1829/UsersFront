@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -10,6 +11,7 @@ import {
   tokenEstaExpirado,
   login,
   logout,
+  renovarSesion,
 } from '../services/api'
 
 import {
@@ -20,6 +22,10 @@ import { AuthContext } from './AuthContextValue'
 
 const TENANT_SESSIONS_KEY = 'tenant_sessions'
 const SUPER_SESSIONS_KEY = 'super_sessions'
+const ACTIVITY_CHECK_INTERVAL_MS = 30 * 1000
+const ACTIVITY_THROTTLE_MS = 10 * 1000
+const RECENT_ACTIVITY_WINDOW_MS = 5 * 60 * 1000
+const REFRESH_THRESHOLD_SECONDS = 5 * 60
 
 export function AuthProvider({ children }) {
   const tenant = obtenerTenantDesdeUrl()
@@ -30,6 +36,9 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true)
   const [mensajeSesion, setMensajeSesion] = useState('')
   const [usuarios, setUsuarios] = useState([])
+  const ultimaActividadRef = useRef(Date.now())
+  const ultimoEventoActividadRef = useRef(0)
+  const renovandoSesionRef = useRef(false)
 
   const obtenerSesiones = useCallback((key) => {
     try {
@@ -182,6 +191,7 @@ export function AuthProvider({ children }) {
       setUsuarioLogueado(usuarioActual)
       setLogueado(true)
       setMensajeSesion('')
+      ultimaActividadRef.current = Date.now()
     } catch (error) {
       console.error('Error validando sesión:', error)
       if (error?.status === 401) {
@@ -245,6 +255,7 @@ export function AuthProvider({ children }) {
         guardarSesionTenant(tenantActual, nuevoToken)
       }
 
+      ultimaActividadRef.current = Date.now()
       await cargarDatos(nuevoToken)
       return resultado
     } catch (error) {
@@ -252,6 +263,74 @@ export function AuthProvider({ children }) {
       throw error
     }
   }, [validarTenantToken, guardarSesionSuper, guardarSesionTenant, cargarDatos])
+
+  const renovarTokenSiCorresponde = useCallback(async () => {
+    if (!token || !logueado || document.hidden || renovandoSesionRef.current) return
+    if (Date.now() - ultimaActividadRef.current > RECENT_ACTIVITY_WINDOW_MS) return
+
+    const payload = obtenerPayloadToken(token)
+    if (!payload?.exp) return
+
+    const segundosRestantes = payload.exp - Math.floor(Date.now() / 1000)
+    if (segundosRestantes > REFRESH_THRESHOLD_SECONDS) return
+
+    renovandoSesionRef.current = true
+
+    try {
+      const resultado = await renovarSesion(token)
+
+      if (!resultado?.access_token) {
+        throw new Error('El servidor no devolvió un token renovado.')
+      }
+
+      const nuevoToken = resultado.access_token
+      const tenantActual = obtenerTenantDesdeUrl()
+      const esSuper = payload?.user_type === 'SUPER'
+
+      if (esSuper) {
+        guardarSesionSuper(tenantActual, nuevoToken)
+      } else {
+        guardarSesionTenant(tenantActual, nuevoToken)
+      }
+
+      setToken(nuevoToken)
+      ultimaActividadRef.current = Date.now()
+    } catch (error) {
+      console.error('Error renovando sesión:', error)
+      if (error?.status === 401) {
+        manejarSesionExpirada()
+      }
+    } finally {
+      renovandoSesionRef.current = false
+    }
+  }, [token, logueado, guardarSesionSuper, guardarSesionTenant, manejarSesionExpirada])
+
+  useEffect(() => {
+    const registrarActividad = () => {
+      const ahora = Date.now()
+      if (ahora - ultimoEventoActividadRef.current < ACTIVITY_THROTTLE_MS) return
+      ultimoEventoActividadRef.current = ahora
+      ultimaActividadRef.current = ahora
+      void renovarTokenSiCorresponde()
+    }
+
+    const eventos = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown']
+    eventos.forEach((evento) => window.addEventListener(evento, registrarActividad, { passive: true }))
+
+    return () => {
+      eventos.forEach((evento) => window.removeEventListener(evento, registrarActividad))
+    }
+  }, [renovarTokenSiCorresponde])
+
+  useEffect(() => {
+    if (!logueado || !token) return undefined
+
+    const intervalo = window.setInterval(() => {
+      void renovarTokenSiCorresponde()
+    }, ACTIVITY_CHECK_INTERVAL_MS)
+
+    return () => window.clearInterval(intervalo)
+  }, [logueado, token, renovarTokenSiCorresponde])
 
   useEffect(() => {
     const validarSesion = async () => {
