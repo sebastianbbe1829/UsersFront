@@ -25,7 +25,7 @@ const SUPER_SESSIONS_KEY = 'super_sessions'
 const ACTIVITY_CHECK_INTERVAL_MS = 30 * 1000
 const ACTIVITY_THROTTLE_MS = 10 * 1000
 const RECENT_ACTIVITY_WINDOW_MS = 5 * 60 * 1000
-const REFRESH_THRESHOLD_SECONDS = 5 * 60
+const REFRESH_THRESHOLD_SECONDS = 60
 
 export function AuthProvider({ children }) {
   const tenant = obtenerTenantDesdeUrl()
@@ -311,7 +311,6 @@ export function AuthProvider({ children }) {
       if (ahora - ultimoEventoActividadRef.current < ACTIVITY_THROTTLE_MS) return
       ultimoEventoActividadRef.current = ahora
       ultimaActividadRef.current = ahora
-      void renovarTokenSiCorresponde()
     }
 
     const eventos = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown']
@@ -320,7 +319,7 @@ export function AuthProvider({ children }) {
     return () => {
       eventos.forEach((evento) => window.removeEventListener(evento, registrarActividad))
     }
-  }, [renovarTokenSiCorresponde])
+  }, [])
 
   useEffect(() => {
     if (!logueado || !token) return undefined
@@ -344,21 +343,18 @@ export function AuthProvider({ children }) {
 
       const tokenSuper = obtenerSesionSuper(tenantActual)
 
-      if (tokenSuper) {
-        const payloadSuper = obtenerPayloadToken(tokenSuper)
-
-        if (
-          payloadSuper?.user_type === 'SUPER' &&
-          !tokenEstaExpirado(tokenSuper) &&
-          validarTenantToken(tokenSuper, tenantActual)
-        ) {
-          setCargando(true)
-          await cargarDatos(tokenSuper)
-          return
-        }
-
-        eliminarSesionSuper(tenantActual, tokenSuper)
+      if (
+        tokenSuper &&
+        obtenerPayloadToken(tokenSuper)?.user_type === 'SUPER' &&
+        !tokenEstaExpirado(tokenSuper) &&
+        validarTenantToken(tokenSuper, tenantActual)
+      ) {
+        setCargando(true)
+        await cargarDatos(tokenSuper)
+        return
       }
+
+      if (tokenSuper) eliminarSesionSuper(tenantActual, tokenSuper)
 
       const tokenTenant = obtenerSesionTenant(tenantActual)
 
