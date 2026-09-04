@@ -26,8 +26,7 @@ const normalizarTexto = (valor) => valor
   .replace(/\s+/g, ' ')
   .trim()
 
-const normalizarEntrada = (valor) =>
-  valor.toLocaleUpperCase('es-CO')
+const normalizarEntrada = (valor) => valor.toLocaleUpperCase('es-CO')
 
 function ClientsPage() {
   const { token, manejarSesionExpirada } = useAuth()
@@ -73,7 +72,6 @@ function ClientsPage() {
   useEffect(() => {
     if (!formulario.country_id) return undefined
     let activo = true
-    setCargandoDepartamentos(true)
     obtenerDepartamentosCliente(token, formulario.country_id)
       .then((data) => { if (activo) setDepartamentos(Array.isArray(data) ? data : []) })
       .catch((error) => {
@@ -88,7 +86,6 @@ function ClientsPage() {
   useEffect(() => {
     if (!formulario.department_id) return undefined
     let activo = true
-    setCargandoCiudades(true)
     obtenerCiudadesCliente(token, formulario.department_id)
       .then((data) => { if (activo) setCiudades(Array.isArray(data) ? data : []) })
       .catch((error) => {
@@ -116,8 +113,18 @@ function ClientsPage() {
   const cambiar = (campo, valor) => setFormulario((actual) => ({ ...actual, [campo]: valor }))
   const cambiarTexto = (campo, valor) => cambiar(campo, normalizarEntrada(valor))
   const cambiarTipoPersona = (valor) => setFormulario((actual) => ({ ...actual, person_type: valor, identification_type_id: '' }))
-  const cambiarPais = (valor) => setFormulario((actual) => ({ ...actual, country_id: valor, department_id: '', city_id: '' }))
-  const cambiarDepartamento = (valor) => setFormulario((actual) => ({ ...actual, department_id: valor, city_id: '' }))
+  const cambiarPais = (valor) => {
+    setCargandoDepartamentos(Boolean(valor))
+    setCargandoCiudades(false)
+    setDepartamentos([])
+    setCiudades([])
+    setFormulario((actual) => ({ ...actual, country_id: valor, department_id: '', city_id: '' }))
+  }
+  const cambiarDepartamento = (valor) => {
+    setCargandoCiudades(Boolean(valor))
+    setCiudades([])
+    setFormulario((actual) => ({ ...actual, department_id: valor, city_id: '' }))
+  }
 
   const cerrarModal = () => {
     if (guardando) return
@@ -129,7 +136,7 @@ function ClientsPage() {
     setCargandoDepartamentos(false)
     setCargandoCiudades(false)
   }
-  const abrirCrear = () => { setClienteEditando(null); setFormulario(formularioInicial); setDepartamentos([]); setCiudades([]); setMensaje(null); setModalAbierto(true) }
+  const abrirCrear = () => { setClienteEditando(null); setFormulario(formularioInicial); setDepartamentos([]); setCiudades([]); setCargandoDepartamentos(false); setCargandoCiudades(false); setMensaje(null); setModalAbierto(true) }
   const editar = (cliente) => {
     setClienteEditando(cliente)
     setFormulario({
@@ -150,6 +157,10 @@ function ClientsPage() {
       consent_given: Boolean(cliente.consent_given),
       consent_at: cliente.consent_at ?? null,
     })
+    setCargandoDepartamentos(Boolean(cliente.country_id))
+    setCargandoCiudades(Boolean(cliente.department_id))
+    setDepartamentos([])
+    setCiudades([])
     setMensaje(null)
     setModalAbierto(true)
   }
