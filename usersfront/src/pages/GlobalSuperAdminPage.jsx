@@ -12,6 +12,24 @@ import {
 } from '../services/globalSuperAdminApi'
 import SuperMfaModal from '../components/SuperMfaModal'
 
+const modalBackdrop = {
+  backgroundColor: 'rgba(0,0,0,.65)',
+  position: 'fixed',
+  inset: 0,
+  zIndex: 2050,
+  overflowY: 'auto',
+  padding: '1rem 0',
+}
+
+const modalDialog = {
+  width: 'calc(100% - 2rem)',
+  maxWidth: '500px',
+  margin: 'auto',
+  minHeight: 'calc(100% - 2rem)',
+  display: 'flex',
+  alignItems: 'center',
+}
+
 function GlobalSuperAdminPage() {
   const { token } = useAuth()
   const payload = obtenerPayloadToken(token)
@@ -218,19 +236,30 @@ function GlobalSuperAdminPage() {
       </div>
 
       {modal === 'crear' && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.65)', position: 'fixed', inset: 0, zIndex: 2050 }}>
-          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
-            <div className="modal-content">
+        <div className="modal d-block" style={modalBackdrop}>
+          <div className="modal-dialog" style={modalDialog}>
+            <div className="modal-content w-100">
               <form onSubmit={(event) => { event.preventDefault(); continuarCrear({ email: event.currentTarget.email.value, password: event.currentTarget.password.value }) }}>
-                <div className="modal-header"><h5 className="modal-title">Crear usuario SUPER</h5><button type="button" className="btn-close" onClick={cancelar} /></div>
-                <div className="modal-body">
-                  <div className="alert alert-info">Completa toda la información del usuario. Al pulsar «Crear SUPER» se solicitará la verificación MFA del SUPER que realiza la operación.</div>
-                  <label className="form-label fw-semibold">Correo</label>
+                <div className="modal-header py-2 px-3">
+                  <div>
+                    <h5 className="modal-title mb-1">Nuevo usuario SUPER</h5>
+                    <div className="text-muted small">Crear una nueva cuenta de acceso global.</div>
+                  </div>
+                  <button type="button" className="btn-close" onClick={cancelar} />
+                </div>
+                <div className="modal-body py-3 px-3">
+                  <div className="alert alert-info py-2 mb-3">
+                    Estás creando una cuenta nueva. La contraseña que registres será la <strong>contraseña inicial del nuevo usuario SUPER</strong>; no es tu contraseña de inicio de sesión.
+                  </div>
+                  <label className="form-label fw-semibold mb-1">Correo electrónico del nuevo usuario</label>
                   <input name="email" type="email" className="form-control mb-3" autoComplete="email" required />
-                  <label className="form-label fw-semibold">Contraseña inicial</label>
+                  <label className="form-label fw-semibold mb-1">Nueva contraseña</label>
                   <input name="password" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" required />
                 </div>
-                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Crear SUPER</button></div>
+                <div className="modal-footer py-2 px-3">
+                  <button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Crear usuario SUPER</button>
+                </div>
               </form>
             </div>
           </div>
@@ -238,9 +267,9 @@ function GlobalSuperAdminPage() {
       )}
 
       {modal === 'editar' && editando && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.65)', position: 'fixed', inset: 0, zIndex: 2050 }}>
-          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
-            <div className="modal-content">
+        <div className="modal d-block" style={modalBackdrop}>
+          <div className="modal-dialog" style={modalDialog}>
+            <div className="modal-content w-100">
               <form onSubmit={(event) => {
                 event.preventDefault()
                 const datos = {
@@ -250,16 +279,25 @@ function GlobalSuperAdminPage() {
                 }
                 continuarEditar(datos)
               }}>
-                <div className="modal-header"><h5 className="modal-title">Editar usuario SUPER</h5><button type="button" className="btn-close" onClick={cancelar} /></div>
-                <div className="modal-body">
-                  <div className="alert alert-info">Completa todos los cambios primero. Al pulsar «Guardar cambios» se solicitará la verificación MFA.</div>
-                  <label className="form-label fw-semibold">Correo</label>
+                <div className="modal-header py-2 px-3">
+                  <div>
+                    <h5 className="modal-title mb-1">Editar usuario SUPER</h5>
+                    <div className="text-muted small">Actualiza los datos de la cuenta global.</div>
+                  </div>
+                  <button type="button" className="btn-close" onClick={cancelar} />
+                </div>
+                <div className="modal-body py-3 px-3">
+                  <div className="alert alert-info py-2 mb-3">Los cambios se aplicarán después de confirmar la verificación MFA.</div>
+                  <label className="form-label fw-semibold mb-1">Correo electrónico</label>
                   <input name="email" type="email" className="form-control mb-3" autoComplete="email" defaultValue={editando.email} required />
-                  <label className="form-label fw-semibold">Nueva contraseña (opcional)</label>
+                  <label className="form-label fw-semibold mb-1">Nueva contraseña (opcional)</label>
                   <input name="password" type="password" className="form-control mb-3" autoComplete="new-password" minLength="12" maxLength="128" />
                   <div className="form-check"><input name="is_active" type="checkbox" className="form-check-input" id="superActivo" defaultChecked={editando.is_active} /><label className="form-check-label" htmlFor="superActivo">Usuario activo</label></div>
                 </div>
-                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Guardar cambios</button></div>
+                <div className="modal-footer py-2 px-3">
+                  <button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary">Guardar cambios</button>
+                </div>
               </form>
             </div>
           </div>
@@ -275,27 +313,27 @@ function GlobalSuperAdminPage() {
       )}
 
       {modal === 'qr' && mfaProvisioning && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.65)', position: 'fixed', inset: 0, zIndex: 2200 }}>
-          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '520px' }}>
-            <div className="modal-content">
-              <div className="modal-header">
+        <div className="modal d-block" style={{ ...modalBackdrop, zIndex: 2200 }}>
+          <div className="modal-dialog" style={{ ...modalDialog, maxWidth: '480px' }}>
+            <div className="modal-content w-100">
+              <div className="modal-header py-2 px-3">
                 <div>
                   <h5 className="modal-title mb-1">Configuración MFA</h5>
                   <div className="text-muted small">{mfaProvisioning.email}</div>
                 </div>
               </div>
-              <div className="modal-body text-center">
-                <p className="mb-4">Escanea este código QR desde la aplicación Authenticator del usuario SUPER.</p>
-                <div className="d-flex justify-content-center mb-4">
-                  <div className="bg-white p-3 rounded border shadow-sm">
-                    <QRCodeSVG value={mfaProvisioning.provisioning_uri} size={260} level="M" includeMargin />
+              <div className="modal-body text-center py-2 px-3">
+                <p className="mb-2">Escanea este código QR desde la aplicación Authenticator del usuario SUPER.</p>
+                <div className="d-flex justify-content-center mb-3">
+                  <div className="bg-white p-2 rounded border shadow-sm" style={{ maxWidth: 'min(260px, 65vw)' }}>
+                    <QRCodeSVG value={mfaProvisioning.provisioning_uri} size={220} level="M" includeMargin style={{ width: '100%', height: 'auto', display: 'block' }} />
                   </div>
                 </div>
-                <div className="alert alert-warning text-start mb-0">
+                <div className="alert alert-warning text-start py-2 mb-0 small">
                   El QR contiene el secreto de enrolamiento MFA. Muéstralo únicamente a la persona autorizada y evita compartir capturas.
                 </div>
               </div>
-              <div className="modal-footer">
+              <div className="modal-footer py-2 px-3">
                 <button type="button" className="btn btn-primary" onClick={cerrarQr}>Cerrar</button>
               </div>
             </div>
