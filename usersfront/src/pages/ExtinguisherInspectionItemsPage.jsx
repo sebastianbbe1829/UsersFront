@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
   actualizarItemRevisionExtintor,
@@ -55,6 +55,12 @@ const Modal = ({ title, children, onClose, footer }) => (
 function ExtinguisherInspectionItemsPage() {
   const { token, manejarSesionExpirada } = useAuth()
 
+  const tokenRef = useRef(token)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
   const [items, setItems] = useState([])
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
@@ -71,7 +77,7 @@ function ExtinguisherInspectionItemsPage() {
     let activo = true
 
     const cargar = async () => {
-      if (!token) {
+      if (!tokenRef.current) {
         if (activo) {
           setCargando(false)
         }
@@ -80,7 +86,9 @@ function ExtinguisherInspectionItemsPage() {
 
       try {
         const resultado =
-          await obtenerItemsRevisionExtintorAdmin(token)
+          await obtenerItemsRevisionExtintorAdmin(
+            tokenRef.current,
+          )
 
         if (activo) {
           setItems(
@@ -119,7 +127,7 @@ function ExtinguisherInspectionItemsPage() {
     return () => {
       activo = false
     }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   const filtrados = useMemo(() => {
     const texto = busqueda.trim().toLowerCase()
