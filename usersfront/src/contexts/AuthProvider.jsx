@@ -38,6 +38,7 @@ export function AuthProvider({ children }) {
   const ultimaActividadRef = useRef(Date.now())
   const ultimoEventoActividadRef = useRef(0)
   const renovandoSesionRef = useRef(false)
+  const cerrandoSesionExpiradaRef = useRef(false)
 
   const obtenerSesiones = useCallback((key) => {
     try {
@@ -127,13 +128,28 @@ export function AuthProvider({ children }) {
     }
   }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
-  const manejarSesionExpirada = useCallback(() => {
+  const manejarSesionExpirada = useCallback(async () => {
+    if (cerrandoSesionExpiradaRef.current) return
+    cerrandoSesionExpiradaRef.current = true
+
     const tenantActual = obtenerTenantDesdeUrl()
-    eliminarSesionTenant(tenantActual)
-    eliminarSesionSuper(tenantActual)
-    limpiarEstadoSesion()
-    setMensajeSesion('Tu sesión ha expirado. Inicia sesión nuevamente.')
-  }, [eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
+    const tokenActual = token
+
+    try {
+      if (tokenActual) {
+        await logout(tokenActual)
+        console.info('[AUTH] Sesión expirada registrada y cerrada en el servidor.')
+      }
+    } catch (error) {
+      console.error('[AUTH] Error registrando cierre por expiración:', error)
+    } finally {
+      eliminarSesionTenant(tenantActual, tokenActual)
+      eliminarSesionSuper(tenantActual, tokenActual)
+      limpiarEstadoSesion()
+      setMensajeSesion('Tu sesión ha expirado. Inicia sesión nuevamente.')
+      cerrandoSesionExpiradaRef.current = false
+    }
+  }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
   const cargarDatos = useCallback(async (tokenGuardado) => {
     try {
@@ -153,7 +169,7 @@ export function AuthProvider({ children }) {
       }
 
       if (tokenEstaExpirado(tokenGuardado)) {
-        manejarSesionExpirada()
+        await manejarSesionExpirada()
         return
       }
 
@@ -194,7 +210,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Error validando sesión:', error)
       if (error?.status === 401) {
-        manejarSesionExpirada()
+        await manejarSesionExpirada()
       } else {
         limpiarEstadoSesion()
         setMensajeSesion(error?.message || 'No fue posible validar la sesión.')
@@ -310,7 +326,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('[AUTH] Error renovando sesión:', error)
       if (error?.status === 401) {
-        manejarSesionExpirada()
+        await manejarSesionExpirada()
       }
     } finally {
       renovandoSesionRef.current = false
