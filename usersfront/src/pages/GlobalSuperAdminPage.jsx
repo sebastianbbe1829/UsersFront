@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 
 import { useAuth } from '../contexts/AuthContext'
@@ -33,9 +33,14 @@ const modalDialog = {
 
 function GlobalSuperAdminPage() {
   const { token } = useAuth()
+  const tokenRef = useRef(token)
   const payload = obtenerPayloadToken(token)
   const esSuper = payload?.user_type === 'SUPER'
   const miId = Number(payload?.global_user_id || payload?.sub)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
   const [supers, setSupers] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -50,7 +55,9 @@ function GlobalSuperAdminPage() {
   const [mfaPendiente, setMfaPendiente] = useState(null)
 
   const cargarSupers = useCallback(async () => {
-    if (!esSuper || !token) {
+    const tokenActual = tokenRef.current
+
+    if (!esSuper || !tokenActual) {
       setCargando(false)
       return
     }
@@ -58,14 +65,14 @@ function GlobalSuperAdminPage() {
     try {
       setCargando(true)
       setError('')
-      const resultado = await obtenerGlobalSupers(token)
+      const resultado = await obtenerGlobalSupers(tokenActual)
       setSupers(Array.isArray(resultado) ? resultado : [])
     } catch (err) {
       setError(err.message || 'No fue posible cargar los usuarios SUPER.')
     } finally {
       setCargando(false)
     }
-  }, [esSuper, token])
+  }, [esSuper])
 
   useEffect(() => {
     void cargarSupers()
@@ -85,7 +92,7 @@ function GlobalSuperAdminPage() {
     setModal('editar')
 
     try {
-      const completo = await obtenerGlobalSuper(item.id, token)
+      const completo = await obtenerGlobalSuper(item.id, tokenRef.current)
       setEditando(completo)
     } catch (err) {
       setError(err.message || 'No fue posible consultar el usuario SUPER.')
@@ -100,7 +107,7 @@ function GlobalSuperAdminPage() {
       setError('')
       setMensaje('')
       setCargandoQr(item.id)
-      const resultado = await obtenerGlobalSuperMfaProvisioning(item.id, token)
+      const resultado = await obtenerGlobalSuperMfaProvisioning(item.id, tokenRef.current)
       setMfaProvisioning(resultado)
       setModal('qr')
     } catch (err) {
@@ -150,7 +157,7 @@ function GlobalSuperAdminPage() {
       setError('')
 
       if (datosPendientes.tipo === 'crear') {
-        const resultado = await crearGlobalSuper(datosPendientes.datos, otp, token)
+        const resultado = await crearGlobalSuper(datosPendientes.datos, otp, tokenRef.current)
         setMfaProvisioning({
           id: resultado.id,
           email: resultado.email,
@@ -164,7 +171,7 @@ function GlobalSuperAdminPage() {
           datosPendientes.superId,
           datosPendientes.datos,
           otp,
-          token,
+          tokenRef.current,
         )
         setMensaje('Usuario SUPER actualizado correctamente.')
         setModal(null)
@@ -200,7 +207,7 @@ function GlobalSuperAdminPage() {
         mfaPendiente.superId,
         otp,
         mfaPendiente.actorOtp,
-        token,
+        tokenRef.current,
       )
       setMensaje(`MFA verificado correctamente para ${mfaPendiente.email}. El usuario ya puede iniciar sesión como SUPER.`)
       setModal(null)
