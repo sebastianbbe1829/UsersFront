@@ -4,9 +4,7 @@ const procesarRespuesta = async (response) => {
   const resultado = await response.json().catch(() => null)
 
   if (!response.ok) {
-    const error = new Error(
-      resultado?.detail || 'Ocurrió un error inesperado.'
-    )
+    const error = new Error(resultado?.detail || 'Ocurrió un error inesperado.')
     error.status = response.status
     throw error
   }
@@ -23,7 +21,6 @@ export const obtenerGlobalSupers = async (token) => {
     method: 'GET',
     headers: headersAutenticacion(token),
   })
-
   return procesarRespuesta(response)
 }
 
@@ -32,7 +29,6 @@ export const obtenerGlobalSuper = async (superId, token) => {
     method: 'GET',
     headers: headersAutenticacion(token),
   })
-
   return procesarRespuesta(response)
 }
 
@@ -41,7 +37,6 @@ export const obtenerGlobalSuperMfaProvisioning = async (superId, token) => {
     method: 'GET',
     headers: headersAutenticacion(token),
   })
-
   return procesarRespuesta(response)
 }
 
@@ -55,7 +50,6 @@ export const crearGlobalSuper = async (datos, otp, token) => {
     },
     body: JSON.stringify(datos),
   })
-
   return procesarRespuesta(response)
 }
 
@@ -69,6 +63,5 @@ export const actualizarGlobalSuper = async (superId, datos, otp, token) => {
     },
     body: JSON.stringify(datos),
   })
-
   return procesarRespuesta(response)
 }
