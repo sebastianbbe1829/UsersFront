@@ -1,43 +1,21 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import Can from './Can'
 
-function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection }) {
+function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, abierto, onToggleSection }) {
   const { config } = useTenantConfig()
   const location = useLocation()
   const clientesPorRuta = location.pathname.includes('/clientes')
   const primaryColor = config?.primary_color || '#0d6efd'
-  const [abierto, setAbierto] = useState(clientesPorRuta)
 
   useEffect(() => {
-    if (clientesPorRuta) setAbierto(true)
-  }, [clientesPorRuta])
-
-  useEffect(() => {
-    const manejarClickSeccion = (event) => {
-      const boton = event.target.closest('button')
-      if (!boton) return
-
-      const texto = boton.textContent?.trim() || ''
-      if (texto.startsWith('Extintores') || texto.startsWith('Administración')) {
-        setAbierto(false)
-      }
-    }
-
-    document.addEventListener('click', manejarClickSeccion, true)
-    return () => document.removeEventListener('click', manejarClickSeccion, true)
-  }, [])
-
-  const alternarClientes = () => {
-    const nuevoEstado = !abierto
-    setAbierto(nuevoEstado)
-    if (nuevoEstado) onOpenSection?.('clientes')
-  }
+    if (clientesPorRuta) onToggleSection?.(true)
+  }, [clientesPorRuta, onToggleSection])
 
   return (
     <Can permission="CLIENT_READ">
-      <button type="button" className={obtenerClaseMenu(clientesPorRuta)} onClick={alternarClientes} title="Clientes" style={{ background: 'transparent' }}>
+      <button type="button" className={obtenerClaseMenu(clientesPorRuta)} onClick={() => onToggleSection?.()} title="Clientes" style={{ background: 'transparent' }}>
         <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👤</span>
         {!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Clientes</span><span>{abierto ? '▾' : '▸'}</span></>}
       </button>
