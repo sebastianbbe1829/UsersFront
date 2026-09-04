@@ -18,6 +18,7 @@ function TenantConfigPage() {
     logo_url: '',
     primary_color: '#0D6EFD',
     secondary_color: '#6C757D',
+    max_login_attempts: 0,
   })
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState('')
@@ -39,10 +40,7 @@ function TenantConfigPage() {
       setCargandoConfig(true)
       setError('')
 
-      const resultado = await obtenerConfigTenantComoSuper(
-        tenantId,
-        token,
-      )
+      const resultado = await obtenerConfigTenantComoSuper(tenantId, token)
 
       setConfig(resultado)
       setFormulario({
@@ -50,6 +48,7 @@ function TenantConfigPage() {
         logo_url: resultado.logo_url || '',
         primary_color: resultado.primary_color || '#0D6EFD',
         secondary_color: resultado.secondary_color || '#6C757D',
+        max_login_attempts: resultado.max_login_attempts ?? 0,
       })
     } catch (err) {
       setError(err.message || 'No fue posible cargar la configuración.')
@@ -62,7 +61,6 @@ function TenantConfigPage() {
     const cargar = async () => {
       await cargarConfig()
     }
-
     void cargar()
   }, [cargarConfig])
 
@@ -76,11 +74,17 @@ function TenantConfigPage() {
   const prepararGuardado = (event) => {
     event.preventDefault()
 
+    const maxLoginAttempts =
+      formulario.max_login_attempts === ''
+        ? 0
+        : Number(formulario.max_login_attempts)
+
     setDatosPendientes({
       app_title: formulario.app_title.trim(),
       logo_url: formulario.logo_url.trim() || null,
       primary_color: formulario.primary_color,
       secondary_color: formulario.secondary_color,
+      max_login_attempts: maxLoginAttempts,
     })
     setMensaje('')
     setError('')
@@ -107,10 +111,13 @@ function TenantConfigPage() {
         logo_url: resultado.logo_url || '',
         primary_color: resultado.primary_color || '#0D6EFD',
         secondary_color: resultado.secondary_color || '#6C757D',
+        max_login_attempts: resultado.max_login_attempts ?? 0,
       })
-      setMensaje('Configuración visual actualizada correctamente.')
+      setMensaje('Configuración actualizada correctamente.')
       setDatosPendientes(null)
       setMostrarOtp(false)
+    } catch (err) {
+      setError(err.message || 'No fue posible actualizar la configuración.')
     } finally {
       setGuardando(false)
     }
@@ -136,9 +143,9 @@ function TenantConfigPage() {
   return (
     <div>
       <div className="mb-4">
-        <h3 className="fw-bold mb-1">Configuración de la interfaz</h3>
+        <h3 className="fw-bold mb-1">Configuración del tenant</h3>
         <p className="text-muted mb-0">
-          Personaliza la identidad visual del tenant. Esta administración está disponible únicamente para SUPER.
+          Personaliza la identidad visual y la seguridad de autenticación del tenant. Esta administración está disponible únicamente para SUPER.
         </p>
       </div>
 
@@ -155,6 +162,9 @@ function TenantConfigPage() {
         <div className="card-body p-4">
           <form onSubmit={prepararGuardado}>
             <div className="row g-4">
+              <div className="col-12">
+                <h5 className="fw-bold mb-0">Identidad visual</h5>
+              </div>
               <div className="col-12">
                 <label className="form-label fw-semibold">Título de la aplicación</label>
                 <input type="text" name="app_title" className="form-control" value={formulario.app_title} onChange={cambiarCampo} minLength="2" maxLength="150" required disabled={guardando} />
@@ -189,7 +199,31 @@ function TenantConfigPage() {
                   </div>
                 </div>
               </div>
+
+              <div className="col-12 mt-4">
+                <h5 className="fw-bold mb-1">Seguridad de autenticación</h5>
+                <p className="text-muted mb-3">
+                  Define cuántos intentos fallidos consecutivos provocan el bloqueo de una cuenta dentro de este tenant.
+                </p>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Máximo de intentos fallidos</label>
+                <input
+                  type="number"
+                  name="max_login_attempts"
+                  className="form-control"
+                  min="0"
+                  step="1"
+                  value={formulario.max_login_attempts}
+                  onChange={cambiarCampo}
+                  disabled={guardando}
+                />
+                <div className="form-text">
+                  <strong>0 o vacío:</strong> sin bloqueo por esta regla. Un valor mayor a 0 bloquea al alcanzar ese número de intentos fallidos.
+                </div>
+              </div>
             </div>
+
             <div className="d-flex justify-content-end mt-4">
               <button type="submit" className="btn btn-primary" disabled={guardando}>Guardar configuración</button>
             </div>
