@@ -22,6 +22,16 @@ const modalDialog = {
   minHeight: 'calc(100% - 2rem)', display: 'flex', alignItems: 'center',
 }
 
+const formatearFechaMfa = (fecha) => {
+  if (!fecha) return 'Pendiente'
+  const valor = new Date(fecha)
+  if (Number.isNaN(valor.getTime())) return '—'
+  return valor.toLocaleString('es-CO', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+}
+
 function GlobalSuperAdminPage() {
   const { token } = useAuth()
   const tokenRef = useRef(token)
@@ -142,15 +152,53 @@ function GlobalSuperAdminPage() {
 
           {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="mt-3 text-muted">Cargando usuarios SUPER...</div></div>
             : supers.length === 0 ? <div className="alert alert-warning mb-0">No hay usuarios SUPER registrados.</div>
-            : <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr>
-              <th>ID</th><th>DNI</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>MFA</th><th>Acciones</th>
-            </tr></thead><tbody>{supers.map((item) => <tr key={item.id}>
-              <td>{item.id}</td><td>{item.dni || '—'}</td><td className="fw-semibold">{item.name || '—'}{item.id === miId && <span className="badge text-bg-primary ms-2">Yo</span>}</td>
-              <td>{item.phone || '—'}</td><td>{item.email}</td>
-              <td><span className={`badge ${item.is_active ? 'text-bg-success' : 'text-bg-secondary'}`}>{item.is_active ? 'Activo' : 'Inactivo'}</span></td>
-              <td><span className={`badge ${item.mfa_verified_at ? 'text-bg-success' : 'text-bg-warning'}`}>{item.mfa_verified_at ? 'Verificado' : 'Pendiente'}</span></td>
-              <td><div className="d-flex gap-2"><button type="button" className="btn btn-sm btn-outline-success" onClick={() => visualizarQr(item)} disabled={!item.is_active || cargandoQr === item.id}>{cargandoQr === item.id ? 'Cargando…' : 'Ver QR'}</button><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button></div></td>
-            </tr>)}</tbody></table></div>}
+            : <>
+              <div className="d-none d-md-block table-responsive">
+                <table className="table table-hover align-middle mb-0 table-sm">
+                  <thead className="table-dark"><tr>
+                    <th>ID</th><th>DNI</th><th>Nombre</th><th>Teléfono</th><th>Correo</th><th>Estado</th><th>MFA</th><th>Activación MFA</th><th>Acciones</th>
+                  </tr></thead>
+                  <tbody>{supers.map((item) => <tr key={item.id}>
+                    <td>{item.id}</td>
+                    <td>{item.dni || '—'}</td>
+                    <td className="fw-semibold">{item.name || '—'}{item.id === miId && <span className="badge text-bg-primary ms-2">Yo</span>}</td>
+                    <td>{item.phone || '—'}</td>
+                    <td>{item.email}</td>
+                    <td><span className={`badge ${item.is_active ? 'text-bg-success' : 'text-bg-secondary'}`}>{item.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                    <td><span className={`badge ${item.mfa_verified_at ? 'text-bg-success' : 'text-bg-warning'}`}>{item.mfa_verified_at ? 'Verificado' : 'Pendiente'}</span></td>
+                    <td className="text-nowrap">{formatearFechaMfa(item.mfa_verified_at)}</td>
+                    <td><div className="d-flex gap-2"><button type="button" className="btn btn-sm btn-outline-success" onClick={() => visualizarQr(item)} disabled={!item.is_active || cargandoQr === item.id}>{cargandoQr === item.id ? 'Cargando…' : 'Ver QR'}</button><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button></div></td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+
+              <div className="d-md-none">
+                {supers.map((item) => (
+                  <div className="card shadow-sm border mb-3" key={item.id}>
+                    <div className="card-body py-3">
+                      <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                          <div className="text-muted small">Nombre</div>
+                          <div className="fw-bold">{item.name || '—'}</div>
+                        </div>
+                        {item.id === miId && <span className="badge text-bg-primary">Yo</span>}
+                      </div>
+
+                      <div className="mb-2"><div className="text-muted small">DNI</div><div>{item.dni || '—'}</div></div>
+                      <div className="mb-2"><div className="text-muted small">Teléfono</div><div>{item.phone || '—'}</div></div>
+                      <div className="mb-2"><div className="text-muted small">Correo</div><div className="text-break">{item.email}</div></div>
+                      <div className="mb-2"><div className="text-muted small">Estado</div><span className={`badge ${item.is_active ? 'text-bg-success' : 'text-bg-secondary'}`}>{item.is_active ? 'Activo' : 'Inactivo'}</span></div>
+                      <div className="mb-3"><div className="text-muted small">MFA</div><div className="d-flex flex-wrap align-items-center gap-2"><span className={`badge ${item.mfa_verified_at ? 'text-bg-success' : 'text-bg-warning'}`}>{item.mfa_verified_at ? 'Verificado' : 'Pendiente'}</span>{item.mfa_verified_at && <small className="text-muted">Activado: {formatearFechaMfa(item.mfa_verified_at)}</small>}</div></div>
+
+                      <div className="d-grid gap-2">
+                        <button type="button" className="btn btn-outline-success btn-sm" onClick={() => visualizarQr(item)} disabled={!item.is_active || cargandoQr === item.id}>{cargandoQr === item.id ? 'Cargando…' : '🔐 Ver QR MFA'}</button>
+                        <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => abrirEditar(item)}>✏️ Editar</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>}
         </div>
       </div>
 
