@@ -1,19 +1,43 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import Can from './Can'
 
-function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection, abierto }) {
+function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection }) {
   const { config } = useTenantConfig()
   const location = useLocation()
   const clientesPorRuta = location.pathname.includes('/clientes')
   const primaryColor = config?.primary_color || '#0d6efd'
+  const [abierto, setAbierto] = useState(clientesPorRuta)
 
   useEffect(() => {
-    if (clientesPorRuta && !abierto) onOpenSection?.('clientes')
-  }, [clientesPorRuta, abierto, onOpenSection])
+    if (clientesPorRuta) setAbierto(true)
+  }, [clientesPorRuta])
 
-  const alternarClientes = () => onOpenSection?.('clientes')
+  useEffect(() => {
+    const nav = document.querySelector('aside nav')
+    if (!nav) return undefined
+
+    const sincronizarConOtrasSecciones = () => {
+      const botones = Array.from(nav.querySelectorAll('button'))
+      const otraSeccionAbierta = botones.some((boton) => {
+        const texto = boton.textContent?.trim() || ''
+        return (texto.startsWith('Extintores') || texto.startsWith('Administración')) && texto.includes('▾')
+      })
+      if (otraSeccionAbierta && !clientesPorRuta) setAbierto(false)
+    }
+
+    sincronizarConOtrasSecciones()
+    const observer = new MutationObserver(sincronizarConOtrasSecciones)
+    observer.observe(nav, { childList: true, subtree: true, characterData: true })
+    return () => observer.disconnect()
+  }, [clientesPorRuta])
+
+  const alternarClientes = () => {
+    const nuevoEstado = !abierto
+    setAbierto(nuevoEstado)
+    if (nuevoEstado) onOpenSection?.('clientes')
+  }
 
   return (
     <Can permission="CLIENT_READ">
