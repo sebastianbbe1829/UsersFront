@@ -140,6 +140,11 @@ export function AuthProvider({ children }) {
     const tenantActual = obtenerTenantDesdeUrl()
     const tokenActual = tokenParaCerrar
 
+    // Invalidar inmediatamente el token local para impedir que un refresh
+    // que ya esté en vuelo pueda restaurar una sesión que acaba de expirar.
+    tokenRef.current = ''
+    renovandoSesionRef.current = false
+
     try {
       if (tokenActual) {
         await logout(tokenActual)
@@ -285,10 +290,11 @@ export function AuthProvider({ children }) {
   }, [validarTenantToken, guardarSesionSuper, guardarSesionTenant, cargarDatos])
 
   const renovarTokenSiCorresponde = useCallback(async () => {
-    if (!token || !logueado || document.hidden || renovandoSesionRef.current) return
+    if (!token || !logueado || document.hidden || renovandoSesionRef.current || cerrandoSesionExpiradaRef.current) return
     if (Date.now() - ultimaActividadRef.current > RECENT_ACTIVITY_WINDOW_MS) return
 
-    const payload = obtenerPayloadToken(token)
+    const tokenAntesDelRefresh = token
+    const payload = obtenerPayloadToken(tokenAntesDelRefresh)
     if (!payload?.exp || !payload?.refresh_at) return
 
     const ahora = Math.floor(Date.now() / 1000)
@@ -302,10 +308,20 @@ export function AuthProvider({ children }) {
     )
 
     try {
-      const resultado = await renovarSesion(token)
+      const resultado = await renovarSesion(tokenAntesDelRefresh)
 
       if (!resultado?.access_token) {
         throw new Error('El servidor no devolvió un token renovado.')
+      }
+
+      // El token pudo expirar mientras el refresh estaba en vuelo. Si la
+      // expiración ya invalidó tokenRef, no se debe restaurar la sesión.
+      if (
+        cerrandoSesionExpiradaRef.current ||
+        tokenRef.current !== tokenAntesDelRefresh
+      ) {
+        console.info('[AUTH] Refresh descartado porque la sesión ya fue cerrada.')
+        return
       }
 
       const nuevoToken = resultado.access_token
@@ -319,6 +335,7 @@ export function AuthProvider({ children }) {
         guardarSesionTenant(tenantActual, nuevoToken)
       }
 
+      tokenRef.current = nuevoToken
       setToken(nuevoToken)
       ultimaActividadRef.current = Date.now()
 
@@ -331,7 +348,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('[AUTH] Error renovando sesión:', error)
       if (error?.status === 401) {
-        await manejarSesionExpirada()
+        await manejarSesionExpirada(tokenAntesDelRefresh)
       }
     } finally {
       renovandoSesionRef.current = false
