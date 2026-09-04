@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { QRCodeSVG } from 'qrcode.react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerPayloadToken } from '../services/api'
@@ -6,6 +7,7 @@ import {
   actualizarGlobalSuper,
   crearGlobalSuper,
   obtenerGlobalSuper,
+  obtenerGlobalSuperMfaProvisioning,
   obtenerGlobalSupers,
 } from '../services/globalSuperAdminApi'
 import SuperMfaModal from '../components/SuperMfaModal'
@@ -24,7 +26,8 @@ function GlobalSuperAdminPage() {
   const [editando, setEditando] = useState(null)
   const [datosPendientes, setDatosPendientes] = useState(null)
   const [guardando, setGuardando] = useState(false)
-  const [provisioningUri, setProvisioningUri] = useState('')
+  const [mfaProvisioning, setMfaProvisioning] = useState(null)
+  const [cargandoQr, setCargandoQr] = useState(null)
 
   const cargarSupers = useCallback(async () => {
     if (!esSuper || !token) {
@@ -51,7 +54,7 @@ function GlobalSuperAdminPage() {
   const abrirCrear = () => {
     setMensaje('')
     setError('')
-    setProvisioningUri('')
+    setMfaProvisioning(null)
     setModal('crear')
   }
 
@@ -70,21 +73,36 @@ function GlobalSuperAdminPage() {
     }
   }
 
+  const visualizarQr = async (item) => {
+    if (!item?.id || !item.is_active) return
+
+    try {
+      setError('')
+      setMensaje('')
+      setCargandoQr(item.id)
+      const resultado = await obtenerGlobalSuperMfaProvisioning(item.id, token)
+      setMfaProvisioning(resultado)
+      setModal('qr')
+    } catch (err) {
+      setError(err.message || 'No fue posible obtener el QR de configuración MFA.')
+    } finally {
+      setCargandoQr(null)
+    }
+  }
+
   const cancelar = () => {
     if (guardando) return
     setModal(null)
     setEditando(null)
     setDatosPendientes(null)
-    setProvisioningUri('')
+    setMfaProvisioning(null)
   }
 
-  // El MFA se solicita únicamente después de completar y enviar el formulario.
   const continuarCrear = (datos) => {
     setDatosPendientes({ tipo: 'crear', datos })
     setModal('otp')
   }
 
-  // El MFA se solicita únicamente después de completar y enviar el formulario.
   const continuarEditar = (datos) => {
     setDatosPendientes({ tipo: 'editar', datos, superId: editando.id })
     setModal('otp')
@@ -99,9 +117,14 @@ function GlobalSuperAdminPage() {
 
       if (datosPendientes.tipo === 'crear') {
         const resultado = await crearGlobalSuper(datosPendientes.datos, otp, token)
-        setProvisioningUri(resultado?.provisioning_uri || '')
-        setMensaje('Usuario SUPER creado correctamente. Debe configurar su autenticador antes de iniciar sesión.')
-        setModal('provisionamiento')
+        setMfaProvisioning({
+          id: resultado.id,
+          email: resultado.email,
+          provisioning_uri: resultado.provisioning_uri,
+        })
+        setMensaje('Usuario SUPER creado correctamente. Escanea el QR con la aplicación Authenticator del nuevo usuario antes de iniciar sesión.')
+        setDatosPendientes(null)
+        setModal('qr')
       } else {
         await actualizarGlobalSuper(
           datosPendientes.superId,
@@ -115,9 +138,18 @@ function GlobalSuperAdminPage() {
         setDatosPendientes(null)
         await cargarSupers()
       }
+    } catch (err) {
+      setError(err.message || 'No fue posible completar la operación.')
     } finally {
       setGuardando(false)
     }
+  }
+
+  const cerrarQr = () => {
+    if (guardando) return
+    setModal(null)
+    setMfaProvisioning(null)
+    void cargarSupers()
   }
 
   if (!esSuper) {
@@ -139,7 +171,7 @@ function GlobalSuperAdminPage() {
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
             <div>
               <h5 className="fw-bold mb-1">Usuarios globales</h5>
-              <div className="text-muted">La consulta no requiere una nueva verificación MFA.</div>
+              <div className="text-muted">La consulta y visualización del QR están protegidas por la sesión SUPER.</div>
             </div>
             <button type="button" className="btn btn-success text-nowrap" onClick={abrirCrear}>+ Crear SUPER</button>
           </div>
@@ -163,7 +195,18 @@ function GlobalSuperAdminPage() {
                       <td><span className={`badge ${item.mfa_verified_at ? 'text-bg-success' : 'text-bg-warning'}`}>{item.mfa_verified_at ? 'Verificado' : 'Pendiente'}</span></td>
                       <td>{item.last_login_at ? new Date(item.last_login_at).toLocaleString() : 'Nunca'}</td>
                       <td className="text-end">
-                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
+                        <div className="d-flex justify-content-end gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-success"
+                            onClick={() => visualizarQr(item)}
+                            disabled={!item.is_active || cargandoQr === item.id}
+                            title={!item.is_active ? 'El usuario está inactivo' : 'Visualizar QR de configuración MFA'}
+                          >
+                            {cargandoQr === item.id ? 'Cargando…' : 'Ver QR'}
+                          </button>
+                          <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -183,9 +226,9 @@ function GlobalSuperAdminPage() {
                 <div className="modal-body">
                   <div className="alert alert-info">Completa toda la información del usuario. Al pulsar «Crear SUPER» se solicitará la verificación MFA del SUPER que realiza la operación.</div>
                   <label className="form-label fw-semibold">Correo</label>
-                  <input name="email" type="email" className="form-control mb-3" required />
+                  <input name="email" type="email" className="form-control mb-3" autoComplete="email" required />
                   <label className="form-label fw-semibold">Contraseña inicial</label>
-                  <input name="password" type="password" className="form-control" minLength="12" maxLength="128" required />
+                  <input name="password" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" required />
                 </div>
                 <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Crear SUPER</button></div>
               </form>
@@ -211,9 +254,9 @@ function GlobalSuperAdminPage() {
                 <div className="modal-body">
                   <div className="alert alert-info">Completa todos los cambios primero. Al pulsar «Guardar cambios» se solicitará la verificación MFA.</div>
                   <label className="form-label fw-semibold">Correo</label>
-                  <input name="email" type="email" className="form-control mb-3" defaultValue={editando.email} required />
+                  <input name="email" type="email" className="form-control mb-3" autoComplete="email" defaultValue={editando.email} required />
                   <label className="form-label fw-semibold">Nueva contraseña (opcional)</label>
-                  <input name="password" type="password" className="form-control mb-3" minLength="12" maxLength="128" />
+                  <input name="password" type="password" className="form-control mb-3" autoComplete="new-password" minLength="12" maxLength="128" />
                   <div className="form-check"><input name="is_active" type="checkbox" className="form-check-input" id="superActivo" defaultChecked={editando.is_active} /><label className="form-check-label" htmlFor="superActivo">Usuario activo</label></div>
                 </div>
                 <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Guardar cambios</button></div>
@@ -231,18 +274,32 @@ function GlobalSuperAdminPage() {
         />
       )}
 
-      {modal === 'provisionamiento' && (
+      {modal === 'qr' && mfaProvisioning && (
         <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.65)', position: 'fixed', inset: 0, zIndex: 2200 }}>
-          <div className="modal-dialog modal-dialog-centered"><div className="modal-content">
-            <div className="modal-header"><h5 className="modal-title">Configuración MFA del nuevo SUPER</h5></div>
-            <div className="modal-body">
-              <p>Entrega esta información al nuevo usuario SUPER para registrarla en su aplicación Authenticator.</p>
-              <label className="form-label fw-semibold">Provisioning URI</label>
-              <textarea className="form-control" rows="5" readOnly value={provisioningUri} />
-              <div className="alert alert-warning mt-3 mb-0">Esta información contiene el secreto de enrolamiento MFA. No la compartas con personas no autorizadas.</div>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '520px' }}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <div>
+                  <h5 className="modal-title mb-1">Configuración MFA</h5>
+                  <div className="text-muted small">{mfaProvisioning.email}</div>
+                </div>
+              </div>
+              <div className="modal-body text-center">
+                <p className="mb-4">Escanea este código QR desde la aplicación Authenticator del usuario SUPER.</p>
+                <div className="d-flex justify-content-center mb-4">
+                  <div className="bg-white p-3 rounded border shadow-sm">
+                    <QRCodeSVG value={mfaProvisioning.provisioning_uri} size={260} level="M" includeMargin />
+                  </div>
+                </div>
+                <div className="alert alert-warning text-start mb-0">
+                  El QR contiene el secreto de enrolamiento MFA. Muéstralo únicamente a la persona autorizada y evita compartir capturas.
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-primary" onClick={cerrarQr}>Cerrar</button>
+              </div>
             </div>
-            <div className="modal-footer"><button type="button" className="btn btn-primary" onClick={() => { setModal(null); setDatosPendientes(null); setProvisioningUri(''); void cargarSupers() }}>Cerrar</button></div>
-          </div></div>
+          </div>
         </div>
       )}
     </div>
