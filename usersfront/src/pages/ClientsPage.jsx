@@ -21,11 +21,10 @@ const formularioInicial = {
   status: 'ACTIVE', consent_given: false, consent_at: null, consent_source: '',
 }
 
-const normalizarNombre = (valor) => valor
-  .toLocaleLowerCase('es-CO')
+const normalizarTexto = (valor) => valor
+  .toLocaleUpperCase('es-CO')
   .replace(/\s+/g, ' ')
   .trim()
-  .replace(/(^|[\s-])(\p{L})/gu, (_, separador, letra) => `${separador}${letra.toLocaleUpperCase('es-CO')}`)
 
 function ClientsPage() {
   const { token, manejarSesionExpirada } = useAuth()
@@ -128,7 +127,7 @@ function ClientsPage() {
   useEffect(() => { if (pagina > totalPaginas) setPagina(totalPaginas) }, [pagina, totalPaginas])
 
   const cambiar = (campo, valor) => setFormulario((actual) => ({ ...actual, [campo]: valor }))
-  const cambiarNombre = (campo, valor) => cambiar(campo, normalizarNombre(valor))
+  const cambiarTexto = (campo, valor) => cambiar(campo, normalizarTexto(valor))
   const cerrarModal = () => {
     if (guardando) return
     setModalAbierto(false)
@@ -142,7 +141,24 @@ function ClientsPage() {
   const abrirCrear = () => { setClienteEditando(null); setFormulario(formularioInicial); setDepartamentos([]); setCiudades([]); setMensaje(null); setModalAbierto(true) }
   const editar = (cliente) => {
     setClienteEditando(cliente)
-    setFormulario({ ...formularioInicial, ...cliente, identification_type_id: cliente.identification_type_id ?? '', country_id: cliente.country_id ?? '', department_id: cliente.department_id ?? '', city_id: cliente.city_id ?? '', consent_given: Boolean(cliente.consent_given), consent_at: cliente.consent_at ?? null, consent_source: cliente.consent_source ?? '' })
+    setFormulario({
+      ...formularioInicial,
+      ...cliente,
+      first_name: normalizarTexto(cliente.first_name),
+      middle_name: normalizarTexto(cliente.middle_name),
+      last_name: normalizarTexto(cliente.last_name),
+      second_last_name: normalizarTexto(cliente.second_last_name),
+      business_name: normalizarTexto(cliente.business_name),
+      email: normalizarTexto(cliente.email),
+      address: normalizarTexto(cliente.address),
+      consent_source: normalizarTexto(cliente.consent_source),
+      identification_type_id: cliente.identification_type_id ?? '',
+      country_id: cliente.country_id ?? '',
+      department_id: cliente.department_id ?? '',
+      city_id: cliente.city_id ?? '',
+      consent_given: Boolean(cliente.consent_given),
+      consent_at: cliente.consent_at ?? null,
+    })
     setMensaje(null)
     setModalAbierto(true)
   }
@@ -153,16 +169,18 @@ function ClientsPage() {
       setGuardando(true); setMensaje(null)
       const datos = {
         ...formulario,
-        first_name: formulario.person_type === 'NATURAL' ? normalizarNombre(formulario.first_name) : formulario.first_name,
-        middle_name: formulario.person_type === 'NATURAL' ? normalizarNombre(formulario.middle_name) : formulario.middle_name,
-        last_name: formulario.person_type === 'NATURAL' ? normalizarNombre(formulario.last_name) : formulario.last_name,
-        second_last_name: formulario.person_type === 'NATURAL' ? normalizarNombre(formulario.second_last_name) : formulario.second_last_name,
+        first_name: normalizarTexto(formulario.first_name),
+        middle_name: normalizarTexto(formulario.middle_name),
+        last_name: normalizarTexto(formulario.last_name),
+        second_last_name: normalizarTexto(formulario.second_last_name),
+        business_name: normalizarTexto(formulario.business_name),
+        email: normalizarTexto(formulario.email) || null,
+        address: normalizarTexto(formulario.address),
+        consent_source: normalizarTexto(formulario.consent_source) || null,
         identification_type_id: Number(formulario.identification_type_id),
         country_id: formulario.country_id ? Number(formulario.country_id) : null,
         department_id: formulario.department_id ? Number(formulario.department_id) : null,
         city_id: formulario.city_id ? Number(formulario.city_id) : null,
-        email: formulario.email || null,
-        consent_source: formulario.consent_source || null,
       }
       const resultado = clienteEditando ? await actualizarCliente(clienteEditando.id, datos, token) : await crearCliente(datos, token)
       setClientes((actuales) => clienteEditando ? actuales.map((cliente) => cliente.id === resultado.id ? resultado : cliente) : [resultado, ...actuales])
@@ -205,10 +223,10 @@ function ClientsPage() {
       <div className="col-md-3"><label className="form-label fw-semibold">Tipo identificación</label><select className="form-select" required value={formulario.identification_type_id} onChange={(e) => cambiar('identification_type_id', e.target.value)} disabled={guardando}><option value="">Seleccione...</option>{tiposDisponibles.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.code} - {tipo.name}</option>)}</select></div>
       <div className="col-md-3"><label className="form-label fw-semibold">Número identificación</label><input className="form-control" required maxLength="50" value={formulario.identification_number} onChange={(e) => cambiar('identification_number', e.target.value)} disabled={guardando} /></div>
       <div className="col-md-3"><label className="form-label fw-semibold">Estado</label><select className="form-select" value={formulario.status} onChange={(e) => cambiar('status', e.target.value)} disabled={guardando}><option value="ACTIVE">Activo</option><option value="INACTIVE">Inactivo</option></select></div>
-      {formulario.person_type === 'NATURAL' ? ['first_name', 'middle_name', 'last_name', 'second_last_name'].map((campo) => <div className="col-md-3" key={campo}><label className="form-label fw-semibold">{{ first_name: 'Primer nombre', middle_name: 'Segundo nombre', last_name: 'Primer apellido', second_last_name: 'Segundo apellido' }[campo]}</label><input className="form-control" required={campo === 'first_name' || campo === 'last_name'} maxLength="100" value={formulario[campo]} onChange={(e) => cambiarNombre(campo, e.target.value)} disabled={guardando} /></div>) : <div className="col-md-6"><label className="form-label fw-semibold">Razón social</label><input className="form-control" required maxLength="250" value={formulario.business_name} onChange={(e) => cambiar('business_name', e.target.value)} disabled={guardando} /></div>}
-      <div className="col-md-4"><label className="form-label fw-semibold">Correo</label><input type="email" className="form-control" value={formulario.email} onChange={(e) => cambiar('email', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Teléfono</label><input className="form-control" maxLength="50" value={formulario.phone} onChange={(e) => cambiar('phone', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Dirección</label><input className="form-control" maxLength="250" value={formulario.address} onChange={(e) => cambiar('address', e.target.value)} disabled={guardando} /></div>
+      {formulario.person_type === 'NATURAL' ? ['first_name', 'middle_name', 'last_name', 'second_last_name'].map((campo) => <div className="col-md-3" key={campo}><label className="form-label fw-semibold">{{ first_name: 'Primer nombre', middle_name: 'Segundo nombre', last_name: 'Primer apellido', second_last_name: 'Segundo apellido' }[campo]}</label><input className="form-control" required={campo === 'first_name' || campo === 'last_name'} maxLength="100" value={formulario[campo]} onChange={(e) => cambiarTexto(campo, e.target.value)} disabled={guardando} /></div>) : <div className="col-md-6"><label className="form-label fw-semibold">Razón social</label><input className="form-control" required maxLength="250" value={formulario.business_name} onChange={(e) => cambiarTexto('business_name', e.target.value)} disabled={guardando} /></div>}
+      <div className="col-md-4"><label className="form-label fw-semibold">Correo</label><input type="email" className="form-control" value={formulario.email} onChange={(e) => cambiarTexto('email', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Teléfono</label><input className="form-control" maxLength="50" value={formulario.phone} onChange={(e) => cambiar('phone', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Dirección</label><input className="form-control" maxLength="250" value={formulario.address} onChange={(e) => cambiarTexto('address', e.target.value)} disabled={guardando} /></div>
       <div className="col-md-4"><label className="form-label fw-semibold">País</label><select className="form-select" value={formulario.country_id} onChange={(e) => setFormulario((actual) => ({ ...actual, country_id: e.target.value, department_id: '', city_id: '' }))} disabled={guardando}><option value="">Seleccione...</option>{paises.map((pais) => <option key={pais.id} value={pais.id}>{pais.code} - {pais.name}</option>)}</select></div><div className="col-md-4"><label className="form-label fw-semibold">Departamento</label><select className="form-select" value={formulario.department_id} onChange={(e) => setFormulario((actual) => ({ ...actual, department_id: e.target.value, city_id: '' }))} disabled={!formulario.country_id || cargandoDepartamentos || guardando}><option value="">{cargandoDepartamentos ? '⏳ Cargando departamentos...' : 'Seleccione...'}</option>{!cargandoDepartamentos && departamentos.map((item) => <option key={item.id} value={item.id}>{item.code} - {item.name}</option>)}</select></div><div className="col-md-4"><label className="form-label fw-semibold">Ciudad</label><select className="form-select" value={formulario.city_id} onChange={(e) => cambiar('city_id', e.target.value)} disabled={!formulario.department_id || cargandoCiudades || guardando}><option value="">{cargandoCiudades ? '⏳ Cargando ciudades...' : 'Seleccione...'}</option>{!cargandoCiudades && ciudades.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
-      <div className="col-12"><div className="form-check"><input className="form-check-input" type="checkbox" checked={formulario.consent_given} onChange={(e) => cambiar('consent_given', e.target.checked)} id="consentimiento-cliente" disabled={guardando} /><label className="form-check-label" htmlFor="consentimiento-cliente">Consentimiento otorgado</label></div></div><div className="col-md-6"><label className="form-label fw-semibold">Origen del consentimiento</label><input className="form-control" maxLength="100" value={formulario.consent_source} onChange={(e) => cambiar('consent_source', e.target.value)} disabled={guardando} /></div>
+      <div className="col-12"><div className="form-check"><input className="form-check-input" type="checkbox" checked={formulario.consent_given} onChange={(e) => cambiar('consent_given', e.target.checked)} id="consentimiento-cliente" disabled={guardando} /><label className="form-check-label" htmlFor="consentimiento-cliente">Consentimiento otorgado</label></div></div><div className="col-md-6"><label className="form-label fw-semibold">Origen del consentimiento</label><input className="form-control" maxLength="100" value={formulario.consent_source} onChange={(e) => cambiarTexto('consent_source', e.target.value)} disabled={guardando} /></div>
     </div>{guardando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.82)', zIndex: 5 }}><div className="spinner-border text-primary" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Guardando cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la información.</small></div>}<div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button className="btn btn-primary" disabled={guardando}>{guardando ? 'Guardando...' : clienteEditando ? 'Actualizar' : 'Crear'}</button></div></form></div></div></div></div>}
 
     {clienteEliminando && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.55)', position: 'fixed', inset: 0, zIndex: 2100 }} role="dialog" aria-modal="true"><div className="modal-dialog modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header border-0 pb-0"><h5 className="modal-title fw-bold">Eliminar cliente</h5><button type="button" className="btn-close" onClick={cancelarEliminar} disabled={eliminando} aria-label="Cerrar" /></div><div className="modal-body text-center px-4 py-4"><div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger" style={{ width: 64, height: 64, fontSize: 28 }}>!</div><h5 className="fw-bold mb-2">¿Estás seguro?</h5><p className="text-muted mb-1">Vas a eliminar este cliente:</p><div className="fw-semibold">{clienteEliminando.full_name || clienteEliminando.identification_number}</div><small className="text-muted">Identificación: {clienteEliminando.identification_number}</small><p className="text-muted mt-3 mb-0">Esta acción cambiará el estado del registro según las reglas del sistema.</p></div><div className="modal-footer border-0 justify-content-center gap-2 pb-4"><button type="button" className="btn btn-outline-secondary px-4" onClick={cancelarEliminar} disabled={eliminando}>Cancelar</button><button type="button" className="btn btn-danger px-4" onClick={confirmarEliminar} disabled={eliminando}>{eliminando ? 'Eliminando...' : 'Sí, eliminar'}</button></div></div></div></div>}
