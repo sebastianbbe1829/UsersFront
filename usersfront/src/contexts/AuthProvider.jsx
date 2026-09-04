@@ -296,8 +296,33 @@ export function AuthProvider({ children }) {
         try {
           const resultado = await renovarSesion(tokenGuardado)
           const renovado = aplicarTokenRenovado(tokenGuardado, resultado)
+
           if (renovado) {
-            setUsuarioLogueado((usuarioActual) => usuarioActual)
+            const payloadRenovado = obtenerPayloadToken(resultado.access_token)
+            const esSuper = payloadRenovado?.user_type === 'SUPER'
+
+            const usuarioActual = esSuper
+              ? {
+                  dni: payloadRenovado?.global_user_id ?? payloadRenovado?.sub ?? null,
+                  name: payloadRenovado?.name ?? null,
+                  email: payloadRenovado?.email ?? null,
+                  tenant_id: payloadRenovado?.tenant_id ?? null,
+                  tenant_slug: payloadRenovado?.tenant_slug ?? null,
+                  user_tenant_id: payloadRenovado?.user_tenant_id ?? null,
+                  user_type: 'SUPER',
+                  global_user_id: payloadRenovado?.global_user_id ?? null,
+                  session_id: payloadRenovado?.session_id ?? null,
+                }
+              : {
+                  dni: payloadRenovado?.sub ?? null,
+                  name: payloadRenovado?.name ?? null,
+                  tenant_id: payloadRenovado?.tenant_id ?? null,
+                  tenant_slug: payloadRenovado?.tenant_slug ?? null,
+                  user_tenant_id: payloadRenovado?.user_tenant_id ?? null,
+                  user_type: 'TENANT',
+                }
+
+            setUsuarioLogueado(usuarioActual)
             setLogueado(true)
             setMensajeSesion('')
             ultimaActividadRef.current = Date.now()
