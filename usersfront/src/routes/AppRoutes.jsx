@@ -11,6 +11,7 @@ import ExtinguisherTypesPage from '../pages/ExtinguisherTypesPage'
 import ExtinguisherInspectionsSearchPage from '../pages/ExtinguisherInspectionsSearchPage'
 import ExtinguisherInspectionItemsPage from '../pages/ExtinguisherInspectionItemsPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
+import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
 import SuperBootstrapPage from '../pages/SuperBootstrapPage'
 import TenantBootstrapPage from '../pages/TenantBootstrapPage'
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Route path="extintores/items-revision" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionItemsPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
+      <Route path="usuarios-super" element={<GlobalSuperAdminPage />} />
     </Route>
     <Route path="*" element={<Navigate to={`/${tenant}`} replace />} />
   </Routes>
