@@ -32,8 +32,12 @@ function MainLayoutFixed() {
 
   const alternarSeccion = (seccion) => {
     if (menuColapsado) {
-      setMenuColapsado(false)
-      setSeccionAbierta(seccion)
+      const rutasSeccion = {
+        clientes: `${rutaTenant}/clientes`,
+        extintores: `${rutaTenant}/extintores`,
+        administracion: `${rutaTenant}/usuarios`,
+      }
+      navigate(rutasSeccion[seccion])
       return
     }
     setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
