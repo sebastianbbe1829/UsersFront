@@ -8,7 +8,7 @@ import SessionManager from '../components/SessionManager'
 import ClientMenu from '../components/ClientMenu'
 
 function MainLayoutFixed() {
-  const { usuarioLogueado, cerrarSesion, manejarSesionExpirada, tenant, token } = useAuth()
+  const { usuarioLogueado, cerrarSesion, manejarSesionExpirada, tenant, token, estadoActividad } = useAuth()
   const { config } = useTenantConfig()
   const payload = obtenerPayloadToken(token)
   const esSuper = payload?.user_type === 'SUPER'
@@ -74,6 +74,7 @@ function MainLayoutFixed() {
 
   const pagina = obtenerTituloPagina()
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
+  const actividadEsActiva = estadoActividad !== 'INACTIVA'
 
   return (
     <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
@@ -126,9 +127,25 @@ function MainLayoutFixed() {
       </aside>
 
       <main style={{ marginLeft: menuColapsado ? '72px' : '250px', width: `calc(100% - ${menuColapsado ? '72px' : '250px'})`, minHeight: '100vh', transition: 'margin-left .25s ease, width .25s ease' }}>
+        <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
         <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}>
           <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div>
-          <div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span>👤</span><div className="d-none d-md-flex flex-column align-items-end"><small className="fw-semibold">{usuarioLogueado.name}</small><small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small></div></div>}</div>
+          <div className="d-flex align-items-center gap-3">
+            {tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}
+            {tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}
+            {usuarioLogueado && (
+              <div className="d-flex align-items-center gap-2">
+                <span>👤</span>
+                <div className="d-none d-md-flex flex-column align-items-end">
+                  <small className="fw-semibold">{usuarioLogueado.name}</small>
+                  <small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small>
+                  <small className={actividadEsActiva ? 'text-success' : 'text-warning'}>
+                    {actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}
+                  </small>
+                </div>
+              </div>
+            )}
+          </div>
         </header>
         <section className="p-4"><Outlet /></section>
       </main>
