@@ -27,13 +27,8 @@ function MainLayoutFixed() {
   const administracionMenuAbierto = administracionAbierta
   const extintoresMenuAbierto = extintoresAbiertos
 
-  useEffect(() => {
-    if (administracionPorRuta) setAdministracionAbierta(true)
-  }, [administracionPorRuta])
-
-  useEffect(() => {
-    if (extintoresPorRuta) setExtintoresAbiertos(true)
-  }, [extintoresPorRuta])
+  useEffect(() => { if (administracionPorRuta) setAdministracionAbierta(true) }, [administracionPorRuta])
+  useEffect(() => { if (extintoresPorRuta) setExtintoresAbiertos(true) }, [extintoresPorRuta])
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
@@ -48,8 +43,6 @@ function MainLayoutFixed() {
     cerrarSesion()
     navigate(tenant ? `/${tenant}/login` : '/login', { replace: true })
   }
-
-  const manejarAdministracion = () => setAdministracionAbierta((valor) => !valor)
 
   const obtenerTituloPagina = () => {
     const ruta = location.pathname
@@ -79,13 +72,13 @@ function MainLayoutFixed() {
   return (
     <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
       <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
-      <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width .25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: menuColapsado ? 'visible' : 'hidden' }}>
-        <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary" style={{ height: '70px' }}>
+      <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width .25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary flex-shrink-0" style={{ height: '70px' }}>
           {!menuColapsado && <div className="d-flex align-items-center gap-2 fw-bold text-nowrap">{config?.logo_url ? <img src={config.logo_url} alt="Logo" style={{ maxHeight: '36px', maxWidth: '48px', objectFit: 'contain' }} onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <span>👥</span>}<span>{appTitle}</span></div>}
           <button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button>
         </div>
 
-        <nav className="d-flex flex-column">
+        <nav className="d-flex flex-column flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
           <NavLink to={tenant ? `/${tenant}` : '/'} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inicio" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>{!menuColapsado && <span className="ms-3">Inicio</span>}
           </NavLink>
@@ -105,7 +98,7 @@ function MainLayoutFixed() {
           <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} />
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
-            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={manejarAdministracion} title="Administración" style={{ background: 'transparent' }}>
+            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => setAdministracionAbierta((valor) => !valor)} title="Administración" style={{ background: 'transparent' }}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{administracionMenuAbierto ? '▾' : '▸'}</span></>}
             </button>
             {administracionMenuAbierto && !menuColapsado && <div className="ps-3">
@@ -117,10 +110,10 @@ function MainLayoutFixed() {
 
           {esSuper && <NavLink to={`${rutaTenant}/configuracion-ui`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Configuración de la interfaz"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>{!menuColapsado && <span className="ms-3">Configuración UI</span>}</NavLink>}
           {esSuper && <NavLink to={`${rutaTenant}/administracion-tenant`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración del tenant"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span>{!menuColapsado && <span className="ms-3">Administración del tenant</span>}</NavLink>}
-          {esSuper && <NavLink to={`${rutaTenant}/usuarios-super`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios SUPER" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👑</span>{!menuColapsado && <span className="ms-3">Usuarios SUPER</span>}</NavLink>}
+          {esSuper && <NavLink to={`${rutaTenant}/usuarios-super`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios SUPER"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👑</span>{!menuColapsado && <span className="ms-3">Usuarios SUPER</span>}</NavLink>}
         </nav>
 
-        <div className="position-absolute bottom-0 start-0 end-0">
+        <div className="flex-shrink-0">
           <button type="button" className="btn text-white border-0 rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: secondaryColor }} onClick={cambiarModoOscuro} title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>{modoOscuro ? '☀️' : '🌙'}</span>{!menuColapsado && <span className="ms-3">{modoOscuro ? 'Modo claro' : 'Modo oscuro'}</span>}</button>
           <button type="button" className="btn text-white rounded-0 w-100 text-start py-3 px-3" style={{ backgroundColor: primaryColor }} onClick={manejarCerrarSesion} title="Cerrar sesión"><span style={{ fontSize: '21px', minWidth: '24px', display: 'inline-block', textAlign: 'center' }}>🚪</span>{!menuColapsado && <span className="ms-3">Cerrar sesión</span>}</button>
         </div>
@@ -133,18 +126,7 @@ function MainLayoutFixed() {
           <div className="d-flex align-items-center gap-3">
             {tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}
             {tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}
-            {usuarioLogueado && (
-              <div className="d-flex align-items-center gap-2">
-                <span>👤</span>
-                <div className="d-none d-md-flex flex-column align-items-end">
-                  <small className="fw-semibold">{usuarioLogueado.name}</small>
-                  <small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small>
-                  <small className={actividadEsActiva ? 'text-success' : 'text-warning'}>
-                    {actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}
-                  </small>
-                </div>
-              </div>
-            )}
+            {usuarioLogueado && <div className="d-flex align-items-center gap-2"><span>👤</span><div className="d-none d-md-flex flex-column align-items-end"><small className="fw-semibold">{usuarioLogueado.name}</small><small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small><small className={actividadEsActiva ? 'text-success' : 'text-warning'}>{actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}</small></div></div>}
           </div>
         </header>
         <section className="p-4"><Outlet /></section>
