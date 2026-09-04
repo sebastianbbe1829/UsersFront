@@ -122,8 +122,11 @@ export function AuthProvider({ children }) {
     const tenantActual = obtenerTenantDesdeUrl()
     const tokenActual = token
 
+    console.info('[AUTH] Cierre de sesión solicitado por el usuario.')
+
     try {
       await logout(tokenActual)
+      console.info('[AUTH] Cierre de sesión registrado y cerrado en el servidor.')
     } catch (error) {
       console.error('Error cerrando sesión en el servidor:', error)
     } finally {
@@ -141,8 +144,6 @@ export function AuthProvider({ children }) {
     const tenantActual = obtenerTenantDesdeUrl()
     const tokenActual = tokenParaCerrar
 
-    // Invalidar inmediatamente el token local para impedir que un refresh
-    // que ya esté en vuelo pueda restaurar una sesión que acaba de expirar.
     tokenRef.current = ''
     renovandoSesionRef.current = false
 
@@ -298,8 +299,6 @@ export function AuthProvider({ children }) {
     const ahoraMs = Date.now()
     const ultimaActividad = ultimaActividadRef.current
 
-    // El refresh no representa actividad del usuario. Solo se permite una
-    // renovación cuando hubo actividad real desde la última renovación.
     if (ultimaActividad <= ultimaActividadRenovadaRef.current) return
     if (ahoraMs - ultimaActividad > RECENT_ACTIVITY_WINDOW_MS) return
 
@@ -324,8 +323,6 @@ export function AuthProvider({ children }) {
         throw new Error('El servidor no devolvió un token renovado.')
       }
 
-      // El token pudo expirar mientras el refresh estaba en vuelo. Si la
-      // expiración ya invalidó tokenRef, no se debe restaurar la sesión.
       if (
         cerrandoSesionExpiradaRef.current ||
         tokenRef.current !== tokenAntesDelRefresh
