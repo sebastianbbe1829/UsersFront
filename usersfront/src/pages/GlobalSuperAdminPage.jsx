@@ -9,7 +9,6 @@ import {
   obtenerGlobalSuper,
   obtenerGlobalSuperMfaProvisioning,
   obtenerGlobalSupers,
-  verificarGlobalSuperMfa,
 } from '../services/globalSuperAdminApi'
 import SuperMfaModal from '../components/SuperMfaModal'
 
@@ -52,7 +51,6 @@ function GlobalSuperAdminPage() {
   const [guardando, setGuardando] = useState(false)
   const [mfaProvisioning, setMfaProvisioning] = useState(null)
   const [cargandoQr, setCargandoQr] = useState(null)
-  const [mfaPendiente, setMfaPendiente] = useState(null)
 
   const cargarSupers = useCallback(async () => {
     const tokenActual = tokenRef.current
@@ -117,26 +115,12 @@ function GlobalSuperAdminPage() {
     }
   }
 
-  const abrirVerificarMfa = (item) => {
-    if (!item?.id || !item.is_active || item.mfa_verified_at) return
-
-    setError('')
-    setMensaje('')
-    setMfaPendiente({
-      superId: item.id,
-      email: item.email,
-      actorOtp: null,
-    })
-    setModal('otp-actor')
-  }
-
   const cancelar = () => {
     if (guardando) return
     setModal(null)
     setEditando(null)
     setDatosPendientes(null)
     setMfaProvisioning(null)
-    setMfaPendiente(null)
   }
 
   const continuarCrear = (datos) => {
@@ -163,7 +147,7 @@ function GlobalSuperAdminPage() {
           email: resultado.email,
           provisioning_uri: resultado.provisioning_uri,
         })
-        setMensaje('Usuario SUPER creado correctamente. Escanea el QR con la aplicación Authenticator del nuevo usuario antes de iniciar sesión.')
+        setMensaje('Usuario SUPER creado correctamente. Entrega este QR al nuevo usuario para que lo configure en su Authenticator. El MFA se activará cuando el nuevo usuario realice su primer inicio de sesión con un código válido.')
         setDatosPendientes(null)
         setModal('qr')
       } else {
@@ -181,40 +165,6 @@ function GlobalSuperAdminPage() {
       }
     } catch (err) {
       setError(err.message || 'No fue posible completar la operación.')
-    } finally {
-      setGuardando(false)
-    }
-  }
-
-  const confirmarActivacionMfa = async (otp) => {
-    if (!mfaPendiente) return
-
-    if (modal === 'otp-actor') {
-      setMfaPendiente((actual) => ({
-        ...actual,
-        actorOtp: otp,
-      }))
-      setModal('otp-target')
-      return
-    }
-
-    if (modal !== 'otp-target' || !mfaPendiente.actorOtp) return
-
-    try {
-      setGuardando(true)
-      setError('')
-      await verificarGlobalSuperMfa(
-        mfaPendiente.superId,
-        otp,
-        mfaPendiente.actorOtp,
-        tokenRef.current,
-      )
-      setMensaje(`MFA verificado correctamente para ${mfaPendiente.email}. El usuario ya puede iniciar sesión como SUPER.`)
-      setModal(null)
-      setMfaPendiente(null)
-      await cargarSupers()
-    } catch (err) {
-      setError(err.message || 'No fue posible verificar el MFA del usuario SUPER.')
     } finally {
       setGuardando(false)
     }
@@ -279,16 +229,6 @@ function GlobalSuperAdminPage() {
                           >
                             {cargandoQr === item.id ? 'Cargando…' : 'Ver QR'}
                           </button>
-                          {!item.mfa_verified_at && item.is_active && (
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-warning"
-                              onClick={() => abrirVerificarMfa(item)}
-                              title="Verificar el MFA del nuevo usuario SUPER"
-                            >
-                              Activar MFA
-                            </button>
-                          )}
                           <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
                         </div>
                       </td>
@@ -378,19 +318,6 @@ function GlobalSuperAdminPage() {
         />
       )}
 
-      {(modal === 'otp-actor' || modal === 'otp-target') && (
-        <SuperMfaModal
-          titulo={modal === 'otp-actor' ? 'Verificación SUPER' : 'Activar MFA del usuario'}
-          descripcion={modal === 'otp-actor'
-            ? 'Primero confirma tu identidad con el código OTP de tu autenticador.'
-            : `Ahora ingresa el código OTP que aparece en el Authenticator de ${mfaPendiente?.email || 'el nuevo usuario SUPER'}.`}
-          etiqueta={modal === 'otp-actor' ? 'Tu código OTP' : 'Código OTP del nuevo usuario'}
-          onConfirmar={confirmarActivacionMfa}
-          onCancelar={() => { if (!guardando) cancelar() }}
-          guardando={guardando}
-        />
-      )}
-
       {modal === 'qr' && mfaProvisioning && (
         <div className="modal d-block" style={{ ...modalBackdrop, zIndex: 2200 }}>
           <div className="modal-dialog" style={{ ...modalDialog, maxWidth: '480px' }}>
@@ -402,11 +329,14 @@ function GlobalSuperAdminPage() {
                 </div>
               </div>
               <div className="modal-body text-center py-2 px-3">
-                <p className="mb-2">Escanea este código QR desde la aplicación Authenticator del usuario SUPER.</p>
+                <p className="mb-2">Escanea este código QR desde la aplicación Authenticator del nuevo usuario SUPER.</p>
                 <div className="d-flex justify-content-center mb-3">
                   <div className="bg-white p-2 rounded border shadow-sm" style={{ maxWidth: 'min(260px, 65vw)' }}>
                     <QRCodeSVG value={mfaProvisioning.provisioning_uri} size={220} level="M" includeMargin style={{ width: '100%', height: 'auto', display: 'block' }} />
                   </div>
+                </div>
+                <div className="alert alert-info text-start py-2 mb-2 small">
+                  <strong>Activación:</strong> el nuevo usuario debe escanear este QR y usar el código de 6 dígitos durante su primer inicio de sesión. Al validar correctamente ese código, su MFA quedará activado automáticamente.
                 </div>
                 <div className="alert alert-warning text-start py-2 mb-0 small">
                   El QR contiene el secreto de enrolamiento MFA. Muéstralo únicamente a la persona autorizada y evita compartir capturas.
