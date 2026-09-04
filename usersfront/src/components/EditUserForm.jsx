@@ -8,94 +8,52 @@ function EditUserForm({
   onUsuarioActualizado,
   onCancelar,
 }) {
-  const [name, setName] =
-    useState(usuario.name || '')
+  const [name, setName] = useState(usuario.name || '')
+  const [email, setEmail] = useState(usuario.email || '')
+  const [phone, setPhone] = useState(usuario.phone || '')
+  const [status, setStatus] = useState(usuario.status)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [guardando, setGuardando] = useState(false)
+  const [desbloqueando, setDesbloqueando] = useState(false)
+  const [erroresValidacion, setErroresValidacion] = useState({})
 
-  const [email, setEmail] =
-    useState(usuario.email || '')
-
-  const [phone, setPhone] =
-    useState(usuario.phone || '')
-
-  const [status, setStatus] =
-    useState(usuario.status)
-
-  const [password, setPassword] =
-    useState('')
-
-  const [error, setError] =
-    useState('')
-
-  const [guardando, setGuardando] =
-    useState(false)
-
-  const [
-    erroresValidacion,
-    setErroresValidacion,
-  ] = useState({})
-
-
-  // ============================================================
-  // VALIDAR FORMULARIO
-  // ============================================================
+  const estaBloqueado = usuario.locked_at != null
 
   const validarFormulario = () => {
-
     const errores = {}
 
-    const validacionNombre =
-      validaciones.nombre(name)
-
+    const validacionNombre = validaciones.nombre(name)
     if (!validacionNombre.valido) {
-      errores.name =
-        validacionNombre.error
+      errores.name = validacionNombre.error
     }
 
-    const validacionEmail =
-      validaciones.email(email)
-
+    const validacionEmail = validaciones.email(email)
     if (!validacionEmail.valido) {
-      errores.email =
-        validacionEmail.error
+      errores.email = validacionEmail.error
     }
 
-    const validacionTelefono =
-      validaciones.telefono(phone)
-
+    const validacionTelefono = validaciones.telefono(phone)
     if (!validacionTelefono.valido) {
-      errores.phone =
-        validacionTelefono.error
+      errores.phone = validacionTelefono.error
     }
 
-    const validacionPassword =
-      validaciones.contrasenaNueva(password)
-
+    const validacionPassword = validaciones.contrasenaNueva(password)
     if (!validacionPassword.valido) {
-      errores.password =
-        validacionPassword.error
+      errores.password = validacionPassword.error
     }
 
     return errores
   }
 
-
-  // ============================================================
-  // GUARDAR CAMBIOS
-  // ============================================================
-
   const guardarCambios = async (event) => {
-
     event.preventDefault()
 
     setError('')
     setErroresValidacion({})
 
-    const errores =
-      validarFormulario()
-
-    if (
-      Object.keys(errores).length > 0
-    ) {
+    const errores = validarFormulario()
+    if (Object.keys(errores).length > 0) {
       setErroresValidacion(errores)
       return
     }
@@ -109,379 +67,251 @@ function EditUserForm({
       status,
     }
 
-    if (
-      password.trim() !== ''
-    ) {
-      datosActualizados.password =
-        password
+    if (password.trim() !== '') {
+      datosActualizados.password = password
     }
 
     try {
-
-      const resultado =
-        await actualizarUsuario(
-          usuario.dni,
-          datosActualizados,
-          token
-        )
-
-      console.log(
-        'Usuario actualizado:',
-        resultado
+      const resultado = await actualizarUsuario(
+        usuario.dni,
+        datosActualizados,
+        token
       )
 
-      onUsuarioActualizado(
-        resultado
-      )
-
+      onUsuarioActualizado(resultado)
     } catch (error) {
-
-      console.error(
-        'Error actualizando usuario:',
-        error
-      )
-
-      setError(
-        error.message
-      )
-
+      console.error('Error actualizando usuario:', error)
+      setError(error.message)
     } finally {
-
       setGuardando(false)
-
     }
   }
 
+  const desbloquearCuenta = async () => {
+    setError('')
+    setDesbloqueando(true)
 
-  // ============================================================
-  // RENDER
-  // ============================================================
+    try {
+      const resultado = await actualizarUsuario(
+        usuario.dni,
+        { unlock: true },
+        token
+      )
+
+      onUsuarioActualizado(resultado)
+    } catch (error) {
+      console.error('Error desbloqueando usuario:', error)
+      setError(error.message)
+    } finally {
+      setDesbloqueando(false)
+    }
+  }
 
   return (
-
     <div
       className="modal d-block"
       style={{
-        backgroundColor:
-          'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         position: 'fixed',
         inset: 0,
         zIndex: 2000,
         overflow: 'hidden',
       }}
     >
-
       <div
-        className="
-          modal-dialog
-          modal-dialog-centered
-        "
+        className="modal-dialog modal-dialog-centered"
         style={{
           maxWidth: '500px',
           width: 'calc(100% - 2rem)',
           margin: '1rem auto',
         }}
       >
-
         <div
           className="modal-content"
-          style={{
-            maxHeight: 'calc(100vh - 2rem)',
-          }}
+          style={{ maxHeight: 'calc(100vh - 2rem)' }}
         >
-
-          {/* ================================================== */}
-          {/* CABECERA */}
-          {/* ================================================== */}
-
-          <div
-            className="
-              modal-header
-              py-2
-              px-3
-            "
-          >
-
-            <h5 className="modal-title mb-0">
-              Editar usuario
-            </h5>
+          <div className="modal-header py-2 px-3">
+            <h5 className="modal-title mb-0">Editar usuario</h5>
 
             <button
               type="button"
               className="btn-close"
               onClick={onCancelar}
-              disabled={guardando}
+              disabled={guardando || desbloqueando}
             />
-
           </div>
 
-
-          {/* ================================================== */}
-          {/* FORMULARIO */}
-          {/* ================================================== */}
-
-          <form
-            onSubmit={guardarCambios}
-            autoComplete="off"
-          >
-
-            {/* ================================================== */}
-            {/* CUERPO */}
-            {/* ================================================== */}
-
+          <form onSubmit={guardarCambios} autoComplete="off">
             <div
-              className="
-                modal-body
-                py-3
-                px-3
-              "
+              className="modal-body py-3 px-3"
               style={{
                 overflowY: 'auto',
                 maxHeight: 'calc(100vh - 150px)',
               }}
             >
-
-              {/* ERROR */}
-
               {error && (
-
-                <div
-                  className="
-                    alert
-                    alert-danger
-                    py-2
-                    mb-2
-                  "
-                >
+                <div className="alert alert-danger py-2 mb-2">
                   ❌ {error}
                 </div>
-
               )}
 
-
-              {/* DNI */}
-
               <div className="mb-2">
-
                 <label className="form-label mb-1">
                   Número de identificación
                 </label>
-
                 <input
                   type="text"
                   className="form-control"
                   value={usuario.dni}
                   disabled
                 />
-
                 <div className="form-text">
-                  El número de identificación no puede
-                  ser modificado.
+                  El número de identificación no puede ser modificado.
                 </div>
-
               </div>
 
-
-              {/* NOMBRE */}
-
               <div className="mb-2">
-
-                <label className="form-label mb-1">
-                  Nombre
-                </label>
-
+                <label className="form-label mb-1">Nombre</label>
                 <input
                   type="text"
-                  className={`form-control ${
-                    erroresValidacion.name
-                      ? 'is-invalid'
-                      : ''
-                  }`}
+                  className={`form-control ${erroresValidacion.name ? 'is-invalid' : ''}`}
                   value={name}
-                  onChange={(event) =>
-                    setName(
-                      event.target.value
-                    )
-                  }
-                  disabled={guardando}
+                  onChange={(event) => setName(event.target.value)}
+                  disabled={guardando || desbloqueando}
                 />
-
                 {erroresValidacion.name && (
-
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.name}
                   </div>
-
                 )}
-
               </div>
 
-
-              {/* EMAIL */}
-
               <div className="mb-2">
-
-                <label className="form-label mb-1">
-                  Email
-                </label>
-
+                <label className="form-label mb-1">Email</label>
                 <input
                   type="email"
-                  className={`form-control ${
-                    erroresValidacion.email
-                      ? 'is-invalid'
-                      : ''
-                  }`}
+                  className={`form-control ${erroresValidacion.email ? 'is-invalid' : ''}`}
                   value={email}
-                  onChange={(event) =>
-                    setEmail(
-                      event.target.value
-                    )
-                  }
-                  disabled={guardando}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={guardando || desbloqueando}
                 />
-
                 {erroresValidacion.email && (
-
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.email}
                   </div>
-
                 )}
-
               </div>
 
-
-              {/* TELÉFONO */}
-
               <div className="mb-2">
-
-                <label className="form-label mb-1">
-                  Teléfono
-                </label>
-
+                <label className="form-label mb-1">Teléfono</label>
                 <input
                   type="text"
-                  className={`form-control ${
-                    erroresValidacion.phone
-                      ? 'is-invalid'
-                      : ''
-                  }`}
+                  className={`form-control ${erroresValidacion.phone ? 'is-invalid' : ''}`}
                   value={phone}
-                  onChange={(event) =>
-                    setPhone(
-                      event.target.value
-                    )
-                  }
-                  disabled={guardando}
+                  onChange={(event) => setPhone(event.target.value)}
+                  disabled={guardando || desbloqueando}
                 />
-
                 {erroresValidacion.phone && (
-
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.phone}
                   </div>
-
                 )}
-
               </div>
 
-
-              {/* ESTADO */}
-
               <div className="mb-2">
-
-                <label className="form-label mb-1">
-                  Estado
-                </label>
-
+                <label className="form-label mb-1">Estado</label>
                 <select
                   className="form-select"
                   value={status}
-                  onChange={(event) =>
-                    setStatus(
-                      parseInt(
-                        event.target.value
-                      )
-                    )
-                  }
-                  disabled={guardando}
+                  onChange={(event) => setStatus(parseInt(event.target.value))}
+                  disabled={guardando || desbloqueando}
                 >
-
-                  <option value="1">
-                    Activo
-                  </option>
-
-                  <option value="0">
-                    Inactivo
-                  </option>
-
+                  <option value="1">Activo</option>
+                  <option value="0">Inactivo</option>
                 </select>
-
               </div>
 
+              <div className="mb-2">
+                <label className="form-label mb-1">Seguridad de la cuenta</label>
 
-              {/* CONTRASEÑA */}
+                {estaBloqueado ? (
+                  <div className="border rounded p-2 bg-light">
+                    <div className="mb-2">
+                      <span className="badge bg-danger me-2">
+                        🔒 Bloqueada
+                      </span>
+                      <span className="text-muted small">
+                        {usuario.failed_login_attempts || 0} intentos fallidos
+                      </span>
+                    </div>
+
+                    <div className="small text-muted mb-2">
+                      La cuenta fue bloqueada por el sistema debido a intentos
+                      fallidos de autenticación.
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn btn-outline-success btn-sm"
+                      onClick={desbloquearCuenta}
+                      disabled={guardando || desbloqueando}
+                    >
+                      {desbloqueando ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm me-2"
+                            role="status"
+                            aria-hidden="true"
+                          />
+                          Desbloqueando...
+                        </>
+                      ) : (
+                        '🔓 Desbloquear cuenta'
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border rounded p-2 bg-light">
+                    <span className="badge bg-success me-2">
+                      🟢 Sin bloqueo
+                    </span>
+                    <span className="text-muted small">
+                      {usuario.failed_login_attempts || 0} intentos fallidos
+                    </span>
+                  </div>
+                )}
+              </div>
 
               <div className="mb-0">
-
                 <label className="form-label mb-1">
                   Cambiar contraseña
                 </label>
-
                 <input
                   type="password"
-                  className={`form-control ${
-                    erroresValidacion.password
-                      ? 'is-invalid'
-                      : ''
-                  }`}
+                  className={`form-control ${erroresValidacion.password ? 'is-invalid' : ''}`}
                   value={password}
-                  onChange={(event) =>
-                    setPassword(
-                      event.target.value
-                    )
-                  }
+                  onChange={(event) => setPassword(event.target.value)}
                   placeholder="Nueva contraseña"
                   autoComplete="new-password"
-                  disabled={guardando}
+                  disabled={guardando || desbloqueando}
                 />
-
                 <div className="form-text">
-                  Déjala vacía si no deseas cambiar
-                  la contraseña actual.
+                  Déjala vacía si no deseas cambiar la contraseña actual.
                 </div>
-
                 {erroresValidacion.password && (
-
                   <div className="invalid-feedback d-block">
                     {erroresValidacion.password}
                   </div>
-
                 )}
-
               </div>
-
             </div>
 
-
-            {/* ================================================== */}
-            {/* BOTONES */}
-            {/* ================================================== */}
-
-            <div
-              className="
-                modal-footer
-                py-2
-                px-3
-              "
-            >
-
+            <div className="modal-footer py-2 px-3">
               <button
                 type="button"
                 className="btn btn-secondary"
                 onClick={onCancelar}
-                disabled={guardando}
+                disabled={guardando || desbloqueando}
               >
                 Cancelar
               </button>
@@ -489,44 +319,26 @@ function EditUserForm({
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={guardando}
+                disabled={guardando || desbloqueando}
               >
-
                 {guardando ? (
-
                   <>
                     <span
-                      className="
-                        spinner-border
-                        spinner-border-sm
-                        me-2
-                      "
+                      className="spinner-border spinner-border-sm me-2"
                       role="status"
                       aria-hidden="true"
                     />
-
                     Guardando...
-
                   </>
-
                 ) : (
-
                   'Guardar cambios'
-
                 )}
-
               </button>
-
             </div>
-
           </form>
-
         </div>
-
       </div>
-
     </div>
-
   )
 }
 
