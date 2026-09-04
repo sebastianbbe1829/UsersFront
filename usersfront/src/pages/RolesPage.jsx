@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -37,6 +38,17 @@ function RolesPage() {
     token,
     manejarSesionExpirada,
   } = useAuth()
+
+
+  // ============================================================
+  // TOKEN REF
+  // ============================================================
+
+  const tokenRef = useRef(token)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
 
   // ============================================================
@@ -168,7 +180,7 @@ function RolesPage() {
 
       const resultado =
         await obtenerRoles(
-          token
+          tokenRef.current
         )
 
 
@@ -219,7 +231,7 @@ function RolesPage() {
 
     }
 
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
 
   // ============================================================
@@ -228,7 +240,7 @@ function RolesPage() {
 
   useEffect(() => {
 
-    if (!token) {
+    if (!tokenRef.current) {
       return
     }
 
@@ -238,7 +250,7 @@ function RolesPage() {
 
     void cargar()
 
-  }, [token, cargarRoles])
+  }, [cargarRoles])
 
 
   // ============================================================
