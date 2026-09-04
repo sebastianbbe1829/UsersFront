@@ -30,7 +30,26 @@ export default function ClientCatalogCrudPage({ title, description, loader, colu
     } finally { setLoading(false) }
   }, [token, loader, manejarSesionExpirada, title])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let activo = true
+    const cargar = async () => {
+      if (!token) return
+      try {
+        setLoading(true)
+        const result = await loader(token)
+        if (!activo) return
+        setItems(Array.isArray(result) ? result : [])
+      } catch (error) {
+        if (!activo) return
+        if (error.status === 401) return manejarSesionExpirada()
+        setMessage({ type: 'danger', text: error.message || `No fue posible cargar ${title.toLowerCase()}.` })
+      } finally {
+        if (activo) setLoading(false)
+      }
+    }
+    cargar()
+    return () => { activo = false }
+  }, [token, loader, manejarSesionExpirada, title])
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -42,9 +61,13 @@ export default function ClientCatalogCrudPage({ title, description, loader, colu
   }, [items, search, columns])
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
-  const visibleItems = filteredItems.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-  useEffect(() => { setPage(1) }, [search])
-  useEffect(() => { if (page > totalPages) setPage(totalPages) }, [page, totalPages])
+  const currentPage = Math.min(page, totalPages)
+  const visibleItems = filteredItems.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  const handleSearchChange = (event) => {
+    setSearch(event.target.value)
+    setPage(1)
+  }
 
   const openCreate = () => { setCreating(true); setEditingId(null); setForm(initialForm(formFields)); setMessage(null) }
   const openEdit = (item) => { setEditingId(item.id); setCreating(false); setForm(Object.fromEntries(formFields.map((field) => [field.key, item[field.key] ?? (field.type === 'checkbox' ? false : '')]))); setMessage(null) }
@@ -89,8 +112,8 @@ export default function ClientCatalogCrudPage({ title, description, loader, colu
     {message && <div className={`alert alert-${message.type}`} role="alert">{message.text}</div>}
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Registros</h5><small className="text-muted">{filteredItems.length} de {items.length}</small></div><Can permission="CLIENT_CREATE"><button type="button" className="btn btn-primary" onClick={openCreate}>+ Nuevo</button></Can></div>
-      <div className="mb-3"><input type="search" className="form-control" placeholder={`Buscar en ${title.toLowerCase()}...`} value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-      {loading ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : filteredItems.length === 0 ? <div className="text-muted text-center py-5">{items.length === 0 ? 'No hay registros.' : 'No se encontraron registros con la búsqueda.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}<th className="text-end">Acciones</th></tr></thead><tbody>{visibleItems.map((item) => <tr key={item.id}>{columns.map((column) => <td key={column.key}>{column.render ? column.render(item) : item[column.key] ?? '-'}</td>)}<td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={() => openEdit(item)}>Editar</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(item)}>Desactivar</button></Can></td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {page} de {totalPages}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button></div></div></>}
+      <div className="mb-3"><input type="search" className="form-control" placeholder={`Buscar en ${title.toLowerCase()}...`} value={search} onChange={handleSearchChange} /></div>
+      {loading ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : filteredItems.length === 0 ? <div className="text-muted text-center py-5">{items.length === 0 ? 'No hay registros.' : 'No se encontraron registros con la búsqueda.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}<th className="text-end">Acciones</th></tr></thead><tbody>{visibleItems.map((item) => <tr key={item.id}>{columns.map((column) => <td key={column.key}>{column.render ? column.render(item) : item[column.key] ?? '-'}</td>)}<td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={() => openEdit(item)}>Editar</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(item)}>Desactivar</button></Can></td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {currentPage} de {totalPages}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === 1} onClick={() => setPage((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button></div></div></>}
     </div></div>
     {modal}
   </>
