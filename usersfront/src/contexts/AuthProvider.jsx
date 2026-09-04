@@ -35,10 +35,15 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true)
   const [mensajeSesion, setMensajeSesion] = useState('')
   const [usuarios, setUsuarios] = useState([])
+  const tokenRef = useRef('')
   const ultimaActividadRef = useRef(Date.now())
   const ultimoEventoActividadRef = useRef(0)
   const renovandoSesionRef = useRef(false)
   const cerrandoSesionExpiradaRef = useRef(false)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
   const obtenerSesiones = useCallback((key) => {
     try {
@@ -128,12 +133,12 @@ export function AuthProvider({ children }) {
     }
   }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
-  const manejarSesionExpirada = useCallback(async () => {
+  const manejarSesionExpirada = useCallback(async (tokenParaCerrar = tokenRef.current) => {
     if (cerrandoSesionExpiradaRef.current) return
     cerrandoSesionExpiradaRef.current = true
 
     const tenantActual = obtenerTenantDesdeUrl()
-    const tokenActual = token
+    const tokenActual = tokenParaCerrar
 
     try {
       if (tokenActual) {
@@ -149,7 +154,7 @@ export function AuthProvider({ children }) {
       setMensajeSesion('Tu sesión ha expirado. Inicia sesión nuevamente.')
       cerrandoSesionExpiradaRef.current = false
     }
-  }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
+  }, [eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
   const cargarDatos = useCallback(async (tokenGuardado) => {
     try {
@@ -169,7 +174,7 @@ export function AuthProvider({ children }) {
       }
 
       if (tokenEstaExpirado(tokenGuardado)) {
-        await manejarSesionExpirada()
+        await manejarSesionExpirada(tokenGuardado)
         return
       }
 
@@ -210,7 +215,7 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Error validando sesión:', error)
       if (error?.status === 401) {
-        await manejarSesionExpirada()
+        await manejarSesionExpirada(tokenGuardado)
       } else {
         limpiarEstadoSesion()
         setMensajeSesion(error?.message || 'No fue posible validar la sesión.')
@@ -382,7 +387,14 @@ export function AuthProvider({ children }) {
         return
       }
 
-      if (tokenSuper) eliminarSesionSuper(tenantActual, tokenSuper)
+      if (tokenSuper) {
+        if (tokenEstaExpirado(tokenSuper)) {
+          await manejarSesionExpirada(tokenSuper)
+          setCargando(false)
+          return
+        }
+        eliminarSesionSuper(tenantActual, tokenSuper)
+      }
 
       const tokenTenant = obtenerSesionTenant(tenantActual)
 
@@ -394,9 +406,7 @@ export function AuthProvider({ children }) {
       }
 
       if (tokenEstaExpirado(tokenTenant)) {
-        eliminarSesionTenant(tenantActual, tokenTenant)
-        limpiarEstadoSesion()
-        setMensajeSesion('')
+        await manejarSesionExpirada(tokenTenant)
         setCargando(false)
         return
       }
@@ -413,6 +423,7 @@ export function AuthProvider({ children }) {
     eliminarSesionTenant,
     validarTenantToken,
     cargarDatos,
+    manejarSesionExpirada,
     limpiarEstadoSesion,
   ])
 
