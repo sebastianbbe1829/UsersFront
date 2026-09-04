@@ -24,4 +24,14 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^navigate$' }],
     },
   },
+  {
+    files: [
+      'src/layouts/MainLayoutFixed.jsx',
+      'src/pages/GlobalSuperAdminPage.jsx',
+    ],
+    rules: {
+      // These effects synchronize UI/data with route/auth changes and async API results.
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
 ])
