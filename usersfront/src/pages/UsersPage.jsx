@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -33,6 +34,12 @@ function UsersPage() {
     setUsuarios,
     manejarSesionExpirada,
   } = useAuth()
+
+  const tokenRef = useRef(token)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
 
   // ============================================================
@@ -109,8 +116,9 @@ function UsersPage() {
 
 
     const cargarUsuarios = async () => {
+      const tokenActual = tokenRef.current
 
-      if (!token) {
+      if (!tokenActual) {
 
         if (componenteActivo) {
 
@@ -136,7 +144,7 @@ function UsersPage() {
 
         const resultado =
           await obtenerUsuarios(
-            token
+            tokenActual
           )
 
 
@@ -237,7 +245,6 @@ function UsersPage() {
     }
 
   }, [
-    token,
     setUsuarios,
     manejarSesionExpirada,
   ])
