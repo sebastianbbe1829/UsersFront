@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import { obtenerPayloadToken } from '../services/api'
@@ -14,7 +14,7 @@ function MainLayoutFixed() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuColapsado, setMenuColapsado] = useState(false)
-  const administracionPorRuta = ['/usuarios', '/roles', '/permisos'].some((ruta) => location.pathname.includes(ruta))
+  const administracionPorRuta = ['usuarios', 'roles', 'permisos'].some((ruta) => location.pathname.split('/').includes(ruta))
   const extintoresPorRuta = location.pathname.includes('/extintores')
   const [administracionAbierta, setAdministracionAbierta] = useState(administracionPorRuta)
   const [extintoresAbiertos, setExtintoresAbiertos] = useState(extintoresPorRuta)
@@ -23,8 +23,14 @@ function MainLayoutFixed() {
   const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
   const rutaTenant = tenant ? `/${tenant}` : ''
-  const administracionMenuAbierto = administracionAbierta || administracionPorRuta
+  const administracionMenuAbierto = administracionAbierta
   const extintoresMenuAbierto = extintoresAbiertos || extintoresPorRuta
+
+  useEffect(() => {
+    if (administracionPorRuta) {
+      setAdministracionAbierta(true)
+    }
+  }, [administracionPorRuta])
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
