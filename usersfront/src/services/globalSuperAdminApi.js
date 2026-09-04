@@ -36,6 +36,15 @@ export const obtenerGlobalSuper = async (superId, token) => {
   return procesarRespuesta(response)
 }
 
+export const obtenerGlobalSuperMfaProvisioning = async (superId, token) => {
+  const response = await fetch(`${API_URL}/global-users/supers/${superId}/mfa-provisioning`, {
+    method: 'GET',
+    headers: headersAutenticacion(token),
+  })
+
+  return procesarRespuesta(response)
+}
+
 export const crearGlobalSuper = async (datos, otp, token) => {
   const response = await fetch(`${API_URL}/global-users/supers`, {
     method: 'POST',
