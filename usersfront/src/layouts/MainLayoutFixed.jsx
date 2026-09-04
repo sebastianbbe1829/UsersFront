@@ -31,6 +31,11 @@ function MainLayoutFixed() {
   }, [seccionPorRuta])
 
   const alternarSeccion = (seccion) => {
+    if (menuColapsado) {
+      setMenuColapsado(false)
+      setSeccionAbierta(seccion)
+      return
+    }
     setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
   }
 
