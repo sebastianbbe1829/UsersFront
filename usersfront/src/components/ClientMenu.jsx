@@ -24,7 +24,7 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection
         const texto = boton.textContent?.trim() || ''
         return (texto.startsWith('Extintores') || texto.startsWith('Administración')) && texto.includes('▾')
       })
-      if (otraSeccionAbierta && !clientesPorRuta) setAbierto(false)
+      if (otraSeccionAbierta) setAbierto(false)
     }
 
     sincronizarConOtrasSecciones()
