@@ -25,9 +25,6 @@ const modalDialog = {
 const formatearFechaMfa = (fecha) => {
   if (!fecha) return 'Pendiente'
 
-  // El backend persiste las fechas UTC en columnas timestamp sin zona.
-  // Al serializarse llegan sin sufijo Z, por lo que debemos interpretarlas
-  // explícitamente como UTC antes de convertirlas a la zona horaria local.
   const fechaNormalizada = typeof fecha === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(fecha)
     ? `${fecha}Z`
     : fecha
@@ -131,6 +128,7 @@ function GlobalSuperAdminPage() {
       }
     } catch (err) {
       setError(err.message || 'No fue posible completar la operación.')
+      throw err
     } finally { setGuardando(false) }
   }
 
@@ -211,10 +209,20 @@ function GlobalSuperAdminPage() {
       </div>
 
       {modal === 'crear' && <div className="modal d-block" style={modalBackdrop}><div className="modal-dialog" style={modalDialog}><div className="modal-content w-100">
-        <form onSubmit={(event) => { event.preventDefault(); continuarCrear({
-          dni: event.currentTarget.dni.value.trim(), name: event.currentTarget.name.value.trim(), phone: event.currentTarget.phone.value.trim(),
-          email: event.currentTarget.email.value.trim(), password: event.currentTarget.password.value, send_email: event.currentTarget.send_email.checked,
-        }) }}>
+        <form onSubmit={(event) => {
+          event.preventDefault()
+          const password = event.currentTarget.password.value
+          const confirmPassword = event.currentTarget.confirmPassword.value
+          if (password !== confirmPassword) {
+            setError('Las contraseñas no coinciden.')
+            return
+          }
+          setError('')
+          continuarCrear({
+            dni: event.currentTarget.dni.value.trim(), name: event.currentTarget.name.value.trim(), phone: event.currentTarget.phone.value.trim(),
+            email: event.currentTarget.email.value.trim(), password, send_email: event.currentTarget.send_email.checked,
+          })
+        }}>
           <div className="modal-header py-2 px-3"><div><h5 className="modal-title mb-1">Nuevo usuario SUPER</h5><div className="text-muted small">Datos personales y credenciales de la cuenta global.</div></div><button type="button" className="btn-close" onClick={cancelar} /></div>
           <div className="modal-body py-3 px-3">
             <div className="alert alert-info py-2 mb-3">Tu MFA se utilizará para autorizar la creación. El MFA del nuevo usuario será independiente y lo configurará él con el QR.</div>
@@ -223,7 +231,8 @@ function GlobalSuperAdminPage() {
               <div className="col-md-6"><label className="form-label fw-semibold mb-1">Nombre completo</label><input name="name" className="form-control" maxLength="100" required /></div>
               <div className="col-md-6"><label className="form-label fw-semibold mb-1">Teléfono</label><input name="phone" type="tel" className="form-control" maxLength="30" required /></div>
               <div className="col-md-6"><label className="form-label fw-semibold mb-1">Correo electrónico</label><input name="email" type="email" className="form-control" autoComplete="email" required /></div>
-              <div className="col-12"><label className="form-label fw-semibold mb-1">Contraseña inicial</label><input name="password" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" required /></div>
+              <div className="col-md-6"><label className="form-label fw-semibold mb-1">Contraseña inicial</label><input name="password" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" required /></div>
+              <div className="col-md-6"><label className="form-label fw-semibold mb-1">Confirmar contraseña</label><input name="confirmPassword" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" required /></div>
             </div>
             <div className="form-check mt-3"><input name="send_email" type="checkbox" className="form-check-input" id="sendSuperEmail" defaultChecked /><label className="form-check-label" htmlFor="sendSuperEmail">Enviar correo al usuario con instrucciones y QR para configurar MFA</label></div>
           </div>
@@ -248,7 +257,7 @@ function GlobalSuperAdminPage() {
         </form>
       </div></div></div>}
 
-      {modal === 'otp' && <SuperMfaModal onConfirm={confirmarOtp} onCancel={cancelar} loading={guardando} />}
+      {modal === 'otp' && <SuperMfaModal onConfirmar={confirmarOtp} onCancelar={cancelar} guardando={guardando} />}
 
       {modal === 'qr' && mfaProvisioning && <div className="modal d-block" style={modalBackdrop}><div className="modal-dialog" style={modalDialog}><div className="modal-content w-100">
         <div className="modal-header py-2 px-3"><div><h5 className="modal-title mb-1">Configuración MFA</h5><div className="text-muted small">QR para {mfaProvisioning.email}</div></div><button type="button" className="btn-close" onClick={cerrarQr} /></div>
