@@ -9,6 +9,7 @@ import {
   obtenerGlobalSuper,
   obtenerGlobalSuperMfaProvisioning,
   obtenerGlobalSupers,
+  verificarGlobalSuperMfa,
 } from '../services/globalSuperAdminApi'
 import SuperMfaModal from '../components/SuperMfaModal'
 
@@ -46,6 +47,7 @@ function GlobalSuperAdminPage() {
   const [guardando, setGuardando] = useState(false)
   const [mfaProvisioning, setMfaProvisioning] = useState(null)
   const [cargandoQr, setCargandoQr] = useState(null)
+  const [mfaPendiente, setMfaPendiente] = useState(null)
 
   const cargarSupers = useCallback(async () => {
     if (!esSuper || !token) {
@@ -108,12 +110,26 @@ function GlobalSuperAdminPage() {
     }
   }
 
+  const abrirVerificarMfa = (item) => {
+    if (!item?.id || !item.is_active || item.mfa_verified_at) return
+
+    setError('')
+    setMensaje('')
+    setMfaPendiente({
+      superId: item.id,
+      email: item.email,
+      actorOtp: null,
+    })
+    setModal('otp-actor')
+  }
+
   const cancelar = () => {
     if (guardando) return
     setModal(null)
     setEditando(null)
     setDatosPendientes(null)
     setMfaProvisioning(null)
+    setMfaPendiente(null)
   }
 
   const continuarCrear = (datos) => {
@@ -163,11 +179,44 @@ function GlobalSuperAdminPage() {
     }
   }
 
+  const confirmarActivacionMfa = async (otp) => {
+    if (!mfaPendiente) return
+
+    if (modal === 'otp-actor') {
+      setMfaPendiente((actual) => ({
+        ...actual,
+        actorOtp: otp,
+      }))
+      setModal('otp-target')
+      return
+    }
+
+    if (modal !== 'otp-target' || !mfaPendiente.actorOtp) return
+
+    try {
+      setGuardando(true)
+      setError('')
+      await verificarGlobalSuperMfa(
+        mfaPendiente.superId,
+        otp,
+        mfaPendiente.actorOtp,
+        token,
+      )
+      setMensaje(`MFA verificado correctamente para ${mfaPendiente.email}. El usuario ya puede iniciar sesión como SUPER.`)
+      setModal(null)
+      setMfaPendiente(null)
+      await cargarSupers()
+    } catch (err) {
+      setError(err.message || 'No fue posible verificar el MFA del usuario SUPER.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   const cerrarQr = () => {
     if (guardando) return
     setModal(null)
     setMfaProvisioning(null)
-    void cargarSupers()
   }
 
   if (!esSuper) {
@@ -223,6 +272,16 @@ function GlobalSuperAdminPage() {
                           >
                             {cargandoQr === item.id ? 'Cargando…' : 'Ver QR'}
                           </button>
+                          {!item.mfa_verified_at && item.is_active && (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-warning"
+                              onClick={() => abrirVerificarMfa(item)}
+                              title="Verificar el MFA del nuevo usuario SUPER"
+                            >
+                              Activar MFA
+                            </button>
+                          )}
                           <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
                         </div>
                       </td>
@@ -308,6 +367,19 @@ function GlobalSuperAdminPage() {
         <SuperMfaModal
           onConfirmar={confirmarOtp}
           onCancelar={() => { if (!guardando) setModal(datosPendientes?.tipo || null) }}
+          guardando={guardando}
+        />
+      )}
+
+      {(modal === 'otp-actor' || modal === 'otp-target') && (
+        <SuperMfaModal
+          titulo={modal === 'otp-actor' ? 'Verificación SUPER' : 'Activar MFA del usuario'}
+          descripcion={modal === 'otp-actor'
+            ? 'Primero confirma tu identidad con el código OTP de tu autenticador.'
+            : `Ahora ingresa el código OTP que aparece en el Authenticator de ${mfaPendiente?.email || 'el nuevo usuario SUPER'}.`}
+          etiqueta={modal === 'otp-actor' ? 'Tu código OTP' : 'Código OTP del nuevo usuario'}
+          onConfirmar={confirmarActivacionMfa}
+          onCancelar={() => { if (!guardando) cancelar() }}
           guardando={guardando}
         />
       )}
