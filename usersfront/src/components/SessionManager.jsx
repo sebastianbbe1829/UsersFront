@@ -8,10 +8,7 @@ import {
 
 let ultimaFirmaRegistrada = ''
 
-function SessionManager({
-  token,
-  onSesionExpirada,
-}) {
+function SessionManager({ token }) {
   const location = useLocation()
 
   useEffect(() => {
@@ -19,35 +16,24 @@ function SessionManager({
       return
     }
 
-    if (tokenEstaExpirado(token)) {
-      onSesionExpirada()
-      return
-    }
-
     const segundosRestantes = obtenerTiempoToken(token)
-    const firmaActual = `${location.pathname}|${token}`
+    const expirado = tokenEstaExpirado(token)
+    const firmaActual = `${location.pathname}|${token}|${expirado}`
 
     if (firmaActual !== ultimaFirmaRegistrada) {
       ultimaFirmaRegistrada = firmaActual
-      console.log(
-        `[AUTH] Ruta ${location.pathname}. Token válido. Expira en ${segundosRestantes} segundos.`
-      )
-    }
 
-    const tiempoMilisegundos = segundosRestantes * 1000
-    const timer = setTimeout(() => {
-      console.log('[AUTH] El token ha expirado. Cerrando sesión.')
-      onSesionExpirada()
-    }, tiempoMilisegundos)
-
-    return () => {
-      clearTimeout(timer)
+      if (expirado) {
+        console.info(
+          '[AUTH] El access token expiró. La sesión lógica permanece disponible para intentar renovación.'
+        )
+      } else {
+        console.log(
+          `[AUTH] Ruta ${location.pathname}. Token válido. Expira en ${segundosRestantes} segundos.`
+        )
+      }
     }
-  }, [
-    token,
-    location.pathname,
-    onSesionExpirada,
-  ])
+  }, [token, location.pathname])
 
   return null
 }
