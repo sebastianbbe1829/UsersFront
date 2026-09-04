@@ -6,13 +6,16 @@ import Can from '../components/Can'
 const initialForm = (fields) => Object.fromEntries(fields.map((field) => [field.key, field.defaultValue ?? (field.type === 'checkbox' ? true : '')]))
 
 export default function ClientCatalogCrudPage({ title, description, loader, columns, createItem, updateItem, deleteItem, formFields = [] }) {
-  const { token, manejarSesionExpirada } = useAuth()
+  const { token, manejarSesionExpirada, hasPermission } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [form, setForm] = useState(() => initialForm(formFields))
   const [saving, setSaving] = useState(false)
+
+  const canCreate = hasPermission('CLIENT_CREATE')
+  const canUpdate = hasPermission('CLIENT_UPDATE')
 
   const load = useCallback(async () => {
     if (!token) return
@@ -80,11 +83,13 @@ export default function ClientCatalogCrudPage({ title, description, loader, colu
     return <input className="form-control" type={field.type || 'text'} step={field.type === 'number' ? 'any' : undefined} value={form[field.key] ?? ''} onChange={(e) => setForm((p) => ({ ...p, [field.key]: e.target.value }))} required={field.required} disabled={saving} />
   }
 
+  const showForm = editingId ? canUpdate : canCreate
+
   return <>
     <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
     <div className="mb-4"><h2 className="fw-bold mb-1">{title}</h2><p className="text-muted mb-0">{description}</p></div>
     {message && <div className={`alert alert-${message.type}`} role="alert">{message.text}</div>}
-    <Can permission="CLIENT_CREATE"><div className="card shadow-sm border-0 mb-4"><div className="card-body"><div className="d-flex justify-content-between align-items-center mb-3"><h5 className="fw-bold mb-0">{editingId ? 'Editar registro' : 'Nuevo registro'}</h5>{editingId && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={reset}>Cancelar</button>}</div><form onSubmit={save}><div className="row g-3">{formFields.map((field) => <div key={field.key} className={field.colClass || 'col-md-6'}>{field.type !== 'checkbox' && <label className="form-label fw-semibold">{field.label}</label>}{renderField(field)}</div>)}</div><button className="btn btn-primary mt-3" type="submit" disabled={saving}>{saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Crear'}</button></form></div></div></Can>
+    {showForm && <div className="card shadow-sm border-0 mb-4"><div className="card-body"><div className="d-flex justify-content-between align-items-center mb-3"><h5 className="fw-bold mb-0">{editingId ? 'Editar registro' : 'Nuevo registro'}</h5>{editingId && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={reset}>Cancelar</button>}</div><form onSubmit={save}><div className="row g-3">{formFields.map((field) => <div key={field.key} className={field.colClass || 'col-md-6'}>{field.type !== 'checkbox' && <label className="form-label fw-semibold">{field.label}</label>}{renderField(field)}</div>)}</div><button className="btn btn-primary mt-3" type="submit" disabled={saving}>{saving ? 'Guardando...' : editingId ? 'Actualizar' : 'Crear'}</button></form></div></div>}
     <div className="card shadow-sm border-0"><div className="card-body"><div className="d-flex justify-content-between align-items-center mb-3"><h5 className="fw-bold mb-0">Registros</h5><span className="badge text-bg-secondary">{items.length}</span></div>{loading ? <div className="text-center py-4"><div className="spinner-border" role="status" /></div> : items.length === 0 ? <div className="text-muted text-center py-4">No hay registros.</div> : <div className="table-responsive"><table className="table table-hover align-middle"><thead><tr>{columns.map((column) => <th key={column.key}>{column.label}</th>)}<th>Acciones</th></tr></thead><tbody>{items.map((item) => <tr key={item.id}>{columns.map((column) => <td key={column.key}>{column.render ? column.render(item) : item[column.key] ?? '-'}</td>)}<td className="text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={() => edit(item)}>Editar</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(item)}>Desactivar</button></Can></td></tr>)}</tbody></table></div>}</div></div>
   </>
 }
