@@ -43,7 +43,6 @@ function CitiesPage() {
     columns={[
       { key: 'department_id', label: 'Departamento' },
       { key: 'code', label: 'Código DANE' },
-      { key: 'code', label: 'Código DANE' },
       { key: 'name', label: 'Nombre' },
       { key: 'type', label: 'Tipo' },
       { key: 'latitude', label: 'Latitud' },
