@@ -10,13 +10,18 @@ import {
 } from '../services/clientsApi'
 
 function CitiesPage() {
-  const { token } = useAuth()
+  const { token, manejarSesionExpirada } = useAuth()
   const [departments, setDepartments] = useState([])
 
   useEffect(() => {
     if (!token) return
-    obtenerDepartamentosCliente(token).then(setDepartments).catch(() => setDepartments([]))
-  }, [token])
+    obtenerDepartamentosCliente(token)
+      .then((data) => setDepartments(Array.isArray(data) ? data : []))
+      .catch((error) => {
+        setDepartments([])
+        if (error.status === 401) manejarSesionExpirada()
+      })
+  }, [token, manejarSesionExpirada])
 
   const formFields = useMemo(() => [
     { key: 'department_id', label: 'Departamento', type: 'select', required: true, options: departments.map((department) => ({ value: department.id, label: `${department.code} - ${department.name}` })) },
@@ -37,6 +42,7 @@ function CitiesPage() {
     deleteItem={eliminarCiudadCliente}
     columns={[
       { key: 'department_id', label: 'Departamento' },
+      { key: 'code', label: 'Código DANE' },
       { key: 'code', label: 'Código DANE' },
       { key: 'name', label: 'Nombre' },
       { key: 'type', label: 'Tipo' },
