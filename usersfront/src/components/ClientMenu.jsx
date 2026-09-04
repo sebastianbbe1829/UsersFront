@@ -1,5 +1,4 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import Can from './Can'
 
@@ -9,13 +8,9 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, abierto, onTo
   const clientesPorRuta = location.pathname.includes('/clientes')
   const primaryColor = config?.primary_color || '#0d6efd'
 
-  useEffect(() => {
-    if (clientesPorRuta) onToggleSection?.(true)
-  }, [clientesPorRuta, onToggleSection])
-
   return (
     <Can permission="CLIENT_READ">
-      <button type="button" className={obtenerClaseMenu(clientesPorRuta)} onClick={() => onToggleSection?.()} title="Clientes" style={{ background: 'transparent' }}>
+      <button type="button" className={obtenerClaseMenu(clientesPorRuta)} onClick={onToggleSection} title="Clientes" style={{ background: 'transparent' }}>
         <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👤</span>
         {!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Clientes</span><span>{abierto ? '▾' : '▸'}</span></>}
       </button>
