@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { buscarExtintores, obtenerExtintor } from '../services/api'
 import ExtinguisherInspectionsPage from './ExtinguisherInspectionsPage'
@@ -26,9 +26,14 @@ const crearTarjeta = (extintor, onSelect) => {
 
 function ExtinguisherInspectionsSearchPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const tokenRef = useRef(token)
 
   useEffect(() => {
-    if (!token) return undefined
+    tokenRef.current = token
+  }, [token])
+
+  useEffect(() => {
+    if (!tokenRef.current) return undefined
 
     const enhanced = new WeakSet()
 
@@ -76,7 +81,7 @@ function ExtinguisherInspectionsSearchPage() {
           return
         }
         try {
-          const extintor = await obtenerExtintor(Number(selectedId()), token)
+          const extintor = await obtenerExtintor(Number(selectedId()), tokenRef.current)
           selectExtinguisher(extintor)
         } catch (error) {
           if (error.status === 401) manejarSesionExpirada()
@@ -111,7 +116,7 @@ function ExtinguisherInspectionsSearchPage() {
           const currentRequest = ++requestId
           searchTimer = setTimeout(async () => {
             try {
-              const encontrados = await buscarExtintores(valueActual, token, 20)
+              const encontrados = await buscarExtintores(valueActual, tokenRef.current, 20)
               if (currentRequest !== requestId) return
               results.innerHTML = ''
               if (!encontrados.length) {
@@ -146,7 +151,7 @@ function ExtinguisherInspectionsSearchPage() {
     return () => {
       observer.disconnect()
     }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   return <ExtinguisherInspectionsPage />
 }

@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 
@@ -10,6 +11,7 @@ import {
   tokenEstaExpirado,
   login,
   logout,
+  renovarSesion,
 } from '../services/api'
 
 import {
@@ -20,6 +22,9 @@ import { AuthContext } from './AuthContextValue'
 
 const TENANT_SESSIONS_KEY = 'tenant_sessions'
 const SUPER_SESSIONS_KEY = 'super_sessions'
+const ACTIVITY_CHECK_INTERVAL_MS = 30 * 1000
+const ACTIVITY_THROTTLE_MS = 10 * 1000
+const RECENT_ACTIVITY_WINDOW_MS = 5 * 60 * 1000
 
 export function AuthProvider({ children }) {
   const tenant = obtenerTenantDesdeUrl()
@@ -30,6 +35,16 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true)
   const [mensajeSesion, setMensajeSesion] = useState('')
   const [usuarios, setUsuarios] = useState([])
+  const tokenRef = useRef('')
+  const ultimaActividadRef = useRef(0)
+  const ultimaActividadRenovadaRef = useRef(0)
+  const ultimoEventoActividadRef = useRef(0)
+  const renovandoSesionRef = useRef(false)
+  const cerrandoSesionExpiradaRef = useRef(false)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
   const obtenerSesiones = useCallback((key) => {
     try {
@@ -107,8 +122,11 @@ export function AuthProvider({ children }) {
     const tenantActual = obtenerTenantDesdeUrl()
     const tokenActual = token
 
+    console.info('[AUTH] Cierre de sesión solicitado por el usuario.')
+
     try {
       await logout(tokenActual)
+      console.info('[AUTH] Cierre de sesión registrado y cerrado en el servidor.')
     } catch (error) {
       console.error('Error cerrando sesión en el servidor:', error)
     } finally {
@@ -119,12 +137,30 @@ export function AuthProvider({ children }) {
     }
   }, [token, eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
-  const manejarSesionExpirada = useCallback(() => {
+  const manejarSesionExpirada = useCallback(async (tokenParaCerrar = tokenRef.current) => {
+    if (cerrandoSesionExpiradaRef.current) return
+    cerrandoSesionExpiradaRef.current = true
+
     const tenantActual = obtenerTenantDesdeUrl()
-    eliminarSesionTenant(tenantActual)
-    eliminarSesionSuper(tenantActual)
-    limpiarEstadoSesion()
-    setMensajeSesion('Tu sesión ha expirado. Inicia sesión nuevamente.')
+    const tokenActual = tokenParaCerrar
+
+    tokenRef.current = ''
+    renovandoSesionRef.current = false
+
+    try {
+      if (tokenActual) {
+        await logout(tokenActual)
+        console.info('[AUTH] Sesión expirada registrada y cerrada en el servidor.')
+      }
+    } catch (error) {
+      console.error('[AUTH] Error registrando cierre por expiración:', error)
+    } finally {
+      eliminarSesionTenant(tenantActual, tokenActual)
+      eliminarSesionSuper(tenantActual, tokenActual)
+      limpiarEstadoSesion()
+      setMensajeSesion('Tu sesión ha expirado. Inicia sesión nuevamente.')
+      cerrandoSesionExpiradaRef.current = false
+    }
   }, [eliminarSesionTenant, eliminarSesionSuper, limpiarEstadoSesion])
 
   const cargarDatos = useCallback(async (tokenGuardado) => {
@@ -145,7 +181,7 @@ export function AuthProvider({ children }) {
       }
 
       if (tokenEstaExpirado(tokenGuardado)) {
-        manejarSesionExpirada()
+        await manejarSesionExpirada(tokenGuardado)
         return
       }
 
@@ -182,10 +218,12 @@ export function AuthProvider({ children }) {
       setUsuarioLogueado(usuarioActual)
       setLogueado(true)
       setMensajeSesion('')
+      ultimaActividadRef.current = Date.now()
+      ultimaActividadRenovadaRef.current = ultimaActividadRef.current
     } catch (error) {
       console.error('Error validando sesión:', error)
       if (error?.status === 401) {
-        manejarSesionExpirada()
+        await manejarSesionExpirada(tokenGuardado)
       } else {
         limpiarEstadoSesion()
         setMensajeSesion(error?.message || 'No fue posible validar la sesión.')
@@ -245,6 +283,8 @@ export function AuthProvider({ children }) {
         guardarSesionTenant(tenantActual, nuevoToken)
       }
 
+      ultimaActividadRef.current = Date.now()
+      ultimaActividadRenovadaRef.current = ultimaActividadRef.current
       await cargarDatos(nuevoToken)
       return resultado
     } catch (error) {
@@ -252,6 +292,101 @@ export function AuthProvider({ children }) {
       throw error
     }
   }, [validarTenantToken, guardarSesionSuper, guardarSesionTenant, cargarDatos])
+
+  const renovarTokenSiCorresponde = useCallback(async () => {
+    if (!token || !logueado || document.hidden || renovandoSesionRef.current || cerrandoSesionExpiradaRef.current) return
+
+    const ahoraMs = Date.now()
+    const ultimaActividad = ultimaActividadRef.current
+
+    if (ultimaActividad <= ultimaActividadRenovadaRef.current) return
+    if (ahoraMs - ultimaActividad > RECENT_ACTIVITY_WINDOW_MS) return
+
+    const tokenAntesDelRefresh = token
+    const payload = obtenerPayloadToken(tokenAntesDelRefresh)
+    if (!payload?.exp || !payload?.refresh_at) return
+
+    const ahora = Math.floor(ahoraMs / 1000)
+    if (ahora < payload.refresh_at) return
+
+    renovandoSesionRef.current = true
+
+    const segundosRestantes = Math.max(payload.exp - ahora, 0)
+    console.info(
+      `[AUTH] Renovación de sesión iniciada. Token actual: ${segundosRestantes} segundos restantes.`
+    )
+
+    try {
+      const resultado = await renovarSesion(tokenAntesDelRefresh)
+
+      if (!resultado?.access_token) {
+        throw new Error('El servidor no devolvió un token renovado.')
+      }
+
+      if (
+        cerrandoSesionExpiradaRef.current ||
+        tokenRef.current !== tokenAntesDelRefresh
+      ) {
+        console.info('[AUTH] Refresh descartado porque la sesión ya fue cerrada.')
+        return
+      }
+
+      const nuevoToken = resultado.access_token
+      const nuevoPayload = obtenerPayloadToken(nuevoToken)
+      const tenantActual = obtenerTenantDesdeUrl()
+      const esSuper = payload?.user_type === 'SUPER'
+
+      if (esSuper) {
+        guardarSesionSuper(tenantActual, nuevoToken)
+      } else {
+        guardarSesionTenant(tenantActual, nuevoToken)
+      }
+
+      tokenRef.current = nuevoToken
+      setToken(nuevoToken)
+      ultimaActividadRenovadaRef.current = ultimaActividad
+
+      const nuevosSegundosRestantes = nuevoPayload?.exp
+        ? Math.max(nuevoPayload.exp - Math.floor(Date.now() / 1000), 0)
+        : 0
+      console.info(
+        `[AUTH] Refresh exitoso. Nuevo token válido por ${nuevosSegundosRestantes} segundos.`
+      )
+    } catch (error) {
+      console.error('[AUTH] Error renovando sesión:', error)
+      if (error?.status === 401) {
+        await manejarSesionExpirada(tokenAntesDelRefresh)
+      }
+    } finally {
+      renovandoSesionRef.current = false
+    }
+  }, [token, logueado, guardarSesionSuper, guardarSesionTenant, manejarSesionExpirada])
+
+  useEffect(() => {
+    const registrarActividad = () => {
+      const ahora = Date.now()
+      if (ahora - ultimoEventoActividadRef.current < ACTIVITY_THROTTLE_MS) return
+      ultimoEventoActividadRef.current = ahora
+      ultimaActividadRef.current = ahora
+    }
+
+    const eventos = ['click', 'keydown', 'mousemove', 'scroll', 'touchstart', 'pointerdown']
+    eventos.forEach((evento) => window.addEventListener(evento, registrarActividad, { passive: true }))
+
+    return () => {
+      eventos.forEach((evento) => window.removeEventListener(evento, registrarActividad))
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!logueado || !token) return undefined
+
+    const intervalo = window.setInterval(() => {
+      void renovarTokenSiCorresponde()
+    }, ACTIVITY_CHECK_INTERVAL_MS)
+
+    return () => window.clearInterval(intervalo)
+  }, [logueado, token, renovarTokenSiCorresponde])
 
   useEffect(() => {
     const validarSesion = async () => {
@@ -265,19 +400,23 @@ export function AuthProvider({ children }) {
 
       const tokenSuper = obtenerSesionSuper(tenantActual)
 
-      if (tokenSuper) {
-        const payloadSuper = obtenerPayloadToken(tokenSuper)
+      if (
+        tokenSuper &&
+        obtenerPayloadToken(tokenSuper)?.user_type === 'SUPER' &&
+        !tokenEstaExpirado(tokenSuper) &&
+        validarTenantToken(tokenSuper, tenantActual)
+      ) {
+        setCargando(true)
+        await cargarDatos(tokenSuper)
+        return
+      }
 
-        if (
-          payloadSuper?.user_type === 'SUPER' &&
-          !tokenEstaExpirado(tokenSuper) &&
-          validarTenantToken(tokenSuper, tenantActual)
-        ) {
-          setCargando(true)
-          await cargarDatos(tokenSuper)
+      if (tokenSuper) {
+        if (tokenEstaExpirado(tokenSuper)) {
+          await manejarSesionExpirada(tokenSuper)
+          setCargando(false)
           return
         }
-
         eliminarSesionSuper(tenantActual, tokenSuper)
       }
 
@@ -291,9 +430,7 @@ export function AuthProvider({ children }) {
       }
 
       if (tokenEstaExpirado(tokenTenant)) {
-        eliminarSesionTenant(tenantActual, tokenTenant)
-        limpiarEstadoSesion()
-        setMensajeSesion('')
+        await manejarSesionExpirada(tokenTenant)
         setCargando(false)
         return
       }
@@ -310,6 +447,7 @@ export function AuthProvider({ children }) {
     eliminarSesionTenant,
     validarTenantToken,
     cargarDatos,
+    manejarSesionExpirada,
     limpiarEstadoSesion,
   ])
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
@@ -100,6 +100,12 @@ function ExtinguisherInspectionsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const location = useLocation()
 
+  const tokenRef = useRef(token)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
   const [extintores, setExtintores] = useState([])
   const [tipos, setTipos] = useState([])
   const [items, setItems] = useState([])
@@ -142,7 +148,7 @@ function ExtinguisherInspectionsPage() {
   }, [location.search])
 
   const cargar = useCallback(async () => {
-    if (!token) {
+    if (!tokenRef.current) {
       return
     }
 
@@ -155,10 +161,10 @@ function ExtinguisherInspectionsPage() {
         its,
         rev,
       ] = await Promise.all([
-        obtenerExtintores(token),
-        obtenerTiposExtintor(token),
-        obtenerItemsRevisionExtintor(token),
-        obtenerRevisiones(token),
+        obtenerExtintores(tokenRef.current),
+        obtenerTiposExtintor(tokenRef.current),
+        obtenerItemsRevisionExtintor(tokenRef.current),
+        obtenerRevisiones(tokenRef.current),
       ])
 
       setExtintores(
@@ -200,7 +206,7 @@ function ExtinguisherInspectionsPage() {
     } finally {
       setCargando(false)
     }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   useEffect(() => {
     const cargarDatos = async () => {

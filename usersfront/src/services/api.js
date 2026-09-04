@@ -8,7 +8,7 @@ const obtenerMensajeError = (status) => {
     case 404: return 'No se encontró el recurso solicitado.'
     case 409: return 'La operación no puede realizarse porque existe un conflicto con el estado actual.'
     case 422: return 'Los datos enviados no son válidos.'
-    case 500: return 'Ocurrió un error interno en el servidor.'
+    case 500: return 'Ocurrió un error interno del servidor.'
     default: return 'Ocurrió un error inesperado.'
   }
 }
@@ -42,6 +42,12 @@ export const login = async (username, password, tenant, superMode = false, otp =
 export const logout = async (token) => {
   if (!token) return null
   const response = await fetch(`${API_URL}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+  return procesarRespuesta(response)
+}
+
+export const renovarSesion = async (token) => {
+  if (!token) return null
+  const response = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
   return procesarRespuesta(response)
 }
 
