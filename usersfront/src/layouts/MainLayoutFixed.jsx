@@ -24,13 +24,19 @@ function MainLayoutFixed() {
   const appTitle = config?.app_title || 'Fenix SaS'
   const rutaTenant = tenant ? `/${tenant}` : ''
   const administracionMenuAbierto = administracionAbierta
-  const extintoresMenuAbierto = extintoresAbiertos || extintoresPorRuta
+  const extintoresMenuAbierto = extintoresAbiertos
 
   useEffect(() => {
     if (administracionPorRuta) {
       setAdministracionAbierta(true)
     }
   }, [administracionPorRuta])
+
+  useEffect(() => {
+    if (extintoresPorRuta) {
+      setExtintoresAbiertos(true)
+    }
+  }, [extintoresPorRuta])
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
