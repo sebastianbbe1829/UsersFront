@@ -25,6 +25,7 @@ const SUPER_SESSIONS_KEY = 'super_sessions'
 const ACTIVITY_CHECK_INTERVAL_MS = 30 * 1000
 const ACTIVITY_THROTTLE_MS = 10 * 1000
 const RECENT_ACTIVITY_WINDOW_MS = 30 * 60 * 1000
+const INACTIVITY_STATUS_WINDOW_MS = 5 * 60 * 1000
 
 export function AuthProvider({ children }) {
   const tenant = obtenerTenantDesdeUrl()
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
   const [cargando, setCargando] = useState(true)
   const [mensajeSesion, setMensajeSesion] = useState('')
   const [usuarios, setUsuarios] = useState([])
+  const [estadoActividad, setEstadoActividad] = useState('ACTIVA')
   const tokenRef = useRef('')
   const ultimaActividadRef = useRef(0)
   const ultimaActividadRenovadaRef = useRef(0)
@@ -116,6 +118,7 @@ export function AuthProvider({ children }) {
     setUsuarios([])
     setToken('')
     setUsuarioLogueado(null)
+    setEstadoActividad('ACTIVA')
   }, [])
 
   const cerrarSesion = useCallback(async () => {
@@ -194,6 +197,7 @@ export function AuthProvider({ children }) {
 
     tokenRef.current = nuevoToken
     setToken(nuevoToken)
+    setEstadoActividad('ACTIVA')
     ultimaActividadRenovadaRef.current = ultimaActividadRef.current
 
     const nuevosSegundosRestantes = nuevoPayload?.exp
@@ -245,9 +249,11 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const registrarActividad = () => {
       const ahora = Date.now()
+      ultimaActividadRef.current = ahora
+      setEstadoActividad('ACTIVA')
+
       if (ahora - ultimoEventoActividadRef.current < ACTIVITY_THROTTLE_MS) return
       ultimoEventoActividadRef.current = ahora
-      ultimaActividadRef.current = ahora
       void renovarTokenSiCorresponde()
     }
 
@@ -263,6 +269,10 @@ export function AuthProvider({ children }) {
     if (!logueado || !token) return undefined
 
     const intervalo = window.setInterval(() => {
+      const ultimaActividad = ultimaActividadRef.current
+      if (ultimaActividad && Date.now() - ultimaActividad >= INACTIVITY_STATUS_WINDOW_MS) {
+        setEstadoActividad('INACTIVA')
+      }
       void renovarTokenSiCorresponde()
     }, ACTIVITY_CHECK_INTERVAL_MS)
 
@@ -325,6 +335,7 @@ export function AuthProvider({ children }) {
             setUsuarioLogueado(usuarioActual)
             setLogueado(true)
             setMensajeSesion('')
+            setEstadoActividad('ACTIVA')
             ultimaActividadRef.current = Date.now()
             ultimaActividadRenovadaRef.current = ultimaActividadRef.current
             return
@@ -363,6 +374,7 @@ export function AuthProvider({ children }) {
       setUsuarioLogueado(usuarioActual)
       setLogueado(true)
       setMensajeSesion('')
+      setEstadoActividad('ACTIVA')
       ultimaActividadRef.current = Date.now()
       ultimaActividadRenovadaRef.current = ultimaActividadRef.current
     } catch (error) {
@@ -430,6 +442,7 @@ export function AuthProvider({ children }) {
 
       ultimaActividadRef.current = Date.now()
       ultimaActividadRenovadaRef.current = ultimaActividadRef.current
+      setEstadoActividad('ACTIVA')
       await cargarDatos(nuevoToken)
       return resultado
     } catch (error) {
@@ -523,6 +536,7 @@ export function AuthProvider({ children }) {
     setMensajeSesion,
     permissions,
     hasPermission,
+    estadoActividad,
   }
 
   return (
