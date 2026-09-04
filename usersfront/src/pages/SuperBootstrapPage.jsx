@@ -2,11 +2,28 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 
-import {
-  bootstrapSuperUser,
-  verificarBootstrapMfa,
-} from '../services/api'
+import { verificarBootstrapMfa } from '../services/api'
 
+const API_URL = import.meta.env.VITE_API_URL
+
+const bootstrapPrimerSuper = async (datos, bootstrapSecret) => {
+  const response = await fetch(`${API_URL}/auth/super/bootstrap`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Super-Bootstrap-Secret': bootstrapSecret,
+    },
+    body: JSON.stringify(datos),
+  })
+
+  const resultado = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    throw new Error(resultado?.detail || 'No fue posible crear el primer usuario SUPER.')
+  }
+
+  return resultado
+}
 
 function SuperBootstrapPage() {
   const navigate = useNavigate()
@@ -43,8 +60,14 @@ function SuperBootstrapPage() {
     setCargando(true)
 
     try {
-      const resultado = await bootstrapSuperUser(
-        { dni: dni.trim(), name: name.trim(), phone: phone.trim(), email: email.trim(), password },
+      const resultado = await bootstrapPrimerSuper(
+        {
+          dni: dni.trim(),
+          name: name.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          password,
+        },
         bootstrapSecret
       )
 
@@ -67,11 +90,7 @@ function SuperBootstrapPage() {
     setCargando(true)
 
     try {
-      await verificarBootstrapMfa(
-        userId,
-        otp,
-        bootstrapSecret
-      )
+      await verificarBootstrapMfa(userId, otp, bootstrapSecret)
 
       setPaso('completado')
       setMensaje('MFA verificado correctamente. El usuario SUPER está listo.')
