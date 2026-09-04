@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useAuth } from '../contexts/AuthContext'
 import { actualizarTipoExtintor, crearTipoExtintor, eliminarTipoExtintor, obtenerTiposExtintor } from '../services/api'
@@ -7,6 +7,7 @@ const formularioInicial = { code: '', name: '' }
 
 function ExtinguisherTypesPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const tokenRef = useRef(token)
   const [tipos, setTipos] = useState([])
   const [cargando, setCargando] = useState(true)
   const [guardando, setGuardando] = useState(false)
@@ -21,10 +22,14 @@ function ExtinguisherTypesPage() {
   const [porPagina, setPorPagina] = useState(10)
   const [pagina, setPagina] = useState(1)
 
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
+
   const cargarTipos = useCallback(async () => {
-    if (!token) return
+    if (!tokenRef.current) return
     try {
-      const resultado = await obtenerTiposExtintor(token)
+      const resultado = await obtenerTiposExtintor(tokenRef.current)
       setTipos(Array.isArray(resultado) ? resultado : [])
       setMensaje(null)
     } catch (error) {
@@ -33,9 +38,10 @@ function ExtinguisherTypesPage() {
     } finally {
       setCargando(false)
     }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   useEffect(() => {
+    if (!tokenRef.current) return
     const cargar = async () => {
       await cargarTipos()
     }
