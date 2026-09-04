@@ -265,10 +265,10 @@ function GlobalSuperAdminPage() {
       {modal === 'otp' && <SuperMfaModal onConfirmar={confirmarOtp} onCancelar={cancelar} guardando={guardando} />}
 
       {modal === 'qr' && mfaProvisioning && <div className="modal d-block" style={modalBackdrop}><div className="modal-dialog" style={qrModalDialog}><div className="modal-content w-100">
-        <div className="modal-header py-2 px-3"><div><h5 className="modal-title mb-1">Configuración MFA</h5><div className="text-muted small">QR para {mfaProvisioning.email}</div></div><button type="button" className="btn-close" onClick={cerrarQr} /></div>
+        <div className="modal-header py-2 px-3"><div className="text-start overflow-hidden"><h5 className="modal-title mb-1">Configuración MFA</h5><div className="text-muted small text-break">QR para {mfaProvisioning.email}</div></div><button type="button" className="btn-close flex-shrink-0 ms-2" onClick={cerrarQr} /></div>
         <div className="modal-body text-center py-3 px-3">
           <p className="text-muted small mb-2">Escanea este código con Google Authenticator, Microsoft Authenticator o una aplicación compatible.</p>
-          <div className="d-inline-block bg-white p-2 rounded border"><QRCodeSVG value={mfaProvisioning.provisioning_uri} size={220} includeMargin /></div>
+          <div className="d-inline-block bg-white p-2 rounded border mw-100"><QRCodeSVG value={mfaProvisioning.provisioning_uri} size={220} style={{ width: 'min(220px, 70vw)', height: 'auto', maxWidth: '100%' }} includeMargin /></div>
           <p className="small text-muted mt-2 mb-0">Este QR contiene la clave de configuración MFA. Trátalo como información confidencial.</p>
         </div>
         <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cerrarQr}>Cerrar</button></div>
