@@ -17,6 +17,7 @@ function MainLayoutFixed() {
   const [menuColapsado, setMenuColapsado] = useState(false)
   const administracionPorRuta = ['usuarios', 'roles', 'permisos'].some((ruta) => location.pathname.split('/').includes(ruta))
   const extintoresPorRuta = location.pathname.includes('/extintores')
+  const clientesPorRuta = location.pathname.includes('/clientes')
   const [administracionAbierta, setAdministracionAbierta] = useState(administracionPorRuta)
   const [extintoresAbiertos, setExtintoresAbiertos] = useState(extintoresPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
@@ -27,8 +28,36 @@ function MainLayoutFixed() {
   const administracionMenuAbierto = administracionAbierta
   const extintoresMenuAbierto = extintoresAbiertos
 
-  useEffect(() => { if (administracionPorRuta) setAdministracionAbierta(true) }, [administracionPorRuta])
-  useEffect(() => { if (extintoresPorRuta) setExtintoresAbiertos(true) }, [extintoresPorRuta])
+  useEffect(() => {
+    if (administracionPorRuta) {
+      setAdministracionAbierta(true)
+      setExtintoresAbiertos(false)
+    }
+  }, [administracionPorRuta])
+
+  useEffect(() => {
+    if (extintoresPorRuta) {
+      setExtintoresAbiertos(true)
+      setAdministracionAbierta(false)
+    }
+  }, [extintoresPorRuta])
+
+  const abrirSeccion = (seccion) => {
+    if (seccion === 'clientes') {
+      setExtintoresAbiertos(false)
+      setAdministracionAbierta(false)
+      return
+    }
+    if (seccion === 'extintores') {
+      setExtintoresAbiertos(true)
+      setAdministracionAbierta(false)
+      return
+    }
+    if (seccion === 'administracion') {
+      setAdministracionAbierta(true)
+      setExtintoresAbiertos(false)
+    }
+  }
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
@@ -78,13 +107,13 @@ function MainLayoutFixed() {
           <button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button>
         </div>
 
-        <nav className="d-flex flex-column flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
+        <nav className="d-flex flex-column flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
           <NavLink to={tenant ? `/${tenant}` : '/'} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inicio" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>{!menuColapsado && <span className="ms-3">Inicio</span>}
           </NavLink>
 
           <Can permission="EXTINGUISHER_READ">
-            <button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => setExtintoresAbiertos((valor) => !valor)} title="Extintores" style={{ background: 'transparent' }}>
+            <button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => { const nuevo = !extintoresAbiertos; if (nuevo) abrirSeccion('extintores'); else setExtintoresAbiertos(false) }} title="Extintores" style={{ background: 'transparent' }}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{extintoresMenuAbierto ? '▾' : '▸'}</span></>}
             </button>
             {extintoresMenuAbierto && !menuColapsado && <div className="ps-3">
@@ -95,10 +124,10 @@ function MainLayoutFixed() {
             </div>}
           </Can>
 
-          <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} />
+          <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} onOpenSection={abrirSeccion} />
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
-            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => setAdministracionAbierta((valor) => !valor)} title="Administración" style={{ background: 'transparent' }}>
+            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => { const nuevo = !administracionAbierta; if (nuevo) abrirSeccion('administracion'); else setAdministracionAbierta(false) }} title="Administración" style={{ background: 'transparent' }}>
               <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{administracionMenuAbierto ? '▾' : '▸'}</span></>}
             </button>
             {administracionMenuAbierto && !menuColapsado && <div className="ps-3">
