@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
   const [mensajeSesion, setMensajeSesion] = useState('')
   const [usuarios, setUsuarios] = useState([])
   const tokenRef = useRef('')
-  const ultimaActividadRef = useRef(Date.now())
+  const ultimaActividadRef = useRef(0)
   const ultimaActividadRenovadaRef = useRef(0)
   const ultimoEventoActividadRef = useRef(0)
   const renovandoSesionRef = useRef(false)
