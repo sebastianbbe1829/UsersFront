@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import ClientCatalogCrudPage from './ClientCatalogCrudPage'
 import {
   obtenerDepartamentosCliente,
@@ -9,18 +10,13 @@ import {
 } from '../services/clientsApi'
 
 function DepartmentsPage() {
+  const { token } = useAuth()
   const [countries, setCountries] = useState([])
 
   useEffect(() => {
-    const loadCountries = async () => {
-      try {
-        setCountries(await obtenerPaisesCliente())
-      } catch {
-        setCountries([])
-      }
-    }
-    loadCountries()
-  }, [])
+    if (!token) return
+    obtenerPaisesCliente(token).then(setCountries).catch(() => setCountries([]))
+  }, [token])
 
   const formFields = useMemo(() => [
     { key: 'country_id', label: 'País', type: 'select', required: true, options: countries.map((country) => ({ value: country.id, label: `${country.code} - ${country.name}` })) },
