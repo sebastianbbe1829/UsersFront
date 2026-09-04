@@ -21,9 +21,9 @@ function ClientIdentificationTypesPage() {
       { key: 'active', label: 'Activo', render: (item) => item.active ? 'Sí' : 'No' },
     ]}
     formFields={[
-      { key: 'code', label: 'Código', required: true },
+      { key: 'code', label: 'Código', required: true, disabledWhenEditing: true },
       { key: 'name', label: 'Nombre', required: true },
-      { key: 'person_type', label: 'Tipo de persona', type: 'select', required: true, options: [{ value: 'NATURAL', label: 'Natural' }, { value: 'JURIDICA', label: 'Jurídica' }] },
+      { key: 'person_type', label: 'Tipo de persona', type: 'select', required: true, disabledWhenEditing: true, options: [{ value: 'NATURAL', label: 'Natural' }, { value: 'JURIDICA', label: 'Jurídica' }] },
       { key: 'active', label: 'Activo', type: 'checkbox', defaultValue: true },
     ]}
   />
