@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import Can from './Can'
 
-function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu }) {
+function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection }) {
   const { config } = useTenantConfig()
   const location = useLocation()
   const clientesPorRuta = location.pathname.includes('/clientes')
@@ -14,55 +14,38 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu }) {
     if (clientesPorRuta) setClientesAbiertos(true)
   }, [clientesPorRuta])
 
+  const alternarClientes = () => {
+    const nuevoEstado = !clientesAbiertos
+    setClientesAbiertos(nuevoEstado)
+    if (nuevoEstado) onOpenSection?.('clientes')
+  }
+
   return (
     <Can permission="CLIENT_READ">
-      <button
-        type="button"
-        className={obtenerClaseMenu(clientesPorRuta)}
-        onClick={() => setClientesAbiertos((valor) => !valor)}
-        title="Clientes"
-        style={{ background: 'transparent' }}
-      >
+      <button type="button" className={obtenerClaseMenu(clientesPorRuta)} onClick={alternarClientes} title="Clientes" style={{ background: 'transparent' }}>
         <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👤</span>
-        {!menuColapsado && (
-          <>
-            <span className="ms-3 flex-grow-1 text-start">Clientes</span>
-            <span>{clientesAbiertos ? '▾' : '▸'}</span>
-          </>
-        )}
+        {!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Clientes</span><span>{clientesAbiertos ? '▾' : '▸'}</span></>}
       </button>
 
       {clientesAbiertos && !menuColapsado && (
         <div className="ps-3">
           <NavLink to={`${rutaTenant}/clientes/tipos-identificacion`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos de Identificación" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🪪</span>
-            <span className="ms-3">Tipos de Identificación</span>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🪪</span><span className="ms-3">Tipos de Identificación</span>
           </NavLink>
-
-          <div className="px-3 py-2 text-uppercase small text-secondary fw-semibold">Demográfica</div>
-          <div className="ps-3">
-            <NavLink to={`${rutaTenant}/clientes/demografica/paises`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Países" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-              <span style={{ fontSize: '18px', minWidth: '24px', textAlign: 'center' }}>🌎</span>
-              <span className="ms-3">Países</span>
-            </NavLink>
-            <NavLink to={`${rutaTenant}/clientes/demografica/departamentos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Departamentos" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-              <span style={{ fontSize: '18px', minWidth: '24px', textAlign: 'center' }}>🗺️</span>
-              <span className="ms-3">Departamentos</span>
-            </NavLink>
-            <NavLink to={`${rutaTenant}/clientes/demografica/ciudades`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ciudades" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-              <span style={{ fontSize: '18px', minWidth: '24px', textAlign: 'center' }}>📍</span>
-              <span className="ms-3">Ciudades</span>
-            </NavLink>
-          </div>
-
+          <NavLink to={`${rutaTenant}/clientes/demografica/paises`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Países" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🌎</span><span className="ms-3">Países</span>
+          </NavLink>
+          <NavLink to={`${rutaTenant}/clientes/demografica/departamentos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Departamentos" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🗺️</span><span className="ms-3">Departamentos</span>
+          </NavLink>
+          <NavLink to={`${rutaTenant}/clientes/demografica/ciudades`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ciudades" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📍</span><span className="ms-3">Ciudades</span>
+          </NavLink>
           <NavLink to={`${rutaTenant}/clientes`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Clientes" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span>
-            <span className="ms-3">Clientes</span>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span><span className="ms-3">Clientes</span>
           </NavLink>
-
           <NavLink to={`${rutaTenant}/clientes/informes-listas-restrictivas`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Informes Listas Restrictivas" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📊</span>
-            <span className="ms-3">Informes Listas Restrictivas</span>
+            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📊</span><span className="ms-3">Informes Listas Restrictivas</span>
           </NavLink>
         </div>
       )}
