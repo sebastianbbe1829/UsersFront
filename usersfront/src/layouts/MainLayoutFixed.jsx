@@ -18,45 +18,20 @@ function MainLayoutFixed() {
   const administracionPorRuta = ['usuarios', 'roles', 'permisos'].some((ruta) => location.pathname.split('/').includes(ruta))
   const extintoresPorRuta = location.pathname.includes('/extintores')
   const clientesPorRuta = location.pathname.includes('/clientes')
-  const [administracionAbierta, setAdministracionAbierta] = useState(administracionPorRuta)
-  const [extintoresAbiertos, setExtintoresAbiertos] = useState(extintoresPorRuta)
+  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : administracionPorRuta ? 'administracion' : null
+  const [seccionAbierta, setSeccionAbierta] = useState(seccionPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const primaryColor = config?.primary_color || '#0d6efd'
   const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
   const rutaTenant = tenant ? `/${tenant}` : ''
-  const administracionMenuAbierto = administracionAbierta
-  const extintoresMenuAbierto = extintoresAbiertos
 
   useEffect(() => {
-    if (administracionPorRuta) {
-      setAdministracionAbierta(true)
-      setExtintoresAbiertos(false)
-    }
-  }, [administracionPorRuta])
+    setSeccionAbierta(seccionPorRuta)
+  }, [seccionPorRuta])
 
-  useEffect(() => {
-    if (extintoresPorRuta) {
-      setExtintoresAbiertos(true)
-      setAdministracionAbierta(false)
-    }
-  }, [extintoresPorRuta])
-
-  const abrirSeccion = (seccion) => {
-    if (seccion === 'clientes') {
-      setExtintoresAbiertos(false)
-      setAdministracionAbierta(false)
-      return
-    }
-    if (seccion === 'extintores') {
-      setExtintoresAbiertos(true)
-      setAdministracionAbierta(false)
-      return
-    }
-    if (seccion === 'administracion') {
-      setAdministracionAbierta(true)
-      setExtintoresAbiertos(false)
-    }
+  const alternarSeccion = (seccion) => {
+    setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
   }
 
   const cambiarModoOscuro = () => {
@@ -113,10 +88,10 @@ function MainLayoutFixed() {
           </NavLink>
 
           <Can permission="EXTINGUISHER_READ">
-            <button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => { const nuevo = !extintoresAbiertos; if (nuevo) abrirSeccion('extintores'); else setExtintoresAbiertos(false) }} title="Extintores" style={{ background: 'transparent' }}>
-              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{extintoresMenuAbierto ? '▾' : '▸'}</span></>}
+            <button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => alternarSeccion('extintores')} title="Extintores" style={{ background: 'transparent' }}>
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{seccionAbierta === 'extintores' ? '▾' : '▸'}</span></>}
             </button>
-            {extintoresMenuAbierto && !menuColapsado && <div className="ps-3">
+            {seccionAbierta === 'extintores' && !menuColapsado && <div className="ps-3">
               <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🧯</span><span className="ms-3">Inventario</span></NavLink></Can>
               <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores/tipos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos de extintores"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span><span className="ms-3">Tipos de extintores</span></NavLink></Can>
               <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores/revisiones`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Revisiones"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Revisiones</span></NavLink></Can>
@@ -124,13 +99,13 @@ function MainLayoutFixed() {
             </div>}
           </Can>
 
-          <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} onOpenSection={abrirSeccion} />
+          <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} abierto={seccionAbierta === 'clientes'} onToggleSection={() => alternarSeccion('clientes')} />
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
-            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => { const nuevo = !administracionAbierta; if (nuevo) abrirSeccion('administracion'); else setAdministracionAbierta(false) }} title="Administración" style={{ background: 'transparent' }}>
-              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{administracionMenuAbierto ? '▾' : '▸'}</span></>}
+            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => alternarSeccion('administracion')} title="Administración" style={{ background: 'transparent' }}>
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{seccionAbierta === 'administracion' ? '▾' : '▸'}</span></>}
             </button>
-            {administracionMenuAbierto && !menuColapsado && <div className="ps-3">
+            {seccionAbierta === 'administracion' && !menuColapsado && <div className="ps-3">
               <Can permission="USER_READ"><NavLink to={`${rutaTenant}/usuarios`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span><span className="ms-3">Usuarios</span></NavLink></Can>
               <Can permission="ROLE_READ"><NavLink to={`${rutaTenant}/roles`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Roles"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛡️</span><span className="ms-3">Roles</span></NavLink></Can>
               <Can permission="PERMISSION_READ"><NavLink to={`${rutaTenant}/permisos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Permisos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🔐</span><span className="ms-3">Permisos</span></NavLink></Can>
