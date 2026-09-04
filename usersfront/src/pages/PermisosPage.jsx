@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react'
 
@@ -31,6 +32,12 @@ function PermisosPage() {
     token,
     manejarSesionExpirada,
   } = useAuth()
+
+  const tokenRef = useRef(token)
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
 
   const [
     permisos,
@@ -64,7 +71,7 @@ function PermisosPage() {
 
       const resultado =
         await obtenerPermisos(
-          token
+          tokenRef.current
         )
 
       setPermisos(
@@ -103,7 +110,7 @@ function PermisosPage() {
     } finally {
       setCargando(false)
     }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   const guardarPermiso = async (
     datos
@@ -166,7 +173,7 @@ function PermisosPage() {
   }
 
   useEffect(() => {
-    if (!token) {
+    if (!tokenRef.current) {
       return
     }
 
@@ -175,7 +182,7 @@ function PermisosPage() {
     }
 
     void cargar()
-  }, [token, cargarPermisos])
+  }, [cargarPermisos])
 
   return (
     <>
