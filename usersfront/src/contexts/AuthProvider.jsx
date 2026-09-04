@@ -37,6 +37,7 @@ export function AuthProvider({ children }) {
   const [usuarios, setUsuarios] = useState([])
   const tokenRef = useRef('')
   const ultimaActividadRef = useRef(Date.now())
+  const ultimaActividadRenovadaRef = useRef(0)
   const ultimoEventoActividadRef = useRef(0)
   const renovandoSesionRef = useRef(false)
   const cerrandoSesionExpiradaRef = useRef(false)
@@ -217,6 +218,7 @@ export function AuthProvider({ children }) {
       setLogueado(true)
       setMensajeSesion('')
       ultimaActividadRef.current = Date.now()
+      ultimaActividadRenovadaRef.current = ultimaActividadRef.current
     } catch (error) {
       console.error('Error validando sesión:', error)
       if (error?.status === 401) {
@@ -281,6 +283,7 @@ export function AuthProvider({ children }) {
       }
 
       ultimaActividadRef.current = Date.now()
+      ultimaActividadRenovadaRef.current = ultimaActividadRef.current
       await cargarDatos(nuevoToken)
       return resultado
     } catch (error) {
@@ -291,13 +294,20 @@ export function AuthProvider({ children }) {
 
   const renovarTokenSiCorresponde = useCallback(async () => {
     if (!token || !logueado || document.hidden || renovandoSesionRef.current || cerrandoSesionExpiradaRef.current) return
-    if (Date.now() - ultimaActividadRef.current > RECENT_ACTIVITY_WINDOW_MS) return
+
+    const ahoraMs = Date.now()
+    const ultimaActividad = ultimaActividadRef.current
+
+    // El refresh no representa actividad del usuario. Solo se permite una
+    // renovación cuando hubo actividad real desde la última renovación.
+    if (ultimaActividad <= ultimaActividadRenovadaRef.current) return
+    if (ahoraMs - ultimaActividad > RECENT_ACTIVITY_WINDOW_MS) return
 
     const tokenAntesDelRefresh = token
     const payload = obtenerPayloadToken(tokenAntesDelRefresh)
     if (!payload?.exp || !payload?.refresh_at) return
 
-    const ahora = Math.floor(Date.now() / 1000)
+    const ahora = Math.floor(ahoraMs / 1000)
     if (ahora < payload.refresh_at) return
 
     renovandoSesionRef.current = true
@@ -337,7 +347,7 @@ export function AuthProvider({ children }) {
 
       tokenRef.current = nuevoToken
       setToken(nuevoToken)
-      ultimaActividadRef.current = Date.now()
+      ultimaActividadRenovadaRef.current = ultimaActividad
 
       const nuevosSegundosRestantes = nuevoPayload?.exp
         ? Math.max(nuevoPayload.exp - Math.floor(Date.now() / 1000), 0)
