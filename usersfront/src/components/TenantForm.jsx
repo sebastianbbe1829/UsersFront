@@ -32,16 +32,39 @@ function TenantForm({ onContinuar, onCancelar, guardando = false }) {
   }
 
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', position: 'fixed', inset: 0, zIndex: 2000, overflow: 'hidden' }}>
-      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '650px', width: 'calc(100% - 2rem)', margin: '1rem auto' }}>
-        <div className="modal-content" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+    <div
+      className="modal d-block"
+      style={{
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        overflowY: 'auto',
+        padding: '0.5rem 0',
+      }}
+    >
+      <div
+        className="modal-dialog"
+        style={{
+          maxWidth: '650px',
+          width: 'calc(100% - 1rem)',
+          minHeight: 'calc(100% - 1rem)',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <div className="modal-content w-100" style={{ maxHeight: 'calc(100vh - 1rem)' }}>
           <div className="modal-header py-2 px-3">
             <h5 className="modal-title mb-0">Nuevo tenant</h5>
             <button type="button" className="btn-close" onClick={onCancelar} disabled={guardando} />
           </div>
 
           <form onSubmit={enviar} autoComplete="off">
-            <div className="modal-body py-3 px-3" style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 150px)' }}>
+            <div
+              className="modal-body py-3 px-3"
+              style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 120px)' }}
+            >
               {error && <div className="alert alert-danger py-2">❌ {error}</div>}
 
               <h6 className="fw-bold mb-3">Datos del tenant</h6>

@@ -1,6 +1,14 @@
 import { useState } from 'react'
 
-function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
+function SuperMfaModal({
+  onConfirmar,
+  onCancelar,
+  guardando = false,
+  titulo = 'Verificación SUPER',
+  descripcion = 'Para confirmar esta operación administrativa ingresa el código OTP de tu autenticador.',
+  etiqueta = 'Código OTP',
+  placeholder = '000000',
+}) {
   const [otp, setOtp] = useState('')
   const [error, setError] = useState('')
 
@@ -15,27 +23,28 @@ function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
     try {
       setError('')
       await onConfirmar(otp)
+      setOtp('')
     } catch (err) {
       setError(err.message || 'No fue posible completar la operación.')
     }
   }
 
   return (
-    <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', position: 'fixed', inset: 0, zIndex: 2100, overflow: 'hidden' }}>
-      <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '430px', width: 'calc(100% - 2rem)', margin: '1rem auto' }}>
-        <div className="modal-content">
+    <div className="modal d-block" style={{ backgroundColor: 'rgba(0, 0, 0, 0.65)', position: 'fixed', inset: 0, zIndex: 2100, overflowY: 'auto', padding: '1rem 0' }}>
+      <div className="modal-dialog" style={{ width: 'calc(100% - 2rem)', maxWidth: '430px', margin: 'auto', minHeight: 'calc(100% - 2rem)', display: 'flex', alignItems: 'center' }}>
+        <div className="modal-content w-100">
           <div className="modal-header py-2 px-3">
-            <h5 className="modal-title mb-0">Verificación SUPER</h5>
+            <h5 className="modal-title mb-0">{titulo}</h5>
             <button type="button" className="btn-close" onClick={onCancelar} disabled={guardando} />
           </div>
 
           <form onSubmit={enviar} autoComplete="off">
-            <div className="modal-body py-3 px-3">
-              <p className="mb-3">Para confirmar esta operación administrativa ingresa el código OTP de tu autenticador.</p>
+            <div className="modal-body py-2 px-3">
+              <p className="mb-2">{descripcion}</p>
 
-              {error && <div className="alert alert-danger py-2">❌ {error}</div>}
+              {error && <div className="alert alert-danger py-2 mb-2">❌ {error}</div>}
 
-              <label className="form-label fw-semibold">Código OTP</label>
+              <label className="form-label fw-semibold mb-1">{etiqueta}</label>
               <input
                 type="text"
                 inputMode="numeric"
@@ -48,7 +57,8 @@ function SuperMfaModal({ onConfirmar, onCancelar, guardando = false }) {
                 }}
                 autoFocus
                 disabled={guardando}
-                placeholder="000000"
+                placeholder={placeholder}
+                autoComplete="one-time-code"
               />
             </div>
 

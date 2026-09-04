@@ -155,45 +155,93 @@ function TenantAdminPage() {
           ) : tenants.length === 0 ? (
             <div className="alert alert-warning mb-0">No hay tenants disponibles.</div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Slug</th>
-                    <th>Estado</th>
-                    <th>Creado por</th>
-                    <th className="text-end">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tenants.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.id}</td>
-                      <td className="fw-semibold">
-                        {item.name}
-                        {item.id === tenantActualId && (
-                          <span className="badge text-bg-primary ms-2">Actual</span>
-                        )}
-                      </td>
-                      <td>{item.slug}</td>
-                      <td>
-                        <span className={`badge ${item.status === 1 ? 'text-bg-success' : 'text-bg-secondary'}`}>
-                          {item.status === 1 ? 'Activo' : 'Inactivo'}
-                        </span>
-                      </td>
-                      <td>{item.created_by}</td>
-                      <td className="text-end">
-                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>
-                          Editar
-                        </button>
-                      </td>
+            <>
+              {/* Desktop: tabla */}
+              <div className="table-responsive d-none d-md-block">
+                <table className="table table-hover align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Slug</th>
+                      <th>Estado</th>
+                      <th>Creado por</th>
+                      <th className="text-end">Acciones</th>
                     </tr>
+                  </thead>
+                  <tbody>
+                    {tenants.map((item) => (
+                      <tr key={item.id}>
+                        <td>{item.id}</td>
+                        <td className="fw-semibold">
+                          {item.name}
+                          {item.id === tenantActualId && (
+                            <span className="badge text-bg-primary ms-2">Actual</span>
+                          )}
+                        </td>
+                        <td>{item.slug}</td>
+                        <td>
+                          <span className={`badge ${item.status === 1 ? 'text-bg-success' : 'text-bg-secondary'}`}>
+                            {item.status === 1 ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </td>
+                        <td>{item.created_by}</td>
+                        <td className="text-end">
+                          <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>
+                            Editar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="d-md-none">
+                <div className="d-flex flex-column gap-3">
+                  {tenants.map((item) => (
+                    <div key={item.id} className="card border shadow-sm">
+                      <div className="card-body">
+                        <div className="d-flex justify-content-between align-items-start gap-2 mb-3">
+                          <div className="min-w-0">
+                            <div className="small text-muted mb-1">Tenant #{item.id}</div>
+                            <div className="fw-bold text-break">{item.name}</div>
+                          </div>
+                          <span className={`badge flex-shrink-0 ${item.status === 1 ? 'text-bg-success' : 'text-bg-secondary'}`}>
+                            {item.status === 1 ? 'Activo' : 'Inactivo'}
+                          </span>
+                        </div>
+
+                        <div className="mb-3">
+                          <div className="small text-muted">Slug</div>
+                          <div className="text-break">{item.slug}</div>
+                        </div>
+
+                        <div className="mb-3">
+                          <div className="small text-muted">Creado por</div>
+                          <div className="text-break">{item.created_by}</div>
+                        </div>
+
+                        {item.id === tenantActualId && (
+                          <div className="mb-3">
+                            <span className="badge text-bg-primary">Tenant actual</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          className="btn btn-outline-primary w-100"
+                          onClick={() => abrirEditar(item)}
+                        >
+                          Editar tenant
+                        </button>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
