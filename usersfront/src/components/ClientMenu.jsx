@@ -15,23 +15,13 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection
   }, [clientesPorRuta])
 
   useEffect(() => {
-    const nav = document.querySelector('aside nav')
-    if (!nav) return undefined
-
-    const sincronizarConOtrasSecciones = () => {
-      const botones = Array.from(nav.querySelectorAll('button'))
-      const otraSeccionAbierta = botones.some((boton) => {
-        const texto = boton.textContent?.trim() || ''
-        return (texto.startsWith('Extintores') || texto.startsWith('Administración')) && texto.includes('▾')
-      })
-      if (otraSeccionAbierta) setAbierto(false)
+    const manejarSeccionAbierta = (event) => {
+      if (event.detail !== 'clientes') setAbierto(false)
     }
 
-    sincronizarConOtrasSecciones()
-    const observer = new MutationObserver(sincronizarConOtrasSecciones)
-    observer.observe(nav, { childList: true, subtree: true, characterData: true })
-    return () => observer.disconnect()
-  }, [clientesPorRuta])
+    window.addEventListener('sidebar-section-opened', manejarSeccionAbierta)
+    return () => window.removeEventListener('sidebar-section-opened', manejarSeccionAbierta)
+  }, [])
 
   const alternarClientes = () => {
     const nuevoEstado = !abierto
