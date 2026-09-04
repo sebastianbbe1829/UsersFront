@@ -5,6 +5,11 @@ import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import ClientsPage from '../pages/ClientsPage'
+import ClientIdentificationTypesPage from '../pages/ClientIdentificationTypesPage'
+import CountriesPage from '../pages/CountriesPage'
+import DepartmentsPage from '../pages/DepartmentsPage'
+import CitiesPage from '../pages/CitiesPage'
+import ClientRestrictedListsReportsPage from '../pages/ClientRestrictedListsReportsPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import ExtinguishersPage from '../pages/ExtinguishersPage'
@@ -50,6 +55,11 @@ function AppRoutes() {
       <Route index element={<WelcomePage />} />
       <Route path="usuarios" element={<RutaConPermiso permission="USER_READ"><UsersPage /></RutaConPermiso>} />
       <Route path="clientes" element={<RutaConPermiso permission="CLIENT_READ"><ClientsPage /></RutaConPermiso>} />
+      <Route path="clientes/tipos-identificacion" element={<RutaConPermiso permission="CLIENT_READ"><ClientIdentificationTypesPage /></RutaConPermiso>} />
+      <Route path="clientes/demografica/paises" element={<RutaConPermiso permission="CLIENT_READ"><CountriesPage /></RutaConPermiso>} />
+      <Route path="clientes/demografica/departamentos" element={<RutaConPermiso permission="CLIENT_READ"><DepartmentsPage /></RutaConPermiso>} />
+      <Route path="clientes/demografica/ciudades" element={<RutaConPermiso permission="CLIENT_READ"><CitiesPage /></RutaConPermiso>} />
+      <Route path="clientes/informes-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsReportsPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
