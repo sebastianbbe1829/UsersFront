@@ -5,7 +5,7 @@ function DepartmentsPage() {
   return <ClientCatalogPage
     title="Departamentos"
     description="Departamentos relacionados con los países del catálogo geográfico."
-    loader={(token) => obtenerDepartamentosCliente(token)}
+    loader={obtenerDepartamentosCliente}
     columns={[{ key: 'country_id', label: 'País' }, { key: 'code', label: 'Código' }, { key: 'name', label: 'Departamento' }]}
   />
 }
