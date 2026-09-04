@@ -1,0 +1,1 @@
+Session expiration is audited server-side through the existing logout flow.
