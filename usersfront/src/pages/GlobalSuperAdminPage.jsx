@@ -22,7 +22,6 @@ function GlobalSuperAdminPage() {
   const [mensaje, setMensaje] = useState('')
   const [modal, setModal] = useState(null)
   const [editando, setEditando] = useState(null)
-  const [detalle, setDetalle] = useState(null)
   const [datosPendientes, setDatosPendientes] = useState(null)
   const [guardando, setGuardando] = useState(false)
   const [provisioningUri, setProvisioningUri] = useState('')
@@ -71,32 +70,21 @@ function GlobalSuperAdminPage() {
     }
   }
 
-  const abrirDetalle = async (item) => {
-    setMensaje('')
-    setError('')
-    try {
-      const completo = await obtenerGlobalSuper(item.id, token)
-      setDetalle(completo)
-      setModal('detalle')
-    } catch (err) {
-      setError(err.message || 'No fue posible consultar el usuario SUPER.')
-    }
-  }
-
   const cancelar = () => {
     if (guardando) return
     setModal(null)
     setEditando(null)
-    setDetalle(null)
     setDatosPendientes(null)
     setProvisioningUri('')
   }
 
+  // El MFA se solicita únicamente después de completar y enviar el formulario.
   const continuarCrear = (datos) => {
     setDatosPendientes({ tipo: 'crear', datos })
     setModal('otp')
   }
 
+  // El MFA se solicita únicamente después de completar y enviar el formulario.
   const continuarEditar = (datos) => {
     setDatosPendientes({ tipo: 'editar', datos, superId: editando.id })
     setModal('otp')
@@ -175,10 +163,7 @@ function GlobalSuperAdminPage() {
                       <td><span className={`badge ${item.mfa_verified_at ? 'text-bg-success' : 'text-bg-warning'}`}>{item.mfa_verified_at ? 'Verificado' : 'Pendiente'}</span></td>
                       <td>{item.last_login_at ? new Date(item.last_login_at).toLocaleString() : 'Nunca'}</td>
                       <td className="text-end">
-                        <div className="d-flex justify-content-end gap-2">
-                          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => abrirDetalle(item)}>Ver</button>
-                          <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
-                        </div>
+                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirEditar(item)}>Editar</button>
                       </td>
                     </tr>
                   ))}
@@ -196,13 +181,13 @@ function GlobalSuperAdminPage() {
               <form onSubmit={(event) => { event.preventDefault(); continuarCrear({ email: event.currentTarget.email.value, password: event.currentTarget.password.value }) }}>
                 <div className="modal-header"><h5 className="modal-title">Crear usuario SUPER</h5><button type="button" className="btn-close" onClick={cancelar} /></div>
                 <div className="modal-body">
-                  <div className="alert alert-info">La creación requiere una nueva verificación MFA del SUPER que está realizando la operación.</div>
+                  <div className="alert alert-info">Completa toda la información del usuario. Al pulsar «Crear SUPER» se solicitará la verificación MFA del SUPER que realiza la operación.</div>
                   <label className="form-label fw-semibold">Correo</label>
                   <input name="email" type="email" className="form-control mb-3" required />
                   <label className="form-label fw-semibold">Contraseña inicial</label>
                   <input name="password" type="password" className="form-control" minLength="12" maxLength="128" required />
                 </div>
-                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Continuar</button></div>
+                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Crear SUPER</button></div>
               </form>
             </div>
           </div>
@@ -224,36 +209,17 @@ function GlobalSuperAdminPage() {
               }}>
                 <div className="modal-header"><h5 className="modal-title">Editar usuario SUPER</h5><button type="button" className="btn-close" onClick={cancelar} /></div>
                 <div className="modal-body">
-                  <div className="alert alert-warning">Cualquier modificación requiere una nueva verificación MFA.</div>
+                  <div className="alert alert-info">Completa todos los cambios primero. Al pulsar «Guardar cambios» se solicitará la verificación MFA.</div>
                   <label className="form-label fw-semibold">Correo</label>
                   <input name="email" type="email" className="form-control mb-3" defaultValue={editando.email} required />
                   <label className="form-label fw-semibold">Nueva contraseña (opcional)</label>
                   <input name="password" type="password" className="form-control mb-3" minLength="12" maxLength="128" />
                   <div className="form-check"><input name="is_active" type="checkbox" className="form-check-input" id="superActivo" defaultChecked={editando.is_active} /><label className="form-check-label" htmlFor="superActivo">Usuario activo</label></div>
                 </div>
-                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Continuar</button></div>
+                <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Guardar cambios</button></div>
               </form>
             </div>
           </div>
-        </div>
-      )}
-
-      {modal === 'detalle' && detalle && (
-        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.65)', position: 'fixed', inset: 0, zIndex: 2050 }}>
-          <div className="modal-dialog modal-dialog-centered modal-lg"><div className="modal-content">
-            <div className="modal-header"><h5 className="modal-title">Detalle del SUPER</h5><button type="button" className="btn-close" onClick={cancelar} /></div>
-            <div className="modal-body">
-              <div className="row g-3">
-                <div className="col-md-6"><strong>ID</strong><div>{detalle.id}</div></div>
-                <div className="col-md-6"><strong>Correo</strong><div>{detalle.email}</div></div>
-                <div className="col-md-6"><strong>Estado</strong><div>{detalle.is_active ? 'Activo' : 'Inactivo'}</div></div>
-                <div className="col-md-6"><strong>MFA</strong><div>{detalle.mfa_verified_at ? 'Verificado' : 'Pendiente'}</div></div>
-                <div className="col-md-6"><strong>Creado por</strong><div>{detalle.created_by}</div></div>
-                <div className="col-md-6"><strong>Actualizado por</strong><div>{detalle.updated_by || '—'}</div></div>
-              </div>
-            </div>
-            <div className="modal-footer"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cerrar</button></div>
-          </div></div>
         </div>
       )}
 
