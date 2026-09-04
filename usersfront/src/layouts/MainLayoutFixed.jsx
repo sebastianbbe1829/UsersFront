@@ -82,7 +82,7 @@ function MainLayoutFixed() {
           <button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button>
         </div>
 
-        <nav className="d-flex flex-column flex-grow-1" style={{ minHeight: 0, overflow: 'hidden' }}>
+        <nav className="sidebar-nav d-flex flex-column flex-grow-1" style={{ minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.22) transparent' }}>
           <NavLink to={tenant ? `/${tenant}` : '/'} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inicio" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
             <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>{!menuColapsado && <span className="ms-3">Inicio</span>}
           </NavLink>
