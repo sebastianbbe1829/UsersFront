@@ -59,25 +59,6 @@ export const crearGlobalSuper = async (datos, otp, token) => {
   return procesarRespuesta(response)
 }
 
-export const verificarGlobalSuperMfa = async (
-  superId,
-  targetOtp,
-  actorOtp,
-  token,
-) => {
-  const response = await fetch(`${API_URL}/global-users/supers/${superId}/verify-mfa`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...headersAutenticacion(token),
-      'X-Super-MFA-OTP': actorOtp,
-    },
-    body: JSON.stringify({ otp: targetOtp }),
-  })
-
-  return procesarRespuesta(response)
-}
-
 export const actualizarGlobalSuper = async (superId, datos, otp, token) => {
   const response = await fetch(`${API_URL}/global-users/supers/${superId}`, {
     method: 'PATCH',
