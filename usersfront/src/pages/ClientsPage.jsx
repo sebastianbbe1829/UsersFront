@@ -26,6 +26,9 @@ const normalizarTexto = (valor) => valor
   .replace(/\s+/g, ' ')
   .trim()
 
+const normalizarEntrada = (valor) =>
+  valor.toLocaleUpperCase('es-CO')
+
 function ClientsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const [clientes, setClientes] = useState([])
@@ -127,7 +130,7 @@ function ClientsPage() {
   useEffect(() => { if (pagina > totalPaginas) setPagina(totalPaginas) }, [pagina, totalPaginas])
 
   const cambiar = (campo, valor) => setFormulario((actual) => ({ ...actual, [campo]: valor }))
-  const cambiarTexto = (campo, valor) => cambiar(campo, normalizarTexto(valor))
+  const cambiarTexto = (campo, valor) => cambiar(campo, normalizarEntrada(valor))
   const cerrarModal = () => {
     if (guardando) return
     setModalAbierto(false)
