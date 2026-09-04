@@ -24,7 +24,15 @@ const modalDialog = {
 
 const formatearFechaMfa = (fecha) => {
   if (!fecha) return 'Pendiente'
-  const valor = new Date(fecha)
+
+  // El backend persiste las fechas UTC en columnas timestamp sin zona.
+  // Al serializarse llegan sin sufijo Z, por lo que debemos interpretarlas
+  // explícitamente como UTC antes de convertirlas a la zona horaria local.
+  const fechaNormalizada = typeof fecha === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(fecha)
+    ? `${fecha}Z`
+    : fecha
+  const valor = new Date(fechaNormalizada)
+
   if (Number.isNaN(valor.getTime())) return '—'
   return valor.toLocaleString('es-CO', {
     dateStyle: 'short',
@@ -233,22 +241,23 @@ function GlobalSuperAdminPage() {
               <div className="col-md-6"><label className="form-label fw-semibold mb-1">Nombre completo</label><input name="name" className="form-control" defaultValue={editando.name || ''} maxLength="100" required /></div>
               <div className="col-md-6"><label className="form-label fw-semibold mb-1">Teléfono</label><input name="phone" type="tel" className="form-control" defaultValue={editando.phone || ''} maxLength="30" required /></div>
               <div className="col-12"><label className="form-label fw-semibold mb-1">Nueva contraseña (opcional)</label><input name="password" type="password" className="form-control" autoComplete="new-password" minLength="12" maxLength="128" /></div>
-              <div className="col-12"><div className="form-check"><input name="is_active" type="checkbox" className="form-check-input" id="superActivo" defaultChecked={editando.is_active} /><label className="form-check-label" htmlFor="superActivo">Usuario activo</label></div></div>
+              <div className="col-12"><div className="form-check"><input name="is_active" type="checkbox" className="form-check-input" id="superActivo" defaultChecked={editando.is_active} /><label className="form-check-label" htmlFor="superActivo">Usuario SUPER activo</label></div></div>
             </div>
           </div>
           <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cancelar}>Cancelar</button><button type="submit" className="btn btn-primary">Guardar cambios</button></div>
         </form>
       </div></div></div>}
 
-      {modal === 'otp' && <SuperMfaModal onConfirmar={confirmarOtp} onCancelar={() => { if (!guardando) setModal(datosPendientes?.tipo || null) }} guardando={guardando} />}
+      {modal === 'otp' && <SuperMfaModal onConfirm={confirmarOtp} onCancel={cancelar} loading={guardando} />}
 
-      {modal === 'qr' && mfaProvisioning && <div className="modal d-block" style={{ ...modalBackdrop, zIndex: 2200 }}><div className="modal-dialog" style={{ ...modalDialog, maxWidth: '480px' }}><div className="modal-content w-100">
-        <div className="modal-header py-2 px-3"><div><h5 className="modal-title mb-1">Configuración MFA</h5><div className="text-muted small">{mfaProvisioning.email}</div></div></div>
-        <div className="modal-body text-center py-2 px-3"><p className="mb-2">Este QR corresponde al MFA del nuevo usuario SUPER.</p><div className="d-flex justify-content-center mb-3"><div className="bg-white p-2 rounded border shadow-sm" style={{ maxWidth: 'min(260px, 65vw)' }}><QRCodeSVG value={mfaProvisioning.provisioning_uri} size={220} level="M" includeMargin style={{ width: '100%', height: 'auto', display: 'block' }} /></div></div>
-          <div className="alert alert-info text-start py-2 mb-2 small"><strong>Primer ingreso:</strong> el nuevo usuario debe escanear este QR y usar su código de 6 dígitos al iniciar sesión. El MFA quedará verificado automáticamente.</div>
-          <div className="alert alert-warning text-start py-2 mb-0 small">El QR es un secreto de seguridad. Compártelo únicamente con el usuario autorizado.</div>
+      {modal === 'qr' && mfaProvisioning && <div className="modal d-block" style={modalBackdrop}><div className="modal-dialog" style={modalDialog}><div className="modal-content w-100">
+        <div className="modal-header py-2 px-3"><div><h5 className="modal-title mb-1">Configuración MFA</h5><div className="text-muted small">QR para {mfaProvisioning.email}</div></div><button type="button" className="btn-close" onClick={cerrarQr} /></div>
+        <div className="modal-body text-center py-4">
+          <p className="text-muted">Escanea este código con Google Authenticator, Microsoft Authenticator o una aplicación compatible.</p>
+          <div className="d-inline-block bg-white p-3 rounded border"><QRCodeSVG value={mfaProvisioning.provisioning_uri} size={260} includeMargin /></div>
+          <p className="small text-muted mt-3 mb-0">Este QR contiene la clave de configuración MFA. Trátalo como información confidencial.</p>
         </div>
-        <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-primary" onClick={cerrarQr}>Cerrar</button></div>
+        <div className="modal-footer py-2 px-3"><button type="button" className="btn btn-secondary" onClick={cerrarQr}>Cerrar</button></div>
       </div></div></div>}
     </div>
   )
