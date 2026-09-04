@@ -15,12 +15,18 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, onOpenSection
   }, [clientesPorRuta])
 
   useEffect(() => {
-    const manejarSeccionAbierta = (event) => {
-      if (event.detail !== 'clientes') setAbierto(false)
+    const manejarClickSeccion = (event) => {
+      const boton = event.target.closest('button')
+      if (!boton) return
+
+      const texto = boton.textContent?.trim() || ''
+      if (texto.startsWith('Extintores') || texto.startsWith('Administración')) {
+        setAbierto(false)
+      }
     }
 
-    window.addEventListener('sidebar-section-opened', manejarSeccionAbierta)
-    return () => window.removeEventListener('sidebar-section-opened', manejarSeccionAbierta)
+    document.addEventListener('click', manejarClickSeccion, true)
+    return () => document.removeEventListener('click', manejarClickSeccion, true)
   }, [])
 
   const alternarClientes = () => {
