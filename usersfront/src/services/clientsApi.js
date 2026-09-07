@@ -43,7 +43,7 @@ export const eliminarTipoIdentificacionCliente = async (id, token) => catalogo('
 export const obtenerPaisesCliente = async (token) => catalogo('countries', token)
 export const obtenerPaisCliente = async (id, token) => catalogo('countries', token, 'GET', null, id)
 export const crearPaisCliente = async (datos, token) => catalogo('countries', token, 'POST', datos)
-export const actualizarPaisCliente = async (id, datos, token) => catalogo('countries', token, 'PATCH', null, id)
+export const actualizarPaisCliente = async (id, datos, token) => catalogo('countries', token, 'PATCH', datos, id)
 export const eliminarPaisCliente = async (id, token) => catalogo('countries', token, 'DELETE', null, id)
 
 export const obtenerDepartamentosCliente = async (token, countryId = null) => {
@@ -61,5 +61,5 @@ export const obtenerCiudadesCliente = async (token, departmentId = null) => {
 }
 export const obtenerCiudadCliente = async (id, token) => catalogo('cities', token, 'GET', null, id)
 export const crearCiudadCliente = async (datos, token) => catalogo('cities', token, 'POST', datos)
-export const actualizarCiudadCliente = async (id, token, datos) => catalogo('cities', token, 'PATCH', datos, id)
+export const actualizarCiudadCliente = async (id, datos, token) => catalogo('cities', token, 'PATCH', datos, id)
 export const eliminarCiudadCliente = async (id, token) => catalogo('cities', token, 'DELETE', null, id)
