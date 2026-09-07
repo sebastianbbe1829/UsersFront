@@ -4,7 +4,18 @@ import { obtenerInformeListasRestrictivas } from '../services/clientsApi'
 import SessionManager from '../components/SessionManager'
 
 const PAGE_SIZE = 10
-const fecha = (valor) => valor ? new Date(valor).toLocaleString('es-CO') : '-'
+const fecha = (valor) => {
+  if (!valor) return '-'
+  const texto = String(valor)
+  const tieneZona = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(texto)
+  const fechaUtc = new Date(tieneZona ? texto : `${texto}Z`)
+  if (Number.isNaN(fechaUtc.getTime())) return '-'
+  return new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  }).format(fechaUtc)
+}
 
 function ClientRestrictedListsReportsPage() {
   const { token, manejarSesionExpirada } = useAuth()
