@@ -20,24 +20,13 @@ function ClientMenu({ rutaTenant, menuColapsado, obtenerClaseMenu, abierto, onTo
 
       {abierto && (
         <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
-          <NavLink to={`${rutaTenant}/clientes/tipos-identificacion`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Tipos de Identificación" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🪪</span>{!menuColapsado && <span className="ms-3">Tipos de Identificación</span>}
-          </NavLink>
-          <NavLink to={`${rutaTenant}/clientes/demografica/paises`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Países" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🌎</span>{!menuColapsado && <span className="ms-3">Países</span>}
-          </NavLink>
-          <NavLink to={`${rutaTenant}/clientes/demografica/departamentos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Departamentos" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🗺️</span>{!menuColapsado && <span className="ms-3">Departamentos</span>}
-          </NavLink>
-          <NavLink to={`${rutaTenant}/clientes/demografica/ciudades`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Ciudades" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📍</span>{!menuColapsado && <span className="ms-3">Ciudades</span>}
-          </NavLink>
-          <NavLink to={`${rutaTenant}/clientes`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Clientes" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span>{!menuColapsado && <span className="ms-3">Clientes</span>}
-          </NavLink>
-          <NavLink to={`${rutaTenant}/clientes/informes-listas-restrictivas`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Informes Listas Restrictivas" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}>
-            <span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📊</span>{!menuColapsado && <span className="ms-3">Informes Listas Restrictivas</span>}
-          </NavLink>
+          <NavLink to={`${rutaTenant}/clientes/tipos-identificacion`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Tipos de Identificación" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🪪</span>{!menuColapsado && <span className="ms-3">Tipos de Identificación</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes/demografica/paises`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Países" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🌎</span>{!menuColapsado && <span className="ms-3">Países</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes/demografica/departamentos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Departamentos" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🗺️</span>{!menuColapsado && <span className="ms-3">Departamentos</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes/demografica/ciudades`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Ciudades" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📍</span>{!menuColapsado && <span className="ms-3">Ciudades</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Clientes" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span>{!menuColapsado && <span className="ms-3">Clientes</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes/informes-listas-restrictivas`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Informes Listas Restrictivas" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📊</span>{!menuColapsado && <span className="ms-3">Informes Listas Restrictivas</span>}</NavLink>
+          <NavLink to={`${rutaTenant}/clientes/historial-levantamientos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Historial de levantamientos" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🧾</span>{!menuColapsado && <span className="ms-3">Historial levantamientos</span>}</NavLink>
         </div>
       )}
     </Can>
