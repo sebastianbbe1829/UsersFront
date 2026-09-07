@@ -24,7 +24,11 @@ const catalogo = async (recurso, token, metodo = 'GET', datos = null, id = null)
   }))
 }
 
-export const obtenerClientes = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { headers: headers(token) }))
+export const obtenerClientes = async (token, { page = 1, pageSize = 10, search = '' } = {}) => {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
+  if (search.trim()) params.set('search', search.trim())
+  return procesarRespuesta(await fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) }))
+}
 export const obtenerCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { headers: headers(token) }))
 export const crearCliente = async (datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
 export const actualizarCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
