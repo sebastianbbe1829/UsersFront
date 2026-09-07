@@ -4,6 +4,7 @@ import {
   actualizarCliente,
   crearCliente,
   eliminarCliente,
+  levantarRestriccionCliente,
   obtenerCiudadesCliente,
   obtenerClientes,
   obtenerDepartamentosCliente,
@@ -38,12 +39,16 @@ function ClientsPage() {
   const [formulario, setFormulario] = useState(formularioInicial)
   const [clienteEditando, setClienteEditando] = useState(null)
   const [clienteEliminando, setClienteEliminando] = useState(null)
+  const [clienteLevantandoRestriccion, setClienteLevantandoRestriccion] = useState(null)
+  const [motivoRestriccion, setMotivoRestriccion] = useState('')
+  const [otpRestriccion, setOtpRestriccion] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(true)
   const [cargandoDepartamentos, setCargandoDepartamentos] = useState(false)
   const [cargandoCiudades, setCargandoCiudades] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [eliminando, setEliminando] = useState(false)
+  const [levantandoRestriccion, setLevantandoRestriccion] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
@@ -210,6 +215,41 @@ function ClientsPage() {
     } finally { setEliminando(false) }
   }
 
+  const solicitarLevantarRestriccion = (cliente) => {
+    setClienteLevantandoRestriccion(cliente)
+    setMotivoRestriccion('')
+    setOtpRestriccion('')
+    setMensaje(null)
+  }
+
+  const cancelarLevantarRestriccion = () => {
+    if (levantandoRestriccion) return
+    setClienteLevantandoRestriccion(null)
+    setMotivoRestriccion('')
+    setOtpRestriccion('')
+  }
+
+  const confirmarLevantarRestriccion = async (event) => {
+    event.preventDefault()
+    if (!clienteLevantandoRestriccion) return
+    try {
+      setLevantandoRestriccion(true)
+      setMensaje(null)
+      await levantarRestriccionCliente(
+        clienteLevantandoRestriccion.id,
+        { reason: motivoRestriccion.trim(), otp: otpRestriccion.trim() },
+        token,
+      )
+      const actualizado = await obtenerClientes(token)
+      setClientes(Array.isArray(actualizado) ? actualizado : [])
+      cancelarLevantarRestriccion()
+      setMensaje({ tipo: 'success', texto: 'Restricción levantada correctamente. La coincidencia original permanece auditada.' })
+    } catch (error) {
+      if (error.status === 401) return manejarSesionExpirada()
+      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible levantar la restricción.' })
+    } finally { setLevantandoRestriccion(false) }
+  }
+
   return <>
     <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
     <div className="mb-4"><h2 className="fw-bold mb-1">Gestión de Clientes</h2><p className="text-muted mb-0">Clientes del tenant actual.</p></div>
@@ -217,7 +257,7 @@ function ClientsPage() {
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Clientes registrados</h5><small className="text-muted">{clientesFiltrados.length} de {clientes.length}</small></div><Can permission="CLIENT_CREATE"><button type="button" className="btn btn-primary" onClick={abrirCrear}>+ Nuevo cliente</button></Can></div>
       <div className="mb-3"><input type="search" className="form-control" placeholder="Buscar por identificación, nombre, correo, estado o lista..." value={busqueda} onChange={cambiarBusqueda} /></div>
-      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientesFiltrados.length === 0 ? <div className="text-muted text-center py-5">{clientes.length === 0 ? 'No hay clientes registrados.' : 'No se encontraron clientes con la búsqueda.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientesVisibles.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can></td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {paginaActual} de {totalPaginas}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
+      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientesFiltrados.length === 0 ? <div className="text-muted text-center py-5">{clientes.length === 0 ? 'No hay clientes registrados.' : 'No se encontraron clientes con la búsqueda.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientesVisibles.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : cliente.status === 'BLOCKED' ? 'text-bg-danger' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : cliente.status === 'BLOCKED' ? 'Bloqueado' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : cliente.compliance_status === 'ERROR' ? <span className="badge text-bg-warning">ERROR</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger me-2" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can>{cliente.status === 'BLOCKED' && <Can permission="CLIENT_COMPLIANCE_OVERRIDE"><button type="button" className="btn btn-sm btn-outline-warning" onClick={() => solicitarLevantarRestriccion(cliente)}>Levantar restricción</button></Can>}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {paginaActual} de {totalPaginas}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
     </div></div>
 
     {modalAbierto && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }} role="dialog" aria-modal="true"><div className="modal-dialog modal-xl modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header"><h5 className="modal-title fw-bold">{clienteEditando ? 'Editar cliente' : 'Nuevo cliente'}</h5><button type="button" className="btn-close" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar" /></div><div className="modal-body" style={{ position: 'relative' }}><form onSubmit={guardar}><div className="row g-3">
@@ -232,6 +272,8 @@ function ClientsPage() {
     </div>{guardando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.82)', zIndex: 5 }}><div className="spinner-border text-primary" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Guardando cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la información.</small></div>}<div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button className="btn btn-primary" disabled={guardando}>{guardando ? 'Guardando...' : clienteEditando ? 'Actualizar' : 'Crear'}</button></div></form></div></div></div></div>}
 
     {clienteEliminando && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.55)', position: 'fixed', inset: 0, zIndex: 2100 }} role="dialog" aria-modal="true"><div className="modal-dialog modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header border-0 pb-0"><h5 className="modal-title fw-bold">Eliminar cliente</h5><button type="button" className="btn-close" onClick={cancelarEliminar} disabled={eliminando} aria-label="Cerrar" /></div><div className="modal-body text-center px-4 py-4" style={{ position: 'relative' }}><div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger" style={{ width: 64, height: 64, fontSize: 28 }}>!</div><h5 className="fw-bold mb-2">¿Estás seguro?</h5><p className="text-muted mb-1">Vas a eliminar este cliente:</p><div className="fw-semibold">{clienteEliminando.full_name || clienteEliminando.identification_number}</div><small className="text-muted">Identificación: {clienteEliminando.identification_number}</small><p className="text-muted mt-3 mb-0">Esta acción cambiará el estado del registro según las reglas del sistema.</p>{eliminando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.9)', zIndex: 5, borderRadius: '0.375rem' }}><div className="spinner-border text-danger" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Eliminando Cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la eliminación.</small></div>}</div><div className="modal-footer border-0 justify-content-center gap-2 pb-4"><button type="button" className="btn btn-outline-secondary px-4" onClick={cancelarEliminar} disabled={eliminando}>Cancelar</button><button type="button" className="btn btn-danger px-4" onClick={confirmarEliminar} disabled={eliminando}>{eliminando ? '⏳ Eliminando Cliente...' : 'Sí, eliminar'}</button></div></div></div></div>}
+
+    {clienteLevantandoRestriccion && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.55)', position: 'fixed', inset: 0, zIndex: 2200 }} role="dialog" aria-modal="true"><div className="modal-dialog modal-dialog-centered"><div className="modal-content shadow-lg border-0"><form onSubmit={confirmarLevantarRestriccion}><div className="modal-header border-0 pb-0"><h5 className="modal-title fw-bold">Levantar restricción de compliance</h5><button type="button" className="btn-close" onClick={cancelarLevantarRestriccion} disabled={levantandoRestriccion} aria-label="Cerrar" /></div><div className="modal-body px-4 py-4"><div className="alert alert-danger"><div className="fw-semibold">Cliente bloqueado por coincidencia en lista restrictiva.</div><div className="small mt-1">{clienteLevantandoRestriccion.full_name || clienteLevantandoRestriccion.identification_number} · Identificación: {clienteLevantandoRestriccion.identification_number}</div></div><p className="text-muted">Esta acción no elimina ni modifica la coincidencia original. El levantamiento quedará registrado en la auditoría y requiere una justificación y MFA.</p><div className="mb-3"><label className="form-label fw-semibold">Motivo del levantamiento</label><textarea className="form-control" rows="4" minLength="5" required value={motivoRestriccion} onChange={(e) => setMotivoRestriccion(e.target.value)} disabled={levantandoRestriccion} placeholder="Explique por qué se autoriza levantar la restricción..." /></div><div className="mb-2"><label className="form-label fw-semibold">Código MFA / OTP</label><input className="form-control" inputMode="numeric" autoComplete="one-time-code" maxLength="6" minLength="6" pattern="[0-9]{6}" required value={otpRestriccion} onChange={(e) => setOtpRestriccion(e.target.value.replace(/\D/g, '').slice(0, 6))} disabled={levantandoRestriccion} placeholder="000000" /></div><small className="text-muted">Usa el código MFA de tu sesión SUPER.</small></div><div className="modal-footer border-0 justify-content-end gap-2 pb-4 px-4"><button type="button" className="btn btn-outline-secondary" onClick={cancelarLevantarRestriccion} disabled={levantandoRestriccion}>Cancelar</button><button type="submit" className="btn btn-warning" disabled={levantandoRestriccion || motivoRestriccion.trim().length < 5 || otpRestriccion.length !== 6}>{levantandoRestriccion ? '⏳ Procesando...' : 'Confirmar levantamiento'}</button></div></form></div></div></div>}
   </>
 }
 
