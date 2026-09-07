@@ -10,6 +10,7 @@ import CountriesPage from '../pages/CountriesPage'
 import DepartmentsPage from '../pages/DepartmentsPage'
 import CitiesPage from '../pages/CitiesPage'
 import ClientRestrictedListsReportsPage from '../pages/ClientRestrictedListsReportsPage'
+import ClientComplianceOverrideHistoryPage from '../pages/ClientComplianceOverrideHistoryPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import ExtinguishersPage from '../pages/ExtinguishersPage'
@@ -31,7 +32,7 @@ const MainLayout = lazy(() => import('../layouts/MainLayoutFixed'))
 
 function RutasProtegidas() {
   const { logueado, cargando } = useAuth()
-  if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Validando sesión...</div></div></div>
+  if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary" role="status" /><div className="text-muted">Validando sesión...</div></div></div>
   if (!logueado) return <Navigate to="login" replace />
   return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense>
 }
@@ -60,6 +61,7 @@ function AppRoutes() {
       <Route path="clientes/demografica/departamentos" element={<RutaConPermiso permission="CLIENT_READ"><DepartmentsPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/ciudades" element={<RutaConPermiso permission="CLIENT_READ"><CitiesPage /></RutaConPermiso>} />
       <Route path="clientes/informes-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsReportsPage /></RutaConPermiso>} />
+      <Route path="clientes/historial-levantamientos" element={<RutaConPermiso permission="CLIENT_READ"><ClientComplianceOverrideHistoryPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
