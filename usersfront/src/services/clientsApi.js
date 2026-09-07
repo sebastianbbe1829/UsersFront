@@ -30,6 +30,9 @@ export const crearCliente = async (datos, token) => procesarRespuesta(await fetc
 export const actualizarCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
 export const eliminarCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'DELETE', headers: headers(token) }))
 export const levantarRestriccionCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/override`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
+export const revisarClienteListas = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/screen`, { method: 'POST', headers: headers(token) }))
+export const obtenerInformeListasRestrictivas = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/restricted-report`, { headers: headers(token) }))
+export const obtenerHistorialLevantamientos = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/compliance/override-history`, { headers: headers(token) }))
 
 export const obtenerTiposIdentificacionCliente = async (token) => catalogo('identification-types', token)
 export const obtenerTipoIdentificacionCliente = async (id, token) => catalogo('identification-types', token, 'GET', null, id)
@@ -40,7 +43,7 @@ export const eliminarTipoIdentificacionCliente = async (id, token) => catalogo('
 export const obtenerPaisesCliente = async (token) => catalogo('countries', token)
 export const obtenerPaisCliente = async (id, token) => catalogo('countries', token, 'GET', null, id)
 export const crearPaisCliente = async (datos, token) => catalogo('countries', token, 'POST', datos)
-export const actualizarPaisCliente = async (id, datos, token) => catalogo('countries', token, 'PATCH', datos, id)
+export const actualizarPaisCliente = async (id, datos, token) => catalogo('countries', token, 'PATCH', null, id)
 export const eliminarPaisCliente = async (id, token) => catalogo('countries', token, 'DELETE', null, id)
 
 export const obtenerDepartamentosCliente = async (token, countryId = null) => {
@@ -58,5 +61,5 @@ export const obtenerCiudadesCliente = async (token, departmentId = null) => {
 }
 export const obtenerCiudadCliente = async (id, token) => catalogo('cities', token, 'GET', null, id)
 export const crearCiudadCliente = async (datos, token) => catalogo('cities', token, 'POST', datos)
-export const actualizarCiudadCliente = async (id, datos, token) => catalogo('cities', token, 'PATCH', datos, id)
+export const actualizarCiudadCliente = async (id, token, datos) => catalogo('cities', token, 'PATCH', datos, id)
 export const eliminarCiudadCliente = async (id, token) => catalogo('cities', token, 'DELETE', null, id)
