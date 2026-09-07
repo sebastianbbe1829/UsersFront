@@ -17,6 +17,7 @@ const headers = (token, json = false) => ({
 
 const catalogoCache = new Map()
 const catalogoEnCurso = new Map()
+const clientesCache = new Map()
 const clientesEnCurso = new Map()
 
 const claveCatalogo = (recurso, token, query = '') => `${recurso}|${token}|${query}`
@@ -25,6 +26,13 @@ const invalidarCatalogo = (recurso, token) => {
   const prefijo = `${recurso}|${token}|`
   for (const clave of catalogoCache.keys()) {
     if (clave.startsWith(prefijo)) catalogoCache.delete(clave)
+  }
+}
+
+const invalidarClientes = (token) => {
+  const prefijo = `${token}|`
+  for (const clave of clientesCache.keys()) {
+    if (clave.startsWith(prefijo)) clientesCache.delete(clave)
   }
 }
 
@@ -61,23 +69,56 @@ const claveClientes = (token, page, pageSize, search) => `${token}|${page}|${pag
 export const obtenerClientes = async (token, { page = 1, pageSize = 10, search = '' } = {}) => {
   const busca = search.trim()
   const clave = claveClientes(token, page, pageSize, busca)
+
+  if (clientesCache.has(clave)) return clientesCache.get(clave)
   if (clientesEnCurso.has(clave)) return clientesEnCurso.get(clave)
 
   const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
   if (busca) params.set('search', busca)
 
   const promesa = procesarRespuesta(await fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) }))
+    .then((resultado) => {
+      clientesCache.set(clave, resultado)
+      return resultado
+    })
     .finally(() => clientesEnCurso.delete(clave))
 
   clientesEnCurso.set(clave, promesa)
   return promesa
 }
+
 export const obtenerCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { headers: headers(token) }))
-export const crearCliente = async (datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
-export const actualizarCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
-export const eliminarCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'DELETE', headers: headers(token) }))
-export const levantarRestriccionCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/override`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
-export const revisarClienteListas = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/screen`, { method: 'POST', headers: headers(token) }))
+
+export const crearCliente = async (datos, token) => {
+  const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
+  invalidarClientes(token)
+  return resultado
+}
+
+export const actualizarCliente = async (id, datos, token) => {
+  const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
+  invalidarClientes(token)
+  return resultado
+}
+
+export const eliminarCliente = async (id, token) => {
+  const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'DELETE', headers: headers(token) }))
+  invalidarClientes(token)
+  return resultado
+}
+
+export const levantarRestriccionCliente = async (id, datos, token) => {
+  const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/override`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
+  invalidarClientes(token)
+  return resultado
+}
+
+export const revisarClienteListas = async (id, token) => {
+  const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/screen`, { method: 'POST', headers: headers(token) }))
+  invalidarClientes(token)
+  return resultado
+}
+
 export const obtenerInformeListasRestrictivas = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/restricted-report`, { headers: headers(token) }))
 export const obtenerHistorialLevantamientos = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/compliance/override-history`, { headers: headers(token) }))
 
