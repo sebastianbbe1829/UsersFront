@@ -17,6 +17,19 @@ const fecha = (valor) => {
   }).format(fechaUtc)
 }
 
+const etiquetaEstado = (item) => {
+  if (item.report_status === 'LEVANTADA') return 'Levantada'
+  if (item.report_status === 'BLOQUEADO') return 'Bloqueado'
+  if (item.status === 'BLOCKED') return 'Bloqueado'
+  return item.report_status || item.status || '-'
+}
+
+const claseEstado = (item) => {
+  if (item.report_status === 'LEVANTADA') return 'text-bg-warning'
+  if (item.report_status === 'BLOQUEADO' || item.status === 'BLOCKED') return 'text-bg-danger'
+  return 'text-bg-secondary'
+}
+
 function ClientRestrictedListsReportsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const [registros, setRegistros] = useState([])
@@ -49,7 +62,7 @@ function ClientRestrictedListsReportsPage() {
     if (!termino) return registros
     return registros.filter((item) => [
       item.identification_number, item.full_name, item.person_type, item.status,
-      item.compliance_status, item.list_type, item.client_created_by,
+      item.report_status, item.compliance_status, item.list_type, item.client_created_by,
       item.screening_status, item.screening_risk_level,
     ].some((valor) => String(valor ?? '').toLowerCase().includes(termino)))
   }, [registros, busqueda])
@@ -65,7 +78,7 @@ function ClientRestrictedListsReportsPage() {
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Clientes reportados</h5><small className="text-muted">{filtrados.length} registro(s)</small></div></div>
       <div className="mb-3"><input type="search" className="form-control" placeholder="Buscar por identificación, cliente, usuario, lista o estado..." value={busqueda} onChange={(e) => { setBusqueda(e.target.value); setPagina(1) }} /></div>
-      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : filtrados.length === 0 ? <div className="alert alert-success mb-0">No hay clientes actualmente marcados en listas restrictivas.</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Estado</th><th>Lista</th><th>Riesgo</th><th>Creado por</th><th>Fecha creación</th><th>Última revisión</th><th>Resultado</th></tr></thead><tbody>{visibles.map((item) => <tr key={item.client_id}><td>{item.identification_number}</td><td>{item.full_name}<br /><small className="text-muted">{item.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</small></td><td><span className="badge text-bg-danger">{item.status === 'BLOCKED' ? 'Bloqueado' : item.status}</span></td><td><span className="badge text-bg-danger">{item.list_type || 'LISTADO'}</span></td><td>{item.screening_risk_level || '-'}</td><td>{item.client_created_by}</td><td>{fecha(item.client_created_at)}</td><td>{fecha(item.screening_requested_at)}</td><td>{item.screening_status || item.compliance_status}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {paginaActual} de {totalPaginas}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
+      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : filtrados.length === 0 ? <div className="alert alert-success mb-0">No hay clientes actualmente marcados en listas restrictivas.</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Estado</th><th>Lista</th><th>Riesgo</th><th>Creado por</th><th>Fecha creación</th><th>Última revisión</th><th>Resultado</th></tr></thead><tbody>{visibles.map((item) => <tr key={item.client_id}><td>{item.identification_number}</td><td>{item.full_name}<br /><small className="text-muted">{item.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</small></td><td><span className={`badge ${claseEstado(item)}`}>{etiquetaEstado(item)}</span></td><td><span className="badge text-bg-danger">{item.list_type || 'LISTADO'}</span></td><td>{item.screening_risk_level || '-'}</td><td>{item.client_created_by}</td><td>{fecha(item.client_created_at)}</td><td>{fecha(item.screening_requested_at)}</td><td>{item.screening_status || item.compliance_status}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {paginaActual} de {totalPaginas}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
     </div></div>
   </>
 }
