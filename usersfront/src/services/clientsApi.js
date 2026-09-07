@@ -17,6 +17,7 @@ const headers = (token, json = false) => ({
 
 const catalogoCache = new Map()
 const catalogoEnCurso = new Map()
+const clientesEnCurso = new Map()
 
 const claveCatalogo = (recurso, token, query = '') => `${recurso}|${token}|${query}`
 
@@ -55,10 +56,21 @@ const catalogoLista = async (recurso, token, query = '') => {
   return promesa
 }
 
+const claveClientes = (token, page, pageSize, search) => `${token}|${page}|${pageSize}|${search.trim()}`
+
 export const obtenerClientes = async (token, { page = 1, pageSize = 10, search = '' } = {}) => {
+  const busca = search.trim()
+  const clave = claveClientes(token, page, pageSize, busca)
+  if (clientesEnCurso.has(clave)) return clientesEnCurso.get(clave)
+
   const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
-  if (search.trim()) params.set('search', search.trim())
-  return procesarRespuesta(await fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) }))
+  if (busca) params.set('search', busca)
+
+  const promesa = procesarRespuesta(await fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) }))
+    .finally(() => clientesEnCurso.delete(clave))
+
+  clientesEnCurso.set(clave, promesa)
+  return promesa
 }
 export const obtenerCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { headers: headers(token) }))
 export const crearCliente = async (datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
