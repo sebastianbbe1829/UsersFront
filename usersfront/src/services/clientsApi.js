@@ -47,13 +47,14 @@ const catalogo = async (recurso, token, metodo = 'GET', datos = null, id = null)
   return resultado
 }
 
-const catalogoLista = async (recurso, token, query = '') => {
+const catalogoLista = (recurso, token, query = '') => {
   const clave = claveCatalogo(recurso, token, query)
-  if (catalogoCache.has(clave)) return catalogoCache.get(clave)
+  if (catalogoCache.has(clave)) return Promise.resolve(catalogoCache.get(clave))
   if (catalogoEnCurso.has(clave)) return catalogoEnCurso.get(clave)
 
   const url = `${API_URL}/clients/catalogs/${recurso}${query}`
-  const promesa = procesarRespuesta(await fetch(url, { headers: headers(token) }))
+  const promesa = fetch(url, { headers: headers(token) })
+    .then(procesarRespuesta)
     .then((resultado) => {
       catalogoCache.set(clave, resultado)
       return resultado
@@ -66,17 +67,18 @@ const catalogoLista = async (recurso, token, query = '') => {
 
 const claveClientes = (token, page, pageSize, search) => `${token}|${page}|${pageSize}|${search.trim()}`
 
-export const obtenerClientes = async (token, { page = 1, pageSize = 10, search = '' } = {}) => {
+export const obtenerClientes = (token, { page = 1, pageSize = 10, search = '' } = {}) => {
   const busca = search.trim()
   const clave = claveClientes(token, page, pageSize, busca)
 
-  if (clientesCache.has(clave)) return clientesCache.get(clave)
+  if (clientesCache.has(clave)) return Promise.resolve(clientesCache.get(clave))
   if (clientesEnCurso.has(clave)) return clientesEnCurso.get(clave)
 
   const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
   if (busca) params.set('search', busca)
 
-  const promesa = procesarRespuesta(await fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) }))
+  const promesa = fetch(`${API_URL}/clients?${params.toString()}`, { headers: headers(token) })
+    .then(procesarRespuesta)
     .then((resultado) => {
       clientesCache.set(clave, resultado)
       return resultado
