@@ -25,14 +25,11 @@ const catalogo = async (recurso, token, metodo = 'GET', datos = null, id = null)
 }
 
 export const obtenerClientes = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { headers: headers(token) }))
-
 export const obtenerCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { headers: headers(token) }))
-
 export const crearCliente = async (datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
-
 export const actualizarCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
-
 export const eliminarCliente = async (id, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'DELETE', headers: headers(token) }))
+export const levantarRestriccionCliente = async (id, datos, token) => procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/override`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
 
 export const obtenerTiposIdentificacionCliente = async (token) => catalogo('identification-types', token)
 export const obtenerTipoIdentificacionCliente = async (id, token) => catalogo('identification-types', token, 'GET', null, id)
