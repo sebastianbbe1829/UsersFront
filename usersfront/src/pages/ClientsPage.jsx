@@ -45,6 +45,7 @@ function ClientsPage() {
   const [motivoRestriccion, setMotivoRestriccion] = useState('')
   const [modalAbierto, setModalAbierto] = useState(false)
   const [cargando, setCargando] = useState(true)
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(false)
   const [cargandoDepartamentos, setCargandoDepartamentos] = useState(false)
   const [cargandoCiudades, setCargandoCiudades] = useState(false)
   const [guardando, setGuardando] = useState(false)
@@ -54,17 +55,18 @@ function ClientsPage() {
   const [mensaje, setMensaje] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
+  const [haySiguiente, setHaySiguiente] = useState(false)
 
   useEffect(() => {
     let activo = true
     const cargar = async () => {
       try {
         setCargando(true)
-        const [lista, tipos, paisesData] = await Promise.all([obtenerClientes(token), obtenerTiposIdentificacionCliente(token), obtenerPaisesCliente(token)])
+        const lista = await obtenerClientes(token, { page: pagina, pageSize: PAGE_SIZE, search: busqueda })
         if (!activo) return
-        setClientes(Array.isArray(lista) ? lista : [])
-        setTiposIdentificacion(Array.isArray(tipos) ? tipos : [])
-        setPaises(Array.isArray(paisesData) ? paisesData : [])
+        const datos = Array.isArray(lista) ? lista : []
+        setClientes(datos)
+        setHaySiguiente(datos.length === PAGE_SIZE)
         setMensaje(null)
       } catch (error) {
         if (!activo) return
@@ -74,10 +76,37 @@ function ClientsPage() {
     }
     if (token) cargar()
     return () => { activo = false }
-  }, [token, manejarSesionExpirada])
+  }, [token, pagina, busqueda, manejarSesionExpirada])
 
   useEffect(() => {
-    if (!formulario.country_id) return undefined
+    if (!modalAbierto || !token) return undefined
+    let activo = true
+    const cargarCatalogos = async () => {
+      try {
+        setCargandoCatalogos(true)
+        const [tipos, paisesData] = await Promise.all([
+          obtenerTiposIdentificacionCliente(token),
+          obtenerPaisesCliente(token),
+        ])
+        if (!activo) return
+        setTiposIdentificacion(Array.isArray(tipos) ? tipos : [])
+        setPaises(Array.isArray(paisesData) ? paisesData : [])
+      } catch (error) {
+        if (!activo) return
+        setTiposIdentificacion([])
+        setPaises([])
+        if (error.status === 401) manejarSesionExpirada()
+        else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los catálogos del cliente.' })
+      } finally {
+        if (activo) setCargandoCatalogos(false)
+      }
+    }
+    cargarCatalogos()
+    return () => { activo = false }
+  }, [modalAbierto, token, manejarSesionExpirada])
+
+  useEffect(() => {
+    if (!modalAbierto || !formulario.country_id) return undefined
     let activo = true
     obtenerDepartamentosCliente(token, formulario.country_id)
       .then((data) => { if (activo) setDepartamentos(Array.isArray(data) ? data : []) })
@@ -88,10 +117,10 @@ function ClientsPage() {
       })
       .finally(() => { if (activo) setCargandoDepartamentos(false) })
     return () => { activo = false }
-  }, [formulario.country_id, token, manejarSesionExpirada])
+  }, [modalAbierto, formulario.country_id, token, manejarSesionExpirada])
 
   useEffect(() => {
-    if (!formulario.department_id) return undefined
+    if (!modalAbierto || !formulario.department_id) return undefined
     let activo = true
     obtenerCiudadesCliente(token, formulario.department_id)
       .then((data) => { if (activo) setCiudades(Array.isArray(data) ? data : []) })
@@ -102,19 +131,9 @@ function ClientsPage() {
       })
       .finally(() => { if (activo) setCargandoCiudades(false) })
     return () => { activo = false }
-  }, [formulario.department_id, token, manejarSesionExpirada])
+  }, [modalAbierto, formulario.department_id, token, manejarSesionExpirada])
 
   const tiposDisponibles = useMemo(() => tiposIdentificacion.filter((tipo) => tipo.person_type === formulario.person_type), [tiposIdentificacion, formulario.person_type])
-
-  const clientesFiltrados = useMemo(() => {
-    const termino = busqueda.trim().toLowerCase()
-    if (!termino) return clientes
-    return clientes.filter((cliente) => [cliente.identification_number, cliente.full_name, cliente.person_type, cliente.email, cliente.status, cliente.list_type, cliente.compliance_status].some((valor) => String(valor ?? '').toLowerCase().includes(termino)))
-  }, [clientes, busqueda])
-
-  const totalPaginas = Math.max(1, Math.ceil(clientesFiltrados.length / PAGE_SIZE))
-  const paginaActual = Math.min(pagina, totalPaginas)
-  const clientesVisibles = clientesFiltrados.slice((paginaActual - 1) * PAGE_SIZE, paginaActual * PAGE_SIZE)
 
   const cambiarBusqueda = (event) => { setBusqueda(event.target.value); setPagina(1) }
   const cambiar = (campo, valor) => setFormulario((actual) => ({ ...actual, [campo]: valor }))
@@ -133,6 +152,13 @@ function ClientsPage() {
     setFormulario((actual) => ({ ...actual, department_id: valor, city_id: '' }))
   }
 
+  const recargarPaginaActual = async () => {
+    const lista = await obtenerClientes(token, { page: pagina, pageSize: PAGE_SIZE, search: busqueda })
+    const datos = Array.isArray(lista) ? lista : []
+    setClientes(datos)
+    setHaySiguiente(datos.length === PAGE_SIZE)
+  }
+
   const cerrarModal = () => {
     if (guardando) return
     setModalAbierto(false)
@@ -140,10 +166,23 @@ function ClientsPage() {
     setFormulario(formularioInicial)
     setDepartamentos([])
     setCiudades([])
+    setCargandoCatalogos(false)
     setCargandoDepartamentos(false)
     setCargandoCiudades(false)
   }
-  const abrirCrear = () => { setClienteEditando(null); setFormulario(formularioInicial); setDepartamentos([]); setCiudades([]); setCargandoDepartamentos(false); setCargandoCiudades(false); setMensaje(null); setModalAbierto(true) }
+
+  const abrirCrear = () => {
+    setClienteEditando(null)
+    setFormulario(formularioInicial)
+    setDepartamentos([])
+    setCiudades([])
+    setCargandoCatalogos(false)
+    setCargandoDepartamentos(false)
+    setCargandoCiudades(false)
+    setMensaje(null)
+    setModalAbierto(true)
+  }
+
   const editar = (cliente) => {
     setClienteEditando(cliente)
     setFormulario({
@@ -193,7 +232,11 @@ function ClientsPage() {
       }
       if (clienteEditando?.status === 'BLOCKED') delete datos.status
       const resultado = clienteEditando ? await actualizarCliente(clienteEditando.id, datos, token) : await crearCliente(datos, token)
-      setClientes((actuales) => clienteEditando ? actuales.map((cliente) => cliente.id === resultado.id ? resultado : cliente) : [resultado, ...actuales])
+      if (clienteEditando) {
+        setClientes((actuales) => actuales.map((cliente) => cliente.id === resultado.id ? resultado : cliente))
+      } else {
+        await recargarPaginaActual()
+      }
       cerrarModal()
       setMensaje({ tipo: 'success', texto: clienteEditando ? 'Cliente actualizado correctamente.' : 'Cliente creado correctamente.' })
     } catch (error) {
@@ -209,7 +252,7 @@ function ClientsPage() {
     try {
       setEliminando(true)
       await eliminarCliente(clienteEliminando.id, token)
-      setClientes((actuales) => actuales.filter((item) => item.id !== clienteEliminando.id))
+      await recargarPaginaActual()
       setClienteEliminando(null)
       setMensaje({ tipo: 'success', texto: 'Cliente eliminado correctamente.' })
     } catch (error) {
@@ -241,8 +284,7 @@ function ClientsPage() {
         { reason: motivoRestriccion.trim() },
         token,
       )
-      const actualizado = await obtenerClientes(token)
-      setClientes(Array.isArray(actualizado) ? actualizado : [])
+      await recargarPaginaActual()
       setClienteLevantandoRestriccion(null)
       setMotivoRestriccion('')
       setMensaje({ tipo: 'success', texto: 'Restricción levantada correctamente. La coincidencia original permanece auditada.' })
@@ -268,8 +310,7 @@ function ClientsPage() {
       setRevisandoListas(true)
       setMensaje(null)
       const resultado = await revisarClienteListas(clienteRevisandoListas.id, token)
-      const actualizado = await obtenerClientes(token)
-      setClientes(Array.isArray(actualizado) ? actualizado : [])
+      await recargarPaginaActual()
       setClienteRevisandoListas(null)
       const estado = resultado?.status || resultado?.compliance_status || 'procesado'
       const texto = estado === 'MATCH'
@@ -289,12 +330,13 @@ function ClientsPage() {
     <div className="mb-4"><h2 className="fw-bold mb-1">Gestión de Clientes</h2><p className="text-muted mb-0">Clientes del tenant actual.</p></div>
     {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
     <div className="card shadow-sm border-0"><div className="card-body">
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Clientes registrados</h5><small className="text-muted">{clientesFiltrados.length} de {clientes.length}</small></div><Can permission="CLIENT_CREATE"><button type="button" className="btn btn-primary" onClick={abrirCrear}>+ Nuevo cliente</button></Can></div>
+      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Clientes registrados</h5><small className="text-muted">Página {pagina}</small></div><Can permission="CLIENT_CREATE"><button type="button" className="btn btn-primary" onClick={abrirCrear}>+ Nuevo cliente</button></Can></div>
       <div className="mb-3"><input type="search" className="form-control" placeholder="Buscar por identificación, nombre, correo, estado o lista..." value={busqueda} onChange={cambiarBusqueda} /></div>
-      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientesFiltrados.length === 0 ? <div className="text-muted text-center py-5">{clientes.length === 0 ? 'No hay clientes registrados.' : 'No se encontraron clientes con la búsqueda.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientesVisibles.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : cliente.status === 'BLOCKED' ? 'text-bg-danger' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : cliente.status === 'BLOCKED' ? 'Bloqueado' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : cliente.compliance_status === 'ERROR' ? <span className="badge text-bg-warning">ERROR</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-info me-2" onClick={() => solicitarRevisionListas(cliente)}>Revisar listas</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger me-2" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can>{cliente.status === 'BLOCKED' && <Can permission="CLIENT_COMPLIANCE_OVERRIDE" allowSuper={false}><button type="button" className="btn btn-sm btn-outline-warning" onClick={() => solicitarLevantarRestriccion(cliente)}>Levantar restricción</button></Can>}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {paginaActual} de {totalPaginas}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === 1} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={paginaActual === totalPaginas} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
+      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientes.length === 0 ? <div className="text-muted text-center py-5">{busqueda.trim() ? 'No se encontraron clientes con la búsqueda.' : 'No hay clientes registrados.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientes.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : cliente.status === 'BLOCKED' ? 'text-bg-danger' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : cliente.status === 'BLOCKED' ? 'Bloqueado' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : cliente.compliance_status === 'ERROR' ? <span className="badge text-bg-warning">ERROR</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-info me-2" onClick={() => solicitarRevisionListas(cliente)}>Revisar listas</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger me-2" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can>{cliente.status === 'BLOCKED' && <Can permission="CLIENT_COMPLIANCE_OVERRIDE" allowSuper={false}><button type="button" className="btn btn-sm btn-outline-warning" onClick={() => solicitarLevantarRestriccion(cliente)}>Levantar restricción</button></Can>}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {pagina}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={pagina === 1 || cargando} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={!haySiguiente || cargando} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
     </div></div>
 
     {modalAbierto && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }} role="dialog" aria-modal="true"><div className="modal-dialog modal-xl modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header"><h5 className="modal-title fw-bold">{clienteEditando ? 'Editar cliente' : 'Nuevo cliente'}</h5><button type="button" className="btn-close" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar" /></div><div className="modal-body" style={{ position: 'relative' }}><form onSubmit={guardar}><div className="row g-3">
+      {cargandoCatalogos ? <div className="col-12 text-center py-4"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando catálogos...</div></div> : <>
       <div className="col-md-3"><label className="form-label fw-semibold">Tipo de persona</label><select className="form-select" value={formulario.person_type} onChange={(e) => cambiarTipoPersona(e.target.value)} disabled={guardando}><option value="NATURAL">Natural</option><option value="JURIDICA">Jurídica</option></select></div>
       <div className="col-md-3"><label className="form-label fw-semibold">Tipo identificación</label><select className="form-select" required value={formulario.identification_type_id} onChange={(e) => cambiar('identification_type_id', e.target.value)} disabled={guardando}><option value="">Seleccione...</option>{tiposDisponibles.map((tipo) => <option key={tipo.id} value={tipo.id}>{tipo.code} - {tipo.name}</option>)}</select></div>
       <div className="col-md-3"><label className="form-label fw-semibold">Número identificación</label><input className="form-control" required maxLength="50" value={formulario.identification_number} onChange={(e) => cambiar('identification_number', e.target.value)} disabled={guardando} /></div>
@@ -303,7 +345,8 @@ function ClientsPage() {
       <div className="col-md-4"><label className="form-label fw-semibold">Correo</label><input type="email" className="form-control" value={formulario.email} onChange={(e) => cambiarTexto('email', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Teléfono</label><input className="form-control" maxLength="50" value={formulario.phone} onChange={(e) => cambiar('phone', e.target.value)} disabled={guardando} /></div><div className="col-md-4"><label className="form-label fw-semibold">Dirección</label><input className="form-control" maxLength="250" value={formulario.address} onChange={(e) => cambiarTexto('address', e.target.value)} disabled={guardando} /></div>
       <div className="col-md-4"><label className="form-label fw-semibold">País</label><select className="form-select" value={formulario.country_id} onChange={(e) => cambiarPais(e.target.value)} disabled={guardando}><option value="">Seleccione...</option>{paises.map((pais) => <option key={pais.id} value={pais.id}>{pais.code} - {pais.name}</option>)}</select></div><div className="col-md-4"><label className="form-label fw-semibold">Departamento</label><select className="form-select" value={formulario.department_id} onChange={(e) => cambiarDepartamento(e.target.value)} disabled={!formulario.country_id || cargandoDepartamentos || guardando}><option value="">{cargandoDepartamentos ? '⏳ Cargando departamentos...' : 'Seleccione...'}</option>{!cargandoDepartamentos && departamentos.map((item) => <option key={item.id} value={item.id}>{item.code} - {item.name}</option>)}</select></div><div className="col-md-4"><label className="form-label fw-semibold">Ciudad</label><select className="form-select" value={formulario.city_id} onChange={(e) => cambiar('city_id', e.target.value)} disabled={!formulario.department_id || cargandoCiudades || guardando}><option value="">{cargandoCiudades ? '⏳ Cargando ciudades...' : 'Seleccione...'}</option>{!cargandoCiudades && ciudades.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
       <div className="col-12"><div className="form-check"><input className="form-check-input" type="checkbox" checked={formulario.consent_given} onChange={(e) => cambiar('consent_given', e.target.checked)} id="consentimiento-cliente" disabled={guardando} /><label className="form-check-label fw-semibold" htmlFor="consentimiento-cliente">Autorización para recibir comunicaciones</label><div className="form-text">El cliente autoriza el envío de información a través de correo electrónico, SMS y WhatsApp.</div></div></div><div className="col-md-6"><label className="form-label fw-semibold">Origen de la autorización</label><input className="form-control" maxLength="100" value={formulario.consent_source} onChange={(e) => cambiarTexto('consent_source', e.target.value)} disabled={guardando} /><div className="form-text">Indique dónde o cómo el cliente otorgó la autorización.</div></div>
-    </div>{guardando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.82)', zIndex: 5 }}><div className="spinner-border text-primary" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Guardando cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la información.</small></div>}<div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button className="btn btn-primary" disabled={guardando}>{guardando ? 'Guardando...' : clienteEditando ? 'Actualizar' : 'Crear'}</button></div></form></div></div></div></div>}
+      </>}
+    </div>{guardando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.82)', zIndex: 5 }}><div className="spinner-border text-primary" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Guardando cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la información.</small></div>}<div className="d-flex justify-content-end gap-2 mt-4"><button type="button" className="btn btn-outline-secondary" onClick={cerrarModal} disabled={guardando}>Cancelar</button><button className="btn btn-primary" disabled={guardando || cargandoCatalogos}>{guardando ? 'Guardando...' : clienteEditando ? 'Actualizar' : 'Crear'}</button></div></form></div></div></div></div>}
 
     {clienteEliminando && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.55)', position: 'fixed', inset: 0, zIndex: 2100 }} role="dialog" aria-modal="true"><div className="modal-dialog modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header border-0 pb-0"><h5 className="modal-title fw-bold">Eliminar cliente</h5><button type="button" className="btn-close" onClick={cancelarEliminar} disabled={eliminando} aria-label="Cerrar" /></div><div className="modal-body text-center px-4 py-4" style={{ position: 'relative' }}><div className="mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger" style={{ width: 64, height: 64, fontSize: 28 }}>!</div><h5 className="fw-bold mb-2">¿Estás seguro?</h5><p className="text-muted mb-1">Vas a eliminar este cliente:</p><div className="fw-semibold">{clienteEliminando.full_name || clienteEliminando.identification_number}</div><small className="text-muted">Identificación: {clienteEliminando.identification_number}</small><p className="text-muted mt-3 mb-0">Esta acción cambiará el estado del registro según las reglas del sistema.</p>{eliminando && <div className="position-absolute d-flex flex-column justify-content-center align-items-center" style={{ inset: 0, backgroundColor: 'rgba(255,255,255,.9)', zIndex: 5, borderRadius: '0.375rem' }}><div className="spinner-border text-danger" role="status" aria-hidden="true" /><div className="fw-semibold mt-3">⏳ Eliminando Cliente...</div><small className="text-muted mt-1">Por favor espera, estamos procesando la eliminación.</small></div>}</div><div className="modal-footer border-0 justify-content-center gap-2 pb-4"><button type="button" className="btn btn-outline-secondary px-4" onClick={cancelarEliminar} disabled={eliminando}>Cancelar</button><button type="button" className="btn btn-danger px-4" onClick={confirmarEliminar} disabled={eliminando}>{eliminando ? '⏳ Eliminando Cliente...' : 'Sí, eliminar'}</button></div></div></div></div>}
 
