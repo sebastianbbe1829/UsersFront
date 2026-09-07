@@ -19,8 +19,13 @@ const catalogoCache = new Map()
 const catalogoEnCurso = new Map()
 const clientesCache = new Map()
 const clientesEnCurso = new Map()
+const informeCache = new Map()
+const informeEnCurso = new Map()
+const historialCache = new Map()
+const historialEnCurso = new Map()
 
 const claveCatalogo = (recurso, token, query = '') => `${recurso}|${token}|${query}`
+const claveConsulta = (token) => token
 
 const invalidarCatalogo = (recurso, token) => {
   const prefijo = `${recurso}|${token}|`
@@ -34,6 +39,12 @@ const invalidarClientes = (token) => {
   for (const clave of clientesCache.keys()) {
     if (clave.startsWith(prefijo)) clientesCache.delete(clave)
   }
+}
+
+const invalidarComplianceConsultas = (token) => {
+  const clave = claveConsulta(token)
+  informeCache.delete(clave)
+  historialCache.delete(clave)
 }
 
 const catalogo = async (recurso, token, metodo = 'GET', datos = null, id = null) => {
@@ -62,6 +73,23 @@ const catalogoLista = (recurso, token, query = '') => {
     .finally(() => catalogoEnCurso.delete(clave))
 
   catalogoEnCurso.set(clave, promesa)
+  return promesa
+}
+
+const consultaCacheada = (cache, enCurso, token, url) => {
+  const clave = claveConsulta(token)
+  if (cache.has(clave)) return Promise.resolve(cache.get(clave))
+  if (enCurso.has(clave)) return enCurso.get(clave)
+
+  const promesa = fetch(url, { headers: headers(token) })
+    .then(procesarRespuesta)
+    .then((resultado) => {
+      cache.set(clave, resultado)
+      return resultado
+    })
+    .finally(() => enCurso.delete(clave))
+
+  enCurso.set(clave, promesa)
   return promesa
 }
 
@@ -94,35 +122,40 @@ export const obtenerCliente = async (id, token) => procesarRespuesta(await fetch
 export const crearCliente = async (datos, token) => {
   const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
   invalidarClientes(token)
+  invalidarComplianceConsultas(token)
   return resultado
 }
 
 export const actualizarCliente = async (id, datos, token) => {
   const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'PATCH', headers: headers(token, true), body: JSON.stringify(datos) }))
   invalidarClientes(token)
+  invalidarComplianceConsultas(token)
   return resultado
 }
 
 export const eliminarCliente = async (id, token) => {
   const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}`, { method: 'DELETE', headers: headers(token) }))
   invalidarClientes(token)
+  invalidarComplianceConsultas(token)
   return resultado
 }
 
 export const levantarRestriccionCliente = async (id, datos, token) => {
   const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/override`, { method: 'POST', headers: headers(token, true), body: JSON.stringify(datos) }))
   invalidarClientes(token)
+  invalidarComplianceConsultas(token)
   return resultado
 }
 
 export const revisarClienteListas = async (id, token) => {
   const resultado = await procesarRespuesta(await fetch(`${API_URL}/clients/${encodeURIComponent(id)}/compliance/screen`, { method: 'POST', headers: headers(token) }))
   invalidarClientes(token)
+  invalidarComplianceConsultas(token)
   return resultado
 }
 
-export const obtenerInformeListasRestrictivas = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/restricted-report`, { headers: headers(token) }))
-export const obtenerHistorialLevantamientos = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/compliance/override-history`, { headers: headers(token) }))
+export const obtenerInformeListasRestrictivas = (token) => consultaCacheada(informeCache, informeEnCurso, token, `${API_URL}/clients/restricted-report`)
+export const obtenerHistorialLevantamientos = (token) => consultaCacheada(historialCache, historialEnCurso, token, `${API_URL}/clients/compliance/override-history`)
 
 export const obtenerTiposIdentificacionCliente = async (token) => catalogoLista('identification-types', token)
 export const obtenerTipoIdentificacionCliente = async (id, token) => catalogo('identification-types', token, 'GET', null, id)
