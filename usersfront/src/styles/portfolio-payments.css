@@ -1,0 +1,14 @@
+/* Obligaciones enlazadas desde Pagos: deben verse como elementos accionables. */
+button[title="Abrir esta obligación"] {
+  color: var(--bs-link-color) !important;
+  font-weight: 600 !important;
+  text-decoration: underline !important;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+button[title="Abrir esta obligación"]:hover,
+button[title="Abrir esta obligación"]:focus-visible {
+  color: var(--bs-link-hover-color) !important;
+  text-decoration-thickness: 2px !important;
+}
