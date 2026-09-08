@@ -38,33 +38,27 @@ function SalesHistoryPage() {
     setError(null)
     try {
       const result = await obtenerVentas(token, { limit: 500, offset: 0 })
-      setSales(Array.isArray(result) ? result : [])
+      const loadedSales = Array.isArray(result) ? result : []
+      setSales(loadedSales)
+
+      const sale = searchParams.get('sale')?.trim().toLowerCase()
+      if (sale) {
+        const encontrada = loadedSales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
+        if (encontrada) setSelectedSale(encontrada)
+      }
     } catch (requestError) {
       if (requestError.status === 401) return manejarSesionExpirada()
       setError(requestError.message || 'No fue posible consultar las ventas.')
     } finally {
       setLoading(false)
     }
-  }, [manejarSesionExpirada, token])
+  }, [manejarSesionExpirada, searchParams, token])
 
   useEffect(() => {
     if (!token) return undefined
     const timer = setTimeout(() => void loadSales(), 0)
     return () => clearTimeout(timer)
   }, [loadSales, token])
-
-  useEffect(() => {
-    const sale = searchParams.get('sale')
-    if (sale) setSearch(sale)
-  }, [searchParams])
-
-  useEffect(() => {
-    const sale = searchParams.get('sale')?.trim().toLowerCase()
-    if (!sale || !sales.length) return
-
-    const encontrada = sales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
-    if (encontrada) setSelectedSale(encontrada)
-  }, [sales, searchParams])
 
   const filteredSales = useMemo(() => {
     const term = search.trim().toLowerCase()
