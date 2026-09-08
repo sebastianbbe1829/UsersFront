@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligaciones, obtenerPagosCartera } from '../services/portfolioApi'
@@ -19,6 +19,7 @@ const nombreCliente = (cliente) => cliente?.full_name || [cliente?.first_name, c
 export default function PortfolioObligationsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const navigate = useNavigate()
+  const cargaInicialRef = useRef(false)
   const [obligaciones, setObligaciones] = useState([])
   const [clientes, setClientes] = useState([])
   const [pagos, setPagos] = useState([])
@@ -67,7 +68,8 @@ export default function PortfolioObligationsPage() {
   }, [token, manejarSesionExpirada])
 
   useEffect(() => {
-    if (!token) return undefined
+    if (!token || cargaInicialRef.current) return undefined
+    cargaInicialRef.current = true
     void Promise.all([cargar(), cargarClientes(), cargarPagos()])
     return undefined
   }, [token, cargar, cargarClientes, cargarPagos])
