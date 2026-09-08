@@ -101,6 +101,7 @@ export default function PortfolioObligationsPage() {
   }
 
   const clientePorId = Object.fromEntries(clientes.map((cliente) => [cliente.id, cliente]))
+  const abrirVenta = (item) => navigate(`../../ventas/consulta?sale=${encodeURIComponent(item.sale_number || item.sale_id)}`)
 
   return (
     <div>
@@ -171,12 +172,7 @@ export default function PortfolioObligationsPage() {
                       <div className="small text-muted">{cliente?.identification_number || '—'}</div>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm p-0 fw-semibold text-decoration-none"
-                        onClick={() => navigate(`../ventas/consulta?sale=${encodeURIComponent(item.sale_number || item.sale_id)}`)}
-                        title="Ver esta venta en la consulta de ventas"
-                      >
+                      <button type="button" className="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" onClick={() => abrirVenta(item)} title="Ver esta venta en la consulta de ventas">
                         {item.sale_number || 'Ver venta'}
                       </button>
                     </td>
@@ -185,7 +181,7 @@ export default function PortfolioObligationsPage() {
                     <td className="text-end fw-bold">{money(item.balance)}</td>
                     <td><span className={`badge ${statusClass[item.status] || 'text-bg-secondary'}`}>{statusLabel[item.status] || item.status}</span></td>
                     <td className="text-end">
-                      <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => navigate(`../ventas/consulta?sale=${encodeURIComponent(item.sale_number || item.sale_id)}`)}>Ver venta</button>
+                      <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirVenta(item)}>Ver venta</button>
                     </td>
                   </tr>
                 )
