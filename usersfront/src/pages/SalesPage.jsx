@@ -21,7 +21,7 @@ function SalesPage() {
   const [search, setSearch] = useState('')
   const [clientSearch, setClientSearch] = useState('')
   const [customerMode, setCustomerMode] = useState('generic')
-  const [selectedClient, setSelectedClient] = useState(null)
+  const [participants, setParticipants] = useState([])
   const [discount, setDiscount] = useState('0')
   const [paymentMethod, setPaymentMethod] = useState('EFECTIVO')
   const [paymentAmount, setPaymentAmount] = useState('')
@@ -73,6 +73,8 @@ function SalesPage() {
   const discountAmount = subtotal * discountValue / 100
   const total = subtotal - discountAmount
   const effectivePayment = Number(paymentAmount) || total
+  const allocatedPercentage = participants.reduce((sum, item) => sum + Number(item.percentage), 0)
+  const remainingPercentage = Math.max(0, 100 - allocatedPercentage)
 
   const addProduct = (product) => {
     const stock = Number(inventoryByProduct.get(product.id)?.quantity || 0)
@@ -103,14 +105,28 @@ function SalesPage() {
 
   const filteredClients = useMemo(() => {
     const term = clientSearch.trim().toLowerCase()
-    if (!term) return clients.slice(0, 8)
-    return clients.filter((client) => `${client.full_name || ''} ${client.identification_number || ''}`.toLowerCase().includes(term)).slice(0, 8)
-  }, [clientSearch, clients])
+    const available = clients.filter((client) => !participants.some((item) => item.id === client.id))
+    if (!term) return available.slice(0, 8)
+    return available.filter((client) => `${client.full_name || ''} ${client.identification_number || ''}`.toLowerCase().includes(term)).slice(0, 8)
+  }, [clientSearch, clients, participants])
+
+  const addParticipant = (client) => {
+    setParticipants((current) => [...current, { ...client, percentage: remainingPercentage || 0 }])
+    setClientSearch('')
+  }
+
+  const removeParticipant = (clientId) => {
+    setParticipants((current) => current.filter((item) => item.id !== clientId))
+  }
+
+  const changeParticipantPercentage = (clientId, value) => {
+    setParticipants((current) => current.map((item) => item.id === clientId ? { ...item, percentage: value } : item))
+  }
 
   const resetSale = () => {
     setCart([])
     setCustomerMode('generic')
-    setSelectedClient(null)
+    setParticipants([])
     setClientSearch('')
     setDiscount('0')
     setPaymentMethod('EFECTIVO')
@@ -122,6 +138,14 @@ function SalesPage() {
       setMessage({ type: 'warning', text: 'Agrega al menos un producto a la venta.' })
       return
     }
+    if (customerMode === 'split' && (participants.length < 2 || Math.abs(allocatedPercentage - 100) > 0.01)) {
+      setMessage({ type: 'warning', text: 'Para dividir la venta agrega al menos dos clientes y distribuye exactamente el 100 %.' })
+      return
+    }
+    if (customerMode === 'client' && participants.length !== 1) {
+      setMessage({ type: 'warning', text: 'Selecciona un cliente registrado.' })
+      return
+    }
     if (Math.abs(effectivePayment - total) > 0.01) {
       setMessage({ type: 'warning', text: 'El pago debe coincidir exactamente con el total de la venta.' })
       return
@@ -129,19 +153,19 @@ function SalesPage() {
     setSaving(true)
     setMessage(null)
     try {
-      const payload = {
+      const customers = customerMode === 'generic'
+        ? [{ allocation_percentage: 100, is_generic: true }]
+        : participants.map((item) => ({
+          client_id: item.id,
+          allocation_percentage: Number(item.percentage),
+          is_generic: false,
+        }))
+      const sale = await crearVenta({
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity })),
-        customers: customerMode === 'generic'
-          ? [{ allocation_percentage: 100, is_generic: true }]
-          : [{ client_id: selectedClient?.id, allocation_percentage: 100, is_generic: false }],
+        customers,
         payments: [{ payment_method: paymentMethod, amount: total }],
         discount_percentage: discountValue,
-      }
-      if (customerMode === 'client' && !selectedClient) {
-        setMessage({ type: 'warning', text: 'Selecciona un cliente o utiliza Consumidor final.' })
-        return
-      }
-      const sale = await crearVenta(payload, token)
+      }, token)
       setMessage({ type: 'success', text: `Venta ${sale.sale_number} realizada correctamente por ${money(sale.total)}.` })
       resetSale()
       await load()
@@ -211,16 +235,32 @@ function SalesPage() {
 
               <hr />
               <div className="mb-3">
-                <label className="form-label fw-semibold">👤 Cliente</label>
+                <label className="form-label fw-semibold">👥 Cliente(s) de la venta</label>
                 <div className="btn-group w-100 mb-2">
                   <button className={`btn ${customerMode === 'generic' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setCustomerMode('generic')}>Consumidor final</button>
-                  <button className={`btn ${customerMode === 'client' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setCustomerMode('client')}>Cliente registrado</button>
+                  <button className={`btn ${customerMode === 'client' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setCustomerMode('client')}>Un cliente</button>
+                  <button className={`btn ${customerMode === 'split' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setCustomerMode('split')}>Dividir</button>
                 </div>
-                {customerMode === 'client' && <>
+                {customerMode !== 'generic' && <>
                   <input className="form-control mb-2" value={clientSearch} onChange={(event) => setClientSearch(event.target.value)} placeholder="Buscar cliente..." />
-                  <div className="list-group">
-                    {filteredClients.map((client) => <button type="button" key={client.id} className={`list-group-item list-group-item-action ${selectedClient?.id === client.id ? 'active' : ''}`} onClick={() => setSelectedClient(client)}>{client.full_name}</button>)}
+                  {customerMode === 'split' && <div className="small text-muted mb-2">Agrega clientes y asigna el porcentaje que corresponde a cada uno.</div>}
+                  <div className="list-group mb-2">
+                    {filteredClients.map((client) => <button type="button" key={client.id} className="list-group-item list-group-item-action" onClick={() => addParticipant(client)}>{client.full_name}</button>)}
                   </div>
+                  {participants.map((participant) => <div className="border rounded p-2 mb-2" key={participant.id}>
+                    <div className="d-flex justify-content-between align-items-center gap-2">
+                      <strong className="small">{participant.full_name}</strong>
+                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeParticipant(participant.id)}>×</button>
+                    </div>
+                    <div className="input-group input-group-sm mt-2">
+                      <input type="number" min="0.01" max="100" step="0.01" className="form-control" value={participant.percentage} onChange={(event) => changeParticipantPercentage(participant.id, event.target.value)} />
+                      <span className="input-group-text">%</span>
+                    </div>
+                    <div className="small text-muted mt-1">{money(total * Number(participant.percentage) / 100)}</div>
+                  </div>)}
+                  {customerMode === 'split' && <div className={`alert py-2 mb-0 ${Math.abs(allocatedPercentage - 100) < 0.01 ? 'alert-success' : 'alert-warning'}`}>
+                    {Math.abs(allocatedPercentage - 100) < 0.01 ? '✓ Venta distribuida al 100 %' : `Faltan ${remainingPercentage.toFixed(2)} % por distribuir`}
+                  </div>}
                 </>}
               </div>
 
