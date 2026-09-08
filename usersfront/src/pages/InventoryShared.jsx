@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import Can from '../components/Can'
+import { buscarImagenesProducto } from '../services/inventoryApi'
 import { money, number, originLabel, PAGE_SIZE } from './InventoryUtils'
 
 export function Pagination({ total, page, onPageChange, hasNext = false }) {
@@ -53,7 +55,49 @@ export function TypeModal({ editando, form, setForm, guardando, onClose, onSubmi
 }
 
 export function ProductModal({ editando, form, setForm, tipos, guardando, onClose, onSubmit }) {
-  return <Modal title={editando ? 'Editar producto' : 'Nuevo producto'} onClose={onClose}><Can permission={editando ? 'INVENTORY_UPDATE' : 'INVENTORY_CREATE'}><form onSubmit={onSubmit}><input className="form-control mb-3" placeholder="Nombre" maxLength="150" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><select className="form-select mb-3" required value={form.inventory_type_id} onChange={(e) => setForm({ ...form, inventory_type_id: e.target.value })}><option value="">Seleccione tipo...</option>{tipos.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select><Check label="Activo" value={form.active} onChange={(value) => setForm({ ...form, active: value })} /><ModalActions editing={editando} disabled={guardando} onCancel={onClose} /></form></Can></Modal>
+  const [imageSearch, setImageSearch] = useState(form.name || '')
+  const [imageResults, setImageResults] = useState([])
+  const [searchingImages, setSearchingImages] = useState(false)
+  const [imageError, setImageError] = useState('')
+
+  const searchImages = async () => {
+    if (!imageSearch.trim()) return
+    setSearchingImages(true)
+    setImageError('')
+    try {
+      const results = await buscarImagenesProducto(imageSearch, window.__authToken || '')
+      setImageResults(Array.isArray(results) ? results : [])
+    } catch (error) {
+      setImageError(error.message || 'No fue posible buscar imágenes.')
+    } finally {
+      setSearchingImages(false)
+    }
+  }
+
+  const selectImage = (image) => {
+    setForm({
+      ...form,
+      image_url: image.url,
+      image_source: 'PEXELS',
+      image_source_url: image.source_url,
+      image_credit: image.credit,
+    })
+  }
+
+  return <Modal title={editando ? 'Editar producto' : 'Nuevo producto'} onClose={onClose}><Can permission={editando ? 'INVENTORY_UPDATE' : 'INVENTORY_CREATE'}><form onSubmit={onSubmit}>
+    <input className="form-control mb-3" placeholder="Nombre" maxLength="150" required value={form.name} onChange={(e) => { setForm({ ...form, name: e.target.value }); if (!imageSearch) setImageSearch(e.target.value) }} />
+    <select className="form-select mb-3" required value={form.inventory_type_id} onChange={(e) => setForm({ ...form, inventory_type_id: e.target.value })}><option value="">Seleccione tipo...</option>{tipos.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select>
+
+    <div className="border rounded p-3 mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-2"><strong>🖼️ Imagen del producto</strong><small className="text-muted">Pexels</small></div>
+      {form.image_url && <div className="mb-3 text-center"><img src={form.image_url} alt={form.name || 'Producto'} className="img-fluid rounded" style={{ maxHeight: 180, objectFit: 'cover' }} /><div className="small text-muted mt-1">Foto de {form.image_credit || 'Pexels'}</div></div>}
+      <div className="input-group mb-2"><input className="form-control" value={imageSearch} onChange={(e) => setImageSearch(e.target.value)} placeholder="Ej.: café en grano, arroz, gaseosa..." /><button type="button" className="btn btn-outline-primary" onClick={searchImages} disabled={searchingImages}>{searchingImages ? 'Buscando...' : '🔎 Buscar'}</button></div>
+      {imageError && <div className="alert alert-warning py-2 small mb-2">{imageError}</div>}
+      {imageResults.length > 0 && <div className="row g-2">{imageResults.map((image) => <div className="col-4 col-sm-3" key={image.id}><button type="button" className={`btn p-0 border w-100 ${form.image_url === image.url ? 'border-primary border-3' : ''}`} onClick={() => selectImage(image)}><img src={image.url} alt={image.alt || 'Imagen de producto'} className="w-100 rounded" style={{ height: 90, objectFit: 'cover' }} /></button></div>)}</div>}
+      <div className="small text-muted mt-2">Selecciona una imagen y quedará asociada a este producto. Las fotos se muestran con crédito a su autor.</div>
+    </div>
+
+    <Check label="Activo" value={form.active} onChange={(value) => setForm({ ...form, active: value })} /><ModalActions editing={editando} disabled={guardando} onCancel={onClose} /></form></Can></Modal>
 }
 
 export function MovementModal({ form, setForm, productos, guardando, onClose, onSubmit, onOriginChange }) {
