@@ -8,10 +8,13 @@ on:
     branches:
       - master
       - chore/frontend-lint-cleanup
+      - feature/domain-portfolio
 
 jobs:
   quality-gate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     defaults:
       run:
         working-directory: usersfront
@@ -19,6 +22,49 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Apply obligation link correction
+        if: github.ref == 'refs/heads/feature/domain-portfolio' && github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'fix: mostrar obligaciones de pagos como enlaces')
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/pages/PortfolioPaymentsPage.jsx')
+          text = path.read_text(encoding='utf-8')
+          old = '''                      return (
+                        <button
+                          key={allocation.id || allocation.obligation_id}
+                          type="button"
+                          className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
+                          onClick={() => {
+                            const tenant = window.location.pathname.split('/')[1]
+                            if (tenant && allocation.obligation_id) {
+                              window.location.href = `/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`
+                            }
+                          }}
+                          title="Abrir esta obligación"
+                        >
+                          {obligation?.sale_number || allocation.obligation_id}
+                        </button>
+                      )'''
+          new = '''                      const tenant = window.location.pathname.split('/')[1]
+                      return (
+                        <a
+                          key={allocation.id || allocation.obligation_id}
+                          href={`/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`}
+                          className="text-primary text-decoration-underline fw-semibold d-block"
+                          title="Abrir esta obligación"
+                        >
+                          {obligation?.sale_number || allocation.obligation_id}
+                        </a>
+                      )'''
+          if old not in text:
+              raise SystemExit('No se encontró el bloque esperado de enlace de obligación.')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
 
       - name: Setup Node
         uses: actions/setup-node@v5
@@ -35,3 +81,14 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Commit obligation link correction
+        if: github.ref == 'refs/heads/feature/domain-portfolio' && github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'fix: mostrar obligaciones de pagos como enlaces')
+        working-directory: .
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add usersfront/src/pages/PortfolioPaymentsPage.jsx
+          git commit -m "fix: mostrar obligaciones de pagos como enlaces"
+          git push origin HEAD:feature/domain-portfolio
