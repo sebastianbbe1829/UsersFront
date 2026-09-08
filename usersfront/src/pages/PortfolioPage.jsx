@@ -1,0 +1,155 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import Can from '../components/Can'
+import { obtenerClientes } from '../services/clientsApi'
+import {
+  actualizarCupoCliente,
+  obtenerCupoCliente,
+  obtenerObligaciones,
+} from '../services/portfolioApi'
+
+const money = (value) => new Intl.NumberFormat('es-CO', {
+  style: 'currency',
+  currency: 'COP',
+  maximumFractionDigits: 0,
+}).format(Number(value || 0))
+
+export default function PortfolioPage() {
+  const { token, manejarSesionExpirada } = useAuth()
+  const [clientes, setClientes] = useState([])
+  const [obligaciones, setObligaciones] = useState([])
+  const [cupos, setCupos] = useState({})
+  const [busqueda, setBusqueda] = useState('')
+  const [cargando, setCargando] = useState(true)
+  const [guardando, setGuardando] = useState(null)
+  const [mensaje, setMensaje] = useState(null)
+
+  const cargar = async () => {
+    try {
+      setCargando(true)
+      const [clientesResult, obligacionesResult] = await Promise.all([
+        obtenerClientes(token, { page: 1, pageSize: 100, search: '' }),
+        obtenerObligaciones(token),
+      ])
+      const datosClientes = Array.isArray(clientesResult?.items)
+        ? clientesResult.items
+        : Array.isArray(clientesResult) ? clientesResult : []
+      const datosObligaciones = Array.isArray(obligacionesResult) ? obligacionesResult : []
+      const cupoEntries = await Promise.all(datosClientes.map(async (cliente) => {
+        try {
+          return [cliente.id, await obtenerCupoCliente(cliente.id, token)]
+        } catch (error) {
+          if (error.status === 404) return [cliente.id, null]
+          throw error
+        }
+      }))
+      setClientes(datosClientes)
+      setObligaciones(datosObligaciones)
+      setCupos(Object.fromEntries(cupoEntries))
+    } catch (error) {
+      if (error.status === 401) return manejarSesionExpirada()
+      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar cartera.' })
+    } finally {
+      setCargando(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!token) return undefined
+    void cargar()
+    return undefined
+  }, [token])
+
+  const filtrados = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase()
+    if (!termino) return clientes
+    return clientes.filter((cliente) => (
+      `${cliente.full_name || ''} ${cliente.identification_number || ''}`
+        .toLowerCase()
+        .includes(termino)
+    ))
+  }, [busqueda, clientes])
+
+  const guardarCupo = async (cliente) => {
+    const valor = Number(cupos[cliente.id]?.approved_limit || 0)
+    if (!Number.isFinite(valor) || valor < 0) {
+      setMensaje({ tipo: 'warning', texto: 'El cupo aprobado debe ser mayor o igual a cero.' })
+      return
+    }
+    try {
+      setGuardando(cliente.id)
+      setMensaje(null)
+      const actualizado = await actualizarCupoCliente(cliente.id, valor, token)
+      setCupos((actuales) => ({ ...actuales, [cliente.id]: actualizado }))
+      setMensaje({ tipo: 'success', texto: `Cupo de ${cliente.full_name} actualizado correctamente.` })
+    } catch (error) {
+      if (error.status === 401) return manejarSesionExpirada()
+      setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible actualizar el cupo.' })
+    } finally {
+      setGuardando(null)
+    }
+  }
+
+  const actualizarValor = (clienteId, value) => {
+    setCupos((actuales) => ({
+      ...actuales,
+      [clienteId]: { ...(actuales[clienteId] || {}), approved_limit: value },
+    }))
+  }
+
+  const totalCartera = obligaciones.reduce((total, item) => total + Number(item.balance || 0), 0)
+  const totalCupos = Object.values(cupos).reduce((total, item) => total + Number(item?.approved_limit || 0), 0)
+  const totalDisponible = Object.values(cupos).reduce((total, item) => total + Number(item?.credit_available || 0), 0)
+
+  return (
+    <div>
+      <div className="d-flex justify-content-between align-items-start mb-4">
+        <div>
+          <h2 className="fw-bold mb-1">Cartera</h2>
+          <p className="text-muted mb-0">Cupos, obligaciones y saldos de los clientes.</p>
+        </div>
+      </div>
+
+      {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
+
+      <div className="row g-3 mb-4">
+        <div className="col-md-4"><div className="card border-0 shadow-sm"><div className="card-body"><div className="text-muted small">Cupo aprobado</div><div className="fs-4 fw-bold">{money(totalCupos)}</div></div></div></div>
+        <div className="col-md-4"><div className="card border-0 shadow-sm"><div className="card-body"><div className="text-muted small">Cartera activa</div><div className="fs-4 fw-bold">{money(totalCartera)}</div></div></div></div>
+        <div className="col-md-4"><div className="card border-0 shadow-sm"><div className="card-body"><div className="text-muted small">Cupo disponible</div><div className="fs-4 fw-bold text-success">{money(totalDisponible)}</div></div></div></div>
+      </div>
+
+      <div className="card shadow-sm border-0">
+        <div className="card-body">
+          <div className="mb-3"><input className="form-control" type="search" placeholder="Buscar cliente por identificación o nombre..." value={busqueda} onChange={(event) => setBusqueda(event.target.value)} /></div>
+          {cargando ? (
+            <div className="text-center py-5"><div className="spinner-border" role="status" /></div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle mb-0">
+                <thead><tr><th>Cliente</th><th>Identificación</th><th>Cupo aprobado</th><th>Utilizado</th><th>Disponible</th><th /></tr></thead>
+                <tbody>
+                  {filtrados.map((cliente) => {
+                    const cupo = cupos[cliente.id]
+                    return (
+                      <tr key={cliente.id}>
+                        <td className="fw-semibold">{cliente.full_name}</td>
+                        <td>{cliente.identification_number}</td>
+                        <td style={{ maxWidth: 180 }}>
+                          <input className="form-control" type="number" min="0" step="0.01" value={cupo?.approved_limit ?? ''} onChange={(event) => actualizarValor(cliente.id, event.target.value)} />
+                        </td>
+                        <td>{money(cupo?.credit_used)}</td>
+                        <td className={Number(cupo?.credit_available) > 0 ? 'text-success fw-semibold' : 'text-danger fw-semibold'}>{money(cupo?.credit_available)}</td>
+                        <td><Can permission="PORTFOLIO_CREDIT_UPDATE"><button className="btn btn-primary btn-sm" onClick={() => void guardarCupo(cliente)} disabled={guardando === cliente.id}>{guardando === cliente.id ? 'Guardando...' : 'Guardar'}</button></Can></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {!filtrados.length && <div className="text-center text-muted py-4">No se encontraron clientes.</div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
