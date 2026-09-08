@@ -9,10 +9,20 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 }).format(Number(value || 0))
 
-const formatDate = (value) => value ? new Intl.DateTimeFormat('es-CO', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-}).format(new Date(value)) : '—'
+const formatDate = (value) => {
+  if (!value) return '—'
+
+  // El backend entrega created_at sin offset, pero el valor corresponde a UTC.
+  // Agregamos Z para que el navegador lo convierta correctamente a la hora local
+  // del usuario (Colombia: UTC-5).
+  const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
+  if (Number.isNaN(fecha.getTime())) return '—'
+
+  return new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(fecha)
+}
 
 function SalesHistoryPage() {
   const { token, manejarSesionExpirada } = useAuth()
