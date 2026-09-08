@@ -2,7 +2,7 @@ import Can from '../components/Can'
 
 export const PAGE_SIZE = 10
 export const emptyType = { code: '', name: '', active: true }
-export const emptyProduct = { code: '', name: '', inventory_type_id: '', active: true }
+export const emptyProduct = { name: '', inventory_type_id: '', active: true }
 export const emptyMovement = { product_id: '', movement_type: 'ENTRY', origin_type: 'PURCHASE', quantity: '', unit_purchase_price: '', profit_percentage: '', notes: '' }
 
 export const money = (value) => value == null ? '-' : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(Number(value))
@@ -60,7 +60,7 @@ export function TypeModal({ editando, form, setForm, guardando, onClose, onSubmi
 }
 
 export function ProductModal({ editando, form, setForm, tipos, guardando, onClose, onSubmit }) {
-  return <Modal title={editando ? 'Editar producto' : 'Nuevo producto'} onClose={onClose}><Can permission={editando ? 'INVENTORY_UPDATE' : 'INVENTORY_CREATE'}><form onSubmit={onSubmit}><input className="form-control mb-3" placeholder="Código" maxLength="30" required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /><input className="form-control mb-3" placeholder="Nombre" maxLength="150" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><select className="form-select mb-3" required value={form.inventory_type_id} onChange={(e) => setForm({ ...form, inventory_type_id: e.target.value })}><option value="">Seleccione tipo...</option>{tipos.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select><Check label="Activo" value={form.active} onChange={(value) => setForm({ ...form, active: value })} /><ModalActions editing={editando} disabled={guardando} onCancel={onClose} /></form></Can></Modal>
+  return <Modal title={editando ? 'Editar producto' : 'Nuevo producto'} onClose={onClose}><Can permission={editando ? 'INVENTORY_UPDATE' : 'INVENTORY_CREATE'}><form onSubmit={onSubmit}><input className="form-control mb-3" placeholder="Nombre" maxLength="150" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><select className="form-select mb-3" required value={form.inventory_type_id} onChange={(e) => setForm({ ...form, inventory_type_id: e.target.value })}><option value="">Seleccione tipo...</option>{tipos.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select><Check label="Activo" value={form.active} onChange={(value) => setForm({ ...form, active: value })} /><ModalActions editing={editando} disabled={guardando} onCancel={onClose} /></form></Can></Modal>
 }
 
 export function MovementModal({ form, setForm, productos, guardando, onClose, onSubmit, onOriginChange }) {
