@@ -77,7 +77,11 @@ function ClientRestrictedListsSyncExecutionsPage() {
   }, [token, manejarSesionExpirada])
 
   useEffect(() => {
-    if (token) cargar(true)
+    if (!token) return undefined
+    const timeoutId = window.setTimeout(() => {
+      cargar(true)
+    }, 0)
+    return () => window.clearTimeout(timeoutId)
   }, [token, cargar])
 
   const hayEjecucionActiva = useMemo(
