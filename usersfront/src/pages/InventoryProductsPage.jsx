@@ -35,11 +35,11 @@ function InventoryProductsPage() {
   const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
   const filas = useMemo(() => filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtrados, page])
   const cerrar = () => { setModal(false); setEditando(null); setForm(emptyProduct) }
-  const editar = (item) => { setEditando(item.id); setForm({ code: item.code, name: item.name, inventory_type_id: String(item.inventory_type_id), active: item.active }); setModal(true) }
+  const editar = (item) => { setEditando(item.id); setForm({ name: item.name, inventory_type_id: String(item.inventory_type_id), active: item.active }); setModal(true) }
   const guardar = async (event) => {
     event.preventDefault(); setGuardando(true); setMensaje(null)
     try {
-      const data = { ...form, code: form.code.trim().toUpperCase(), name: form.name.trim(), inventory_type_id: Number(form.inventory_type_id) }
+      const data = { name: form.name.trim(), inventory_type_id: Number(form.inventory_type_id), active: form.active }
       if (editando) await actualizarProductoInventario(editando, data, token); else await crearProductoInventario(data, token)
       await cargar(); setMensaje({ tipo: 'success', texto: editando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.' }); cerrar()
     } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el producto.' }) }
