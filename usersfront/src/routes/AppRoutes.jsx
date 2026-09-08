@@ -18,6 +18,7 @@ import ExtinguishersPage from '../pages/ExtinguishersPage'
 import ExtinguisherTypesPage from '../pages/ExtinguisherTypesPage'
 import ExtinguisherInspectionsSearchPage from '../pages/ExtinguisherInspectionsSearchPage'
 import ExtinguisherInspectionItemsPage from '../pages/ExtinguisherInspectionItemsPage'
+import InventoryPage from '../pages/InventoryPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -70,6 +71,10 @@ function AppRoutes() {
       <Route path="extintores/tipos" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherTypesPage /></RutaConPermiso>} />
       <Route path="extintores/revisiones" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionsSearchPage /></RutaConPermiso>} />
       <Route path="extintores/items-revision" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionItemsPage /></RutaConPermiso>} />
+      <Route path="inventarios" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
+      <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
+      <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
+      <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
       <Route path="usuarios-super" element={<GlobalSuperAdminPage />} />
