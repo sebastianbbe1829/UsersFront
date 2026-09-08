@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
@@ -7,6 +7,8 @@ import { emptyMovement, EmptyState, MovementBadge, MovementModal, Pagination, PA
 
 function InventoryMovementsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const tokenRef = useRef(token)
+  const cargaInicialRef = useRef(false)
   const [productos, setProductos] = useState([])
   const [productoId, setProductoId] = useState('')
   const [movimientos, setMovimientos] = useState([])
@@ -19,20 +21,24 @@ function InventoryMovementsPage() {
   const [form, setForm] = useState(emptyMovement)
   const [mensaje, setMensaje] = useState(null)
 
+  useEffect(() => { tokenRef.current = token }, [token])
+
   const cargarProductos = useCallback(async () => {
-    try { setCargandoProductos(true); const result = await obtenerProductosInventario(token, true); setProductos(Array.isArray(result) ? result : []) }
+    const tokenActual = tokenRef.current
+    if (!tokenActual) return
+    try { setCargandoProductos(true); const result = await obtenerProductosInventario(tokenActual, true); setProductos(Array.isArray(result) ? result : []) }
     catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) }
     finally { setCargandoProductos(false) }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
   const cargarMovimientos = useCallback(async (id, requestedPage = 1) => {
     if (!id) { setMovimientos([]); setHasNext(false); return }
-    try { setCargando(true); const result = await obtenerMovimientosInventario(id, token, { limit: PAGE_SIZE + 1, offset: (requestedPage - 1) * PAGE_SIZE }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, PAGE_SIZE)); setHasNext(rows.length > PAGE_SIZE); setPage(requestedPage); setMensaje(null) }
+    try { setCargando(true); const result = await obtenerMovimientosInventario(id, tokenRef.current, { limit: PAGE_SIZE + 1, offset: (requestedPage - 1) * PAGE_SIZE }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, PAGE_SIZE)); setHasNext(rows.length > PAGE_SIZE); setPage(requestedPage); setMensaje(null) }
     catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el kardex.' }) }
     finally { setCargando(false) }
-  }, [token, manejarSesionExpirada])
+  }, [manejarSesionExpirada])
 
-  useEffect(() => { if (token) void cargarProductos() }, [token, cargarProductos])
+  useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargarProductos() } }, [token, cargarProductos])
   useEffect(() => { if (productoId) void cargarMovimientos(productoId, 1); else setMovimientos([]) }, [productoId, cargarMovimientos])
 
   const abrir = () => { setForm({ ...emptyMovement, product_id: productoId }); setModal(true) }
