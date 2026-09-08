@@ -8,6 +8,22 @@ export const emptyMovement = { product_id: '', movement_type: 'ENTRY', origin_ty
 export const money = (value) => value == null ? '-' : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(Number(value))
 export const number = (value) => Number(value || 0).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 3 })
 
+export const originLabel = (value) => ({
+  PURCHASE: 'Compra',
+  MANUAL_ADJUSTMENT: 'Ajuste manual',
+  SALES_RETURN: 'Devolución de venta',
+  PURCHASE_RETURN: 'Devolución de compra',
+}[value] || value || '-')
+
+export const formatColombiaDateTime = (value) => {
+  if (!value) return '-'
+  const raw = String(value)
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)
+  const date = new Date(hasTimezone ? raw : `${raw}Z`)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+}
+
 export function Pagination({ total, page, onPageChange, hasNext = false }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   if (pages === 1 && !hasNext) return null
