@@ -33,7 +33,7 @@ function InventoryProductsPage() {
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargar() } }, [token, cargar])
 
   const tipoPorId = useMemo(() => new Map(tipos.map((item) => [item.id, item])), [tipos])
-  const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
+  const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${item.brand || ''} ${item.presentation || ''} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
   const filas = useMemo(() => filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtrados, page])
   const cerrar = () => { setModal(false); setEditando(null); setForm(emptyProduct) }
   const editar = (item) => {
@@ -41,6 +41,8 @@ function InventoryProductsPage() {
     setForm({
       name: item.name,
       inventory_type_id: String(item.inventory_type_id),
+      brand: item.brand || '',
+      presentation: item.presentation || '',
       active: item.active,
       image_url: item.image_url || '',
       image_source: item.image_source || '',
@@ -55,6 +57,8 @@ function InventoryProductsPage() {
       const data = {
         name: form.name.trim(),
         inventory_type_id: Number(form.inventory_type_id),
+        brand: form.brand.trim() || null,
+        presentation: form.presentation.trim() || null,
         active: form.active,
         image_url: form.image_url || null,
         image_source: form.image_source || null,
