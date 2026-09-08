@@ -29,9 +29,7 @@ export default function ClientCreditLimitsPage() {
         if (!activo) return
         if (error.status === 401) return manejarSesionExpirada()
         setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los clientes.' })
-      } finally {
-        if (activo) setCargando(false)
-      }
+      } finally { if (activo) setCargando(false) }
     }
     void cargar()
     return () => { activo = false }
@@ -45,10 +43,7 @@ export default function ClientCreditLimitsPage() {
 
   const guardar = async (cliente) => {
     const valor = Number(valores[cliente.id] || 0)
-    if (!Number.isFinite(valor) || valor < 0) {
-      setMensaje({ tipo: 'warning', texto: 'El cupo aprobado debe ser un valor mayor o igual a cero.' })
-      return
-    }
+    if (!Number.isFinite(valor) || valor < 0) return setMensaje({ tipo: 'warning', texto: 'El cupo aprobado debe ser un valor mayor o igual a cero.' })
     try {
       setGuardando(cliente.id); setMensaje(null)
       const actualizado = await actualizarCliente(cliente.id, { credit_limit: Math.round((valor + Number.EPSILON) * 100) / 100 }, token)
@@ -66,7 +61,7 @@ export default function ClientCreditLimitsPage() {
     {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="mb-3"><input className="form-control" type="search" placeholder="Buscar por identificación o nombre..." value={busqueda} onChange={(event) => setBusqueda(event.target.value)} /></div>
-      {cargando ? <div className="text-center py-4"><div className="spinner-border" /></div> : <div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Cliente</th><th>Identificación</th><th>Cupo aprobado</th><th>Acción</th></tr></thead><tbody>{filtrados.map((cliente) => <tr key={cliente.id}><td className="fw-semibold">{cliente.full_name}</td><td>{cliente.identification_number}</td><td style={{ maxWidth: 220 }}><input className="form-control" type="number" min="0" step="0.01" value={valores[cliente.id] ?? '0'} onChange={(event) => setValores((actuales) => ({ ...actuales, [cliente.id]: event.target.value }))} /></td><td><Can permission="CLIENT_UPDATE"><button className="btn btn-primary btn-sm" onClick={() => void guardar(cliente)} disabled={guardando === cliente.id}>{guardando === cliente.id ? 'Guardando...' : 'Guardar'}</button></Can></td></tr>)}</tbody></table>{!filtrados.length && <div className="text-center text-muted py-4">No se encontraron clientes.</div>}</div>}
+      {cargando ? <div className="text-center py-4"><div className="spinner-border" /></div> : <div className="table-responsive"><table className="table align-middle mb-0"><thead><tr><th>Cliente</th><th>Identificación</th><th>Cupo aprobado</th><th>Utilizado</th><th>Disponible</th><th>Acción</th></tr></thead><tbody>{filtrados.map((cliente) => <tr key={cliente.id}><td className="fw-semibold">{cliente.full_name}</td><td>{cliente.identification_number}</td><td style={{ maxWidth: 180 }}><input className="form-control" type="number" min="0" step="0.01" value={valores[cliente.id] ?? '0'} onChange={(event) => setValores((actuales) => ({ ...actuales, [cliente.id]: event.target.value }))} /></td><td>{money(cliente.credit_used)}</td><td className={Number(cliente.credit_available) > 0 ? 'text-success fw-semibold' : 'text-danger fw-semibold'}>{money(cliente.credit_available)}</td><td><Can permission="CLIENT_UPDATE"><button className="btn btn-primary btn-sm" onClick={() => void guardar(cliente)} disabled={guardando === cliente.id}>{guardando === cliente.id ? 'Guardando...' : 'Guardar'}</button></Can></td></tr>)}</tbody></table>{!filtrados.length && <div className="text-center text-muted py-4">No se encontraron clientes.</div>}</div>}
     </div></div>
   </>
 }
