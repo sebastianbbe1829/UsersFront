@@ -34,4 +34,11 @@ export default defineConfig([
       'react-hooks/set-state-in-effect': 'off',
     },
   },
+  {
+    files: ['src/pages/InventoryShared.jsx'],
+    rules: {
+      // Shared UI modules intentionally export multiple reusable components.
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
