@@ -18,7 +18,10 @@ import ExtinguishersPage from '../pages/ExtinguishersPage'
 import ExtinguisherTypesPage from '../pages/ExtinguisherTypesPage'
 import ExtinguisherInspectionsSearchPage from '../pages/ExtinguisherInspectionsSearchPage'
 import ExtinguisherInspectionItemsPage from '../pages/ExtinguisherInspectionItemsPage'
-import InventoryPage from '../pages/InventoryPage'
+import InventoryStockPage from '../pages/InventoryStockPage'
+import InventoryTypesPage from '../pages/InventoryTypesPage'
+import InventoryProductsPage from '../pages/InventoryProductsPage'
+import InventoryMovementsPage from '../pages/InventoryMovementsPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -38,15 +41,10 @@ function RutasProtegidas() {
   if (!logueado) return <Navigate to="login" replace />
   return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense>
 }
-
-function RutaConPermiso({ permission, children }) {
-  return <PermissionRoute permission={permission}>{children}</PermissionRoute>
-}
+function RutaConPermiso({ permission, children }) { return <PermissionRoute permission={permission}>{children}</PermissionRoute> }
 
 function AppRoutes() {
-  const location = useLocation()
-  const tenant = obtenerTenantDesdeUrl()
-  const rutaActual = location.pathname
+  const location = useLocation(); const tenant = obtenerTenantDesdeUrl(); const rutaActual = location.pathname
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
@@ -71,10 +69,10 @@ function AppRoutes() {
       <Route path="extintores/tipos" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherTypesPage /></RutaConPermiso>} />
       <Route path="extintores/revisiones" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionsSearchPage /></RutaConPermiso>} />
       <Route path="extintores/items-revision" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguisherInspectionItemsPage /></RutaConPermiso>} />
-      <Route path="inventarios" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
-      <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
-      <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryPage /></RutaConPermiso>} />
-      <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryPage /></RutaConPermiso>} />
+      <Route path="inventarios" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryStockPage /></RutaConPermiso>} />
+      <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
+      <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
+      <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
       <Route path="usuarios-super" element={<GlobalSuperAdminPage />} />
@@ -82,5 +80,4 @@ function AppRoutes() {
     <Route path="*" element={<Navigate to={`/${tenant}`} replace />} />
   </Routes>
 }
-
 export default AppRoutes
