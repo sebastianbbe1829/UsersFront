@@ -10,7 +10,7 @@ const ORIGIN_LABELS = { PURCHASE: 'Compra', SALE: 'Venta', MANUAL_ADJUSTMENT: 'A
 const OPERATION_MOVEMENT_TYPES = { PURCHASE: 'ENTRY', SALE: 'EXIT', SALES_RETURN: 'ENTRY', PURCHASE_RETURN: 'EXIT' }
 const formatFechaColombia = (value) => { if (!value) return '-'; const normalized = typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value; return new Date(normalized).toLocaleString('es-CO', { timeZone: 'America/Bogota' }) }
 function descargarArchivo(blob, filename) { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url) }
-function precioVentaMovimiento(item) { if (item.unit_purchase_price == null || item.profit_percentage == null) return null; return Number(item.unit_purchase_price) * (1 + Number(item.profit_percentage) / 100) }
+function precioVentaMovimiento(item) { if (item.unit_purchase_price == null || item.profit_percentage == null) return null; return Number(item.unit_purchase_price) * (1 + Number(item.profit_percentage)) }
 
 function InventoryMovementsPage() {
   const { token, manejarSesionExpirada } = useAuth()
