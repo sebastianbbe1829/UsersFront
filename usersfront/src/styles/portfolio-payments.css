@@ -12,3 +12,8 @@ button[title="Abrir esta obligación"]:focus-visible {
   color: var(--bs-link-hover-color) !important;
   text-decoration-thickness: 2px !important;
 }
+
+/* Header superior: los metadatos deben conservar contraste en modo oscuro. */
+header.bg-black .text-muted {
+  color: rgba(255, 255, 255, .72) !important;
+}
