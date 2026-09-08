@@ -88,7 +88,7 @@ function WelcomePage() {
 
   return (
     <div
-      className="welcome-page d-flex flex-column align-items-center text-center px-3"
+      className={`welcome-page d-flex flex-column align-items-center text-center px-3 ${modoOscuro ? 'welcome-page-dark' : ''}`}
       style={{ color: colorPrincipal }}
     >
       <header className="welcome-header">
