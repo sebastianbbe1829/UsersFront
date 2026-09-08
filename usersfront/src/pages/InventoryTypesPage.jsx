@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
@@ -7,6 +7,8 @@ import { emptyType, EmptyState, PAGE_SIZE, Pagination, SearchBar, TableTypes, Ty
 
 function InventoryTypesPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const tokenRef = useRef(token)
+  const cargaInicialRef = useRef(false)
   const [tipos, setTipos] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [page, setPage] = useState(1)
@@ -17,12 +19,16 @@ function InventoryTypesPage() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
+  useEffect(() => { tokenRef.current = token }, [token])
+
   const cargar = useCallback(async () => {
-    try { setCargando(true); const result = await obtenerTiposInventario(token); setTipos(Array.isArray(result) ? result : []); setMensaje(null) }
+    const tokenActual = tokenRef.current
+    if (!tokenActual) return
+    try { setCargando(true); const result = await obtenerTiposInventario(tokenActual); setTipos(Array.isArray(result) ? result : []); setMensaje(null) }
     catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los tipos.' }) }
     finally { setCargando(false) }
-  }, [token, manejarSesionExpirada])
-  useEffect(() => { if (token) void cargar() }, [token, cargar])
+  }, [manejarSesionExpirada])
+  useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargar() } }, [token, cargar])
 
   const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? tipos.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(term)) : tipos }, [tipos, busqueda])
   const filas = useMemo(() => filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtrados, page])
