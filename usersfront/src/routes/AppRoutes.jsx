@@ -11,6 +11,7 @@ import DepartmentsPage from '../pages/DepartmentsPage'
 import CitiesPage from '../pages/CitiesPage'
 import ClientRestrictedListsReportsPage from '../pages/ClientRestrictedListsReportsPage'
 import ClientComplianceOverrideHistoryPage from '../pages/ClientComplianceOverrideHistoryPage'
+import ClientRestrictedListsSyncExecutionsPage from '../pages/ClientRestrictedListsSyncExecutionsPage'
 import RolesPage from '../pages/RolesPage'
 import PermisosPage from '../pages/PermisosPage'
 import ExtinguishersPage from '../pages/ExtinguishersPage'
@@ -62,6 +63,7 @@ function AppRoutes() {
       <Route path="clientes/demografica/ciudades" element={<RutaConPermiso permission="CLIENT_READ"><CitiesPage /></RutaConPermiso>} />
       <Route path="clientes/informes-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsReportsPage /></RutaConPermiso>} />
       <Route path="clientes/historial-levantamientos" element={<RutaConPermiso permission="CLIENT_READ"><ClientComplianceOverrideHistoryPage /></RutaConPermiso>} />
+      <Route path="clientes/ejecuciones-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsSyncExecutionsPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
