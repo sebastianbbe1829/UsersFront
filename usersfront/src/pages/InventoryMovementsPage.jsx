@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
 import { crearMovimientoInventario, obtenerMovimientosInventario, obtenerProductosInventario } from '../services/inventoryApi'
-import { emptyMovement, EmptyState, MovementBadge, MovementModal, Pagination, PAGE_SIZE, number } from './InventoryShared'
+import { emptyMovement, EmptyState, money, MovementBadge, MovementModal, Pagination, PAGE_SIZE, number } from './InventoryShared'
 
 const ORIGIN_LABELS = {
   PURCHASE: 'Compra',
@@ -79,7 +79,7 @@ function InventoryMovementsPage() {
       {cargando && <div className="text-center py-4"><div className="spinner-border spinner-border-sm" /> <span className="text-muted ms-2">Cargando Kardex...</span></div>}
       {!cargando && !productoId && <EmptyState text="Seleccione un producto para consultar sus movimientos." />}
       {!cargando && productoId && movimientos.length === 0 && <EmptyState text="Este producto todavía no tiene movimientos." />}
-      {!cargando && movimientos.length > 0 && <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th className="text-end">Cantidad</th><th className="text-end">Antes</th><th className="text-end">Después</th><th>Notas</th></tr></thead><tbody>{movimientos.map((item) => <tr key={item.id}><td>{formatFechaColombia(item.created_at)}</td><td><MovementBadge type={item.movement_type} /></td><td>{ORIGIN_LABELS[item.origin_type] || item.origin_type}</td><td className="text-end">{number(item.quantity)}</td><td className="text-end">{number(item.balance_before)}</td><td className="text-end fw-semibold">{number(item.balance_after)}</td><td>{item.notes || '-'}</td></tr>)}</tbody></table></div><Pagination total={page * PAGE_SIZE + (hasNext ? 1 : 0)} page={page} onPageChange={(next) => cargarMovimientos(productoId, next)} hasNext={hasNext} /></>}
+      {!cargando && movimientos.length > 0 && <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th className="text-end">Cantidad</th><th className="text-end">Precio compra</th><th className="text-end">Antes</th><th className="text-end">Después</th><th>Notas</th></tr></thead><tbody>{movimientos.map((item) => <tr key={item.id}><td>{formatFechaColombia(item.created_at)}</td><td><MovementBadge type={item.movement_type} /></td><td>{ORIGIN_LABELS[item.origin_type] || item.origin_type}</td><td className="text-end">{number(item.quantity)}</td><td className="text-end">{money(item.unit_purchase_price)}</td><td className="text-end">{number(item.balance_before)}</td><td className="text-end fw-semibold">{number(item.balance_after)}</td><td>{item.notes || '-'}</td></tr>)}</tbody></table></div><Pagination total={page * PAGE_SIZE + (hasNext ? 1 : 0)} page={page} onPageChange={(next) => cargarMovimientos(productoId, next)} hasNext={hasNext} /></>}
     </div></div>
     {modal && <MovementModal form={form} setForm={setForm} productos={productos} guardando={guardando} onClose={cerrar} onSubmit={guardar} onOriginChange={origenCambia} />}
   </>
