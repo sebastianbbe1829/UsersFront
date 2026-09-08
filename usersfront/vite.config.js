@@ -14,7 +14,6 @@ export default defineConfig({
       '/tenants': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/tenant-config': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/global-users': { target: 'http://127.0.0.1:8000', changeOrigin: true },
-      // Solo /bootstrap es API. /bootstrap/super y /bootstrap/tenant son SPA.
       '^/bootstrap$': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/roles': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/permissions': { target: 'http://127.0.0.1:8000', changeOrigin: true },
@@ -29,6 +28,7 @@ export default defineConfig({
       '/clients': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/inventory': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/sales': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/portfolio': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/diagnostics': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
