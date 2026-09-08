@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligaciones } from '../services/portfolioApi'
@@ -27,6 +27,13 @@ const statusClass = {
   CANCELLED: 'text-bg-secondary',
 }
 
+const nombreCliente = (cliente) => cliente?.full_name || [
+  cliente?.first_name,
+  cliente?.middle_name,
+  cliente?.last_name,
+  cliente?.second_last_name,
+].filter(Boolean).join(' ') || cliente?.business_name || 'Cliente no disponible'
+
 export default function PortfolioObligationsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const navigate = useNavigate()
@@ -36,22 +43,29 @@ export default function PortfolioObligationsPage() {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [cargando, setCargando] = useState(true)
+  const [cargandoClientes, setCargandoClientes] = useState(true)
   const [mensaje, setMensaje] = useState(null)
 
   const cargarClientes = useCallback(async () => {
-    const pageSize = 100
-    const acumulados = []
-    let page = 1
+    setCargandoClientes(true)
+    try {
+      const pageSize = 100
+      const acumulados = []
+      let page = 1
 
-    while (page <= 50) {
-      const resultado = await obtenerClientes(token, { page, pageSize, search: '' })
-      const items = Array.isArray(resultado?.items) ? resultado.items : []
-      acumulados.push(...items)
-      if (items.length < pageSize || !resultado?.total || acumulados.length >= resultado.total) break
-      page += 1
+      while (true) {
+        const resultado = await obtenerClientes(token, { page, pageSize, search: '' })
+        const items = Array.isArray(resultado) ? resultado : Array.isArray(resultado?.items) ? resultado.items : []
+        acumulados.push(...items)
+
+        if (items.length < pageSize) break
+        page += 1
+      }
+
+      setClientes(acumulados)
+    } finally {
+      setCargandoClientes(false)
     }
-
-    setClientes(acumulados)
   }, [token])
 
   const cargar = useCallback(async (filtros = {}) => {
@@ -69,13 +83,18 @@ export default function PortfolioObligationsPage() {
 
   useEffect(() => {
     if (!token) return undefined
-    Promise.resolve()
-      .then(() => cargar())
-      .then(() => cargarClientes())
-      .catch((error) => {
-        if (error.status === 401) manejarSesionExpirada()
-      })
-    return undefined
+    let activo = true
+
+    const iniciar = async () => {
+      try {
+        await Promise.all([cargar(), cargarClientes()])
+      } catch (error) {
+        if (activo && error.status === 401) manejarSesionExpirada()
+      }
+    }
+
+    void iniciar()
+    return () => { activo = false }
   }, [token, cargar, cargarClientes, manejarSesionExpirada])
 
   const aplicarFiltros = async (event) => {
@@ -100,8 +119,25 @@ export default function PortfolioObligationsPage() {
     await cargar()
   }
 
-  const clientePorId = Object.fromEntries(clientes.map((cliente) => [cliente.id, cliente]))
-  const abrirVenta = (item) => navigate(`../../ventas/consulta?sale=${encodeURIComponent(item.sale_number || item.sale_id)}`)
+  const clientesOrdenados = useMemo(() => [...clientes].sort((a, b) => {
+    const nombreA = nombreCliente(a).toLocaleLowerCase('es-CO')
+    const nombreB = nombreCliente(b).toLocaleLowerCase('es-CO')
+    return nombreA.localeCompare(nombreB, 'es-CO')
+  }), [clientes])
+
+  const clientePorId = useMemo(
+    () => Object.fromEntries(clientes.map((cliente) => [String(cliente.id), cliente])),
+    [clientes],
+  )
+
+  const abrirVenta = (item) => {
+    const sale = item.sale_number || item.sale_id
+    if (!sale) {
+      setMensaje({ tipo: 'warning', texto: 'Esta obligación no tiene una venta asociada.' })
+      return
+    }
+    navigate(`../../ventas/consulta?sale=${encodeURIComponent(sale)}`)
+  }
 
   return (
     <div>
@@ -120,11 +156,11 @@ export default function PortfolioObligationsPage() {
             <div className="row g-3 align-items-end">
               <div className="col-lg-5">
                 <label className="form-label fw-semibold" htmlFor="obligaciones-cliente">Cliente</label>
-                <select id="obligaciones-cliente" className="form-select" value={clientId} onChange={(event) => setClientId(event.target.value)}>
-                  <option value="">Todos los clientes</option>
-                  {clientes.map((cliente) => (
+                <select id="obligaciones-cliente" className="form-select" value={clientId} onChange={(event) => setClientId(event.target.value)} disabled={cargandoClientes}>
+                  <option value="">{cargandoClientes ? 'Cargando clientes...' : 'Todos los clientes'}</option>
+                  {clientesOrdenados.map((cliente) => (
                     <option key={cliente.id} value={cliente.id}>
-                      {cliente.full_name} — {cliente.identification_number}
+                      {nombreCliente(cliente)} — {cliente.identification_number || 'Sin identificación'}
                     </option>
                   ))}
                 </select>
@@ -138,8 +174,8 @@ export default function PortfolioObligationsPage() {
                 <input id="obligaciones-hasta" type="date" className="form-control" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
               </div>
               <div className="col-lg-3 d-flex gap-2">
-                <button type="submit" className="btn btn-primary flex-grow-1">🔎 Filtrar</button>
-                <button type="button" className="btn btn-outline-secondary" onClick={() => void limpiarFiltros()}>Limpiar</button>
+                <button type="submit" className="btn btn-primary flex-grow-1" disabled={cargando}>🔎 Filtrar</button>
+                <button type="button" className="btn btn-outline-secondary" onClick={() => void limpiarFiltros()} disabled={cargando}>Limpiar</button>
               </div>
             </div>
           </form>
@@ -157,32 +193,31 @@ export default function PortfolioObligationsPage() {
                 <th className="text-end">Valor inicial</th>
                 <th className="text-end">Saldo</th>
                 <th>Estado</th>
-                <th className="text-end">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {cargando && <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando obligaciones...</div></td></tr>}
-              {!cargando && !obligaciones.length && <tr><td colSpan="7" className="text-center text-muted py-5">No hay obligaciones para los filtros seleccionados.</td></tr>}
+              {cargando && <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando obligaciones...</div></td></tr>}
+              {!cargando && !obligaciones.length && <tr><td colSpan="6" className="text-center text-muted py-5">No hay obligaciones para los filtros seleccionados.</td></tr>}
               {!cargando && obligaciones.map((item) => {
-                const cliente = clientePorId[item.client_id]
+                const cliente = clientePorId[String(item.client_id)]
+                const nombre = nombreCliente(cliente)
                 return (
                   <tr key={item.id}>
                     <td>
-                      <div className="fw-semibold">{cliente?.full_name || 'Cliente no disponible'}</div>
+                      <div className="fw-semibold">{nombre}</div>
                       <div className="small text-muted">{cliente?.identification_number || '—'}</div>
                     </td>
                     <td>
-                      <button type="button" className="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" onClick={() => abrirVenta(item)} title="Ver esta venta en la consulta de ventas">
-                        {item.sale_number || 'Ver venta'}
-                      </button>
+                      {item.sale_number || item.sale_id ? (
+                        <button type="button" className="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" onClick={() => abrirVenta(item)} title="Abrir esta venta">
+                          {item.sale_number || 'Ver venta'}
+                        </button>
+                      ) : '—'}
                     </td>
                     <td>{formatDate(item.created_at)}</td>
                     <td className="text-end">{money(item.initial_amount)}</td>
                     <td className="text-end fw-bold">{money(item.balance)}</td>
                     <td><span className={`badge ${statusClass[item.status] || 'text-bg-secondary'}`}>{statusLabel[item.status] || item.status}</span></td>
-                    <td className="text-end">
-                      <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => abrirVenta(item)}>Ver venta</button>
-                    </td>
                   </tr>
                 )
               })}
