@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { enviarFacturaPorCorreo, obtenerVentas } from '../services/salesApi'
 import { abrirFactura } from '../utils/salesInvoice'
@@ -34,7 +34,7 @@ function SalesHistoryPage() {
   const [sendingId, setSendingId] = useState(null)
   const [message, setMessage] = useState(null)
 
-  const loadSales = async () => {
+  const loadSales = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -46,11 +46,13 @@ function SalesHistoryPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [manejarSesionExpirada, token])
 
   useEffect(() => {
-    if (token) void loadSales()
-  }, [token])
+    if (!token) return undefined
+    const timer = setTimeout(() => void loadSales(), 0)
+    return () => clearTimeout(timer)
+  }, [loadSales, token])
 
   const filteredSales = useMemo(() => {
     const term = search.trim().toLowerCase()
