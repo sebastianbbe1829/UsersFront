@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
@@ -49,7 +49,7 @@ function InventoryPage() {
 
   const tab = location.pathname.endsWith('/tipos') ? TABS.types : location.pathname.endsWith('/productos') ? TABS.products : location.pathname.endsWith('/movimientos') ? TABS.movements : TABS.stock
 
-  const cargarCatalogos = async () => {
+  const cargarCatalogos = useCallback(async () => {
     try {
       setCargando(true)
       const [tiposResult, productosResult, inventarioResult] = await Promise.all([obtenerTiposInventario(token), obtenerProductosInventario(token), obtenerInventario(token)])
@@ -61,10 +61,9 @@ function InventoryPage() {
       if (error.status === 401) return manejarSesionExpirada()
       setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el inventario.' })
     } finally { setCargando(false) }
-  }
+  }, [token, manejarSesionExpirada])
 
-  useEffect(() => { if (token) cargarCatalogos() }, [token])
-  useEffect(() => { setPage(1); setBusqueda('') }, [tab])
+  useEffect(() => { if (token) cargarCatalogos() }, [token, cargarCatalogos])
 
   const tipoPorId = useMemo(() => new Map(tipos.map((item) => [item.id, item])), [tipos])
   const productoPorId = useMemo(() => new Map(productos.map((item) => [item.id, item])), [productos])
@@ -84,7 +83,7 @@ function InventoryPage() {
   const paginaProductos = useMemo(() => productosFiltrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [productosFiltrados, page])
   const paginaInventario = useMemo(() => inventarioFiltrado.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [inventarioFiltrado, page])
 
-  const cargarMovimientos = async (productId, requestedPage = 1) => {
+  const cargarMovimientos = useCallback(async (productId, requestedPage = 1) => {
     if (!productId) { setMovimientos([]); setMovementHasNext(false); return }
     try {
       setCargandoMovimientos(true)
@@ -95,9 +94,11 @@ function InventoryPage() {
       if (error.status === 401) return manejarSesionExpirada()
       setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los movimientos.' })
     } finally { setCargandoMovimientos(false) }
-  }
+  }, [token, manejarSesionExpirada])
 
-  useEffect(() => { if (tab === TABS.movements && productoMovimiento) cargarMovimientos(productoMovimiento, 1) }, [tab, productoMovimiento])
+  useEffect(() => {
+    if (tab === TABS.movements && productoMovimiento) cargarMovimientos(productoMovimiento, 1)
+  }, [tab, productoMovimiento, cargarMovimientos])
 
   const ejecutar = async (action, successMessage) => {
     try {
@@ -126,7 +127,7 @@ function InventoryPage() {
   }
   const iniciarEdicionTipo = (item) => { setEditandoTipo(item.id); setTipoForm({ code: item.code, name: item.name, active: item.active }); setModal('type') }
   const iniciarEdicionProducto = (item) => { setEditandoProducto(item.id); setProductoForm({ code: item.code, name: item.name, inventory_type_id: String(item.inventory_type_id), active: item.active }); setModal('product') }
-  const cambiarTab = (value) => navigate(value === TABS.stock ? '/inventarios' : `/inventarios/${value}`)
+  const cambiarTab = (value) => { setPage(1); setBusqueda(''); navigate(value === TABS.stock ? '/inventarios' : `/inventarios/${value}`) }
   const abrirMovimiento = () => { setMovimientoForm({ ...emptyMovement, product_id: productoMovimiento }); setModal('movement') }
   const origenCambia = (value) => setMovimientoForm({ ...movimientoForm, origin_type: value, movement_type: value === 'PURCHASE' || value === 'SALES_RETURN' ? 'ENTRY' : 'EXIT' })
 
