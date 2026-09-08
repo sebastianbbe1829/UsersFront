@@ -28,6 +28,7 @@ export default defineConfig({
       '/extinguisher-inspection-items': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/clients': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/inventory': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/sales': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/diagnostics': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
