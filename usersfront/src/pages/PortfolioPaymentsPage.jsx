@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera } from '../services/portfolioApi'
+import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
 
 const money = (value) => new Intl.NumberFormat('es-CO', {
@@ -32,6 +32,8 @@ const formatDate = (value) => {
   return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO').format(fecha)
 }
 
+const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
+
 export default function PortfolioPaymentsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -46,6 +48,7 @@ export default function PortfolioPaymentsPage() {
   const [cargando, setCargando] = useState(true)
   const [cargandoObligaciones, setCargandoObligaciones] = useState(false)
   const [guardando, setGuardando] = useState(false)
+  const [procesandoPagoId, setProcesandoPagoId] = useState(null)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [mensaje, setMensaje] = useState(null)
   const [filtroCliente, setFiltroCliente] = useState('')
@@ -215,6 +218,27 @@ export default function PortfolioPaymentsPage() {
     }
   }
 
+  const revertir = async (pago) => {
+    if (pago.status !== 'APLICADO' || procesandoPagoId) return
+    const confirmado = window.confirm(
+      `¿Confirmas anular el pago de ${money(pago.amount)}? Esta acción revertirá su aplicación sobre las obligaciones.`,
+    )
+    if (!confirmado) return
+
+    try {
+      setProcesandoPagoId(pago.id)
+      setMensaje(null)
+      await revertirPagoCartera(pago.id, token)
+      await cargarPagos()
+      setMensaje({ tipo: 'success', texto: 'Pago anulado correctamente y sus aplicaciones fueron revertidas.' })
+    } catch (error) {
+      if (error.status === 401) manejarSesionExpirada()
+      else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible anular el pago.' })
+    } finally {
+      setProcesandoPagoId(null)
+    }
+  }
+
   const cancelarRegistro = () => {
     setMostrarFormulario(false)
     setFormulario(nuevoFormulario())
@@ -239,10 +263,7 @@ export default function PortfolioPaymentsPage() {
   )
 
   const pagoSeleccionado = searchParams.get('payment')?.trim()
-  const estadosPago = useMemo(
-    () => [...new Set(pagos.map((pago) => pago?.status).filter(Boolean))].sort(),
-    [pagos],
-  )
+  const estadosPago = ['APLICADO', 'ANULADO']
 
   const pagosFiltrados = useMemo(() => {
     const paymentId = pagoSeleccionado?.toLowerCase()
@@ -472,9 +493,9 @@ export default function PortfolioPaymentsPage() {
               </div>
               <div className="col-lg-2">
                 <label className="form-label fw-semibold" htmlFor="pagos-filtro-estado">Estado</label>
-                <select id="pagos-filtro-estado" className="form-select" value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)} disabled={cargando || !estadosPago.length}>
+                <select id="pagos-filtro-estado" className="form-select" value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)} disabled={cargando}>
                   <option value="">Todos</option>
-                  {estadosPago.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+                  {estadosPago.map((estado) => <option key={estado} value={estado}>{estadoPagoLabel(estado)}</option>)}
                 </select>
               </div>
               <div className="col-lg-2 d-flex justify-content-end">
@@ -494,11 +515,12 @@ export default function PortfolioPaymentsPage() {
                   <th className="text-end">Valor</th>
                   <th>Medio de pago</th>
                   <th>Estado</th>
+                  <th className="text-end">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {cargando && <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando pagos...</div></td></tr>}
-                {!cargando && !pagosFiltrados.length && <tr><td colSpan="7" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
+                {cargando && <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando pagos...</div></td></tr>}
+                {!cargando && !pagosFiltrados.length && <tr><td colSpan="8" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
                 {!cargando && pagosFiltrados.map((pago) => (
                   <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
                     <td>{formatDate(pago.payment_date)}</td>
@@ -514,7 +536,27 @@ export default function PortfolioPaymentsPage() {
                     </td>
                     <td className="text-end fw-bold">{money(pago.amount)}</td>
                     <td>{pago.payment_method || '—'}</td>
-                    <td>{pago.status || '—'}</td>
+                    <td>
+                      <span className={`badge ${pago.status === 'APLICADO' ? 'text-bg-success' : 'text-bg-secondary'}`}>
+                        {estadoPagoLabel(pago.status)}
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      {pago.status === 'APLICADO' ? (
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => void revertir(pago)}
+                          disabled={procesandoPagoId !== null}
+                        >
+                          {procesandoPagoId === pago.id
+                            ? <><span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />Anulando...</>
+                            : 'Anular'}
+                        </button>
+                      ) : (
+                        <span className="text-muted small">Sin acciones</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
