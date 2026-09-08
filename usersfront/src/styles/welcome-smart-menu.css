@@ -96,17 +96,10 @@
 }
 
 @media (max-width: 900px) {
-  .welcome-quick-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+  .welcome-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 520px) {
-  .welcome-quick-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .welcome-quick-card {
-    min-height: 125px;
-  }
+  .welcome-quick-grid { grid-template-columns: 1fr; }
+  .welcome-quick-card { min-height: 125px; }
 }
