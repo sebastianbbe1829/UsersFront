@@ -102,7 +102,7 @@ function ClientRestrictedListsSyncExecutionsPage() {
     <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
     <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
       <div><h2 className="fw-bold mb-1">Ejecuciones de listas restrictivas</h2><p className="text-muted mb-0">Historial de sincronizaciones automáticas y manuales de las listas oficiales.</p></div>
-      <Can permission="CLIENT_SCREENING">
+      <Can permission="CLIENT_SCREENING" allowSuper={false}>
         <button type="button" className="btn btn-primary" onClick={ejecutarManual} disabled={ejecutando || hayEjecucionActiva}>
           {ejecutando ? <><span className="spinner-border spinner-border-sm me-2" role="status" />Programando...</> : '↻ Actualizar listas ahora'}
         </button>
