@@ -23,8 +23,7 @@ function SalesPage() {
   const [customerMode, setCustomerMode] = useState('generic')
   const [participants, setParticipants] = useState([])
   const [discount, setDiscount] = useState('0')
-  const [paymentMethod, setPaymentMethod] = useState('EFECTIVO')
-  const [paymentAmount, setPaymentAmount] = useState('')
+  const [payments, setPayments] = useState([{ method: 'EFECTIVO', amount: '' }])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
@@ -72,7 +71,9 @@ function SalesPage() {
   const discountValue = Math.min(100, Math.max(0, Number(discount) || 0))
   const discountAmount = subtotal * discountValue / 100
   const total = subtotal - discountAmount
-  const effectivePayment = Number(paymentAmount) || total
+  const paymentTotal = payments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0)
+  const paymentDifference = total - paymentTotal
+  const paymentComplete = Math.abs(paymentDifference) <= 0.01
   const allocatedPercentage = participants.reduce((sum, item) => sum + Number(item.percentage), 0)
   const remainingPercentage = Math.max(0, 100 - allocatedPercentage)
 
@@ -111,6 +112,8 @@ function SalesPage() {
   }, [clientSearch, clients, participants])
 
   const addParticipant = (client) => {
+    if (customerMode === 'split' && remainingPercentage <= 0) return
+    if (customerMode === 'client' && participants.length >= 1) return
     setParticipants((current) => [...current, { ...client, percentage: remainingPercentage || 0 }])
     setClientSearch('')
   }
@@ -123,14 +126,28 @@ function SalesPage() {
     setParticipants((current) => current.map((item) => item.id === clientId ? { ...item, percentage: value } : item))
   }
 
+  const addPayment = () => {
+    const remaining = Math.max(0, total - paymentTotal)
+    setPayments((current) => [...current, { method: 'EFECTIVO', amount: remaining > 0 ? String(remaining) : '' }])
+  }
+
+  const removePayment = (index) => {
+    setPayments((current) => current.filter((_, paymentIndex) => paymentIndex !== index))
+  }
+
+  const changePayment = (index, field, value) => {
+    setPayments((current) => current.map((payment, paymentIndex) => (
+      paymentIndex === index ? { ...payment, [field]: value } : payment
+    )))
+  }
+
   const resetSale = () => {
     setCart([])
     setCustomerMode('generic')
     setParticipants([])
     setClientSearch('')
     setDiscount('0')
-    setPaymentMethod('EFECTIVO')
-    setPaymentAmount('')
+    setPayments([{ method: 'EFECTIVO', amount: '' }])
   }
 
   const submit = async () => {
@@ -146,8 +163,8 @@ function SalesPage() {
       setMessage({ type: 'warning', text: 'Selecciona un cliente registrado.' })
       return
     }
-    if (Math.abs(effectivePayment - total) > 0.01) {
-      setMessage({ type: 'warning', text: 'El pago debe coincidir exactamente con el total de la venta.' })
+    if (!paymentComplete) {
+      setMessage({ type: 'warning', text: paymentDifference > 0 ? 'Aún falta completar el pago de la venta.' : 'El pago supera el total de la venta.' })
       return
     }
     setSaving(true)
@@ -163,7 +180,10 @@ function SalesPage() {
       const sale = await crearVenta({
         items: cart.map((item) => ({ product_id: item.product.id, quantity: item.quantity })),
         customers,
-        payments: [{ payment_method: paymentMethod, amount: total }],
+        payments: payments.map((payment) => ({
+          payment_method: payment.method,
+          amount: Number(payment.amount),
+        })),
         discount_percentage: discountValue,
       }, token)
       setMessage({ type: 'success', text: `Venta ${sale.sale_number} realizada correctamente por ${money(sale.total)}.` })
@@ -270,15 +290,25 @@ function SalesPage() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">💳 Método de pago</label>
-                <select className="form-select" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>
-                  {PAYMENT_METHODS.map((method) => <option key={method}>{method}</option>)}
-                </select>
-              </div>
-
-              <div className="mb-3">
-                <label className="form-label">Valor recibido</label>
-                <input type="number" min="0" className="form-control" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} placeholder={String(total)} />
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                  <label className="form-label fw-semibold mb-0">💳 Métodos de pago</label>
+                  <button type="button" className="btn btn-sm btn-outline-primary" onClick={addPayment} disabled={saving}>+ Agregar pago</button>
+                </div>
+                {payments.map((payment, index) => <div className="border rounded p-2 mb-2" key={`payment-${index}`}>
+                  <div className="d-flex align-items-center gap-2">
+                    <select className="form-select" value={payment.method} onChange={(event) => changePayment(index, 'method', event.target.value)}>
+                      {PAYMENT_METHODS.map((method) => <option key={method}>{method}</option>)}
+                    </select>
+                    <input type="number" min="0" step="0.01" className="form-control" value={payment.amount} onChange={(event) => changePayment(index, 'amount', event.target.value)} placeholder="Valor" />
+                    {payments.length > 1 && <button type="button" className="btn btn-outline-danger" onClick={() => removePayment(index)} aria-label="Eliminar pago">×</button>}
+                  </div>
+                </div>)}
+                <div className="small mt-2">
+                  <div className="d-flex justify-content-between"><span>Total pagado</span><strong>{money(paymentTotal)}</strong></div>
+                  {paymentDifference > 0.01 && <div className="d-flex justify-content-between text-warning"><span>Pendiente</span><strong>{money(paymentDifference)}</strong></div>}
+                  {paymentDifference < -0.01 && <div className="d-flex justify-content-between text-danger"><span>Excedente</span><strong>{money(Math.abs(paymentDifference))}</strong></div>}
+                  {paymentComplete && <div className="alert alert-success py-2 mt-2 mb-0">✓ Pago completo</div>}
+                </div>
               </div>
 
               <div className="bg-light rounded p-3 mb-3">
@@ -288,7 +318,7 @@ function SalesPage() {
                 <div className="d-flex justify-content-between fs-4 fw-bold"><span>Total</span><span>{money(total)}</span></div>
               </div>
 
-              <button type="button" className="btn btn-success btn-lg w-100" disabled={!cart.length || saving} onClick={submit}>
+              <button type="button" className="btn btn-success btn-lg w-100" disabled={!cart.length || saving || !paymentComplete} onClick={submit}>
                 {saving ? 'Procesando venta...' : '✓ Finalizar venta'}
               </button>
             </div>
