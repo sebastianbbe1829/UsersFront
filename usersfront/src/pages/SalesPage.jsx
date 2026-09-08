@@ -31,7 +31,6 @@ function SalesPage() {
   const load = useCallback(async () => {
     if (!token) return
     try {
-      setLoading(true)
       const [productsResult, inventoryResult, clientsResult] = await Promise.all([
         obtenerProductosInventario(token, true),
         obtenerInventario(token),
@@ -317,7 +316,6 @@ function SalesPage() {
                 <hr className="my-2" />
                 <div className="d-flex justify-content-between fs-4 fw-bold"><span>Total</span><span>{money(total)}</span></div>
               </div>
-
               <button type="button" className="btn btn-success btn-lg w-100" disabled={!cart.length || saving || !paymentComplete} onClick={submit}>
                 {saving ? 'Procesando venta...' : '✓ Finalizar venta'}
               </button>
