@@ -1,3 +1,5 @@
+const API_URL = import.meta.env.VITE_API_URL
+
 const procesarRespuesta = async (response) => {
   const resultado = await response.json().catch(() => null)
   if (!response.ok) {
@@ -14,21 +16,21 @@ const headers = (token) => ({
 })
 
 export const crearVenta = async (datos, token) => procesarRespuesta(await fetch(
-  '/sales',
+  `${API_URL}/sales`,
   { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
 ))
 
 export const obtenerVentas = async (token, { limit = 100, offset = 0 } = {}) => procesarRespuesta(await fetch(
-  `/sales?limit=${limit}&offset=${offset}`,
+  `${API_URL}/sales?limit=${limit}&offset=${offset}`,
   { headers: { Authorization: `Bearer ${token}` } },
 ))
 
 export const obtenerVenta = async (saleId, token) => procesarRespuesta(await fetch(
-  `/sales/${saleId}`,
+  `${API_URL}/sales/${saleId}`,
   { headers: { Authorization: `Bearer ${token}` } },
 ))
 
 export const enviarFacturaPorCorreo = async (saleId, token) => procesarRespuesta(await fetch(
-  `/sales/${saleId}/invoice/email`,
+  `${API_URL}/sales/${saleId}/invoice/email`,
   { method: 'POST', headers: headers(token) },
 ))
