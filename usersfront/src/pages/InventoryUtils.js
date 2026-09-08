@@ -1,6 +1,6 @@
 export const PAGE_SIZE = 10
 export const emptyType = { code: '', name: '', active: true }
-export const emptyProduct = { name: '', inventory_type_id: '', active: true }
+export const emptyProduct = { name: '', inventory_type_id: '', active: true, image_url: '', image_source: '', image_source_url: '', image_credit: '' }
 export const emptyMovement = { product_id: '', movement_type: 'ENTRY', origin_type: 'PURCHASE', quantity: '', unit_purchase_price: '', profit_percentage: '', notes: '' }
 
 export const money = (value) => value == null ? '-' : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 2 }).format(Number(value))
