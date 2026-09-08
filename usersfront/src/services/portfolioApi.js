@@ -29,8 +29,12 @@ export const actualizarCupoCliente = async (clientId, approvedLimit, token) => p
   },
 ))
 
-export const obtenerObligaciones = async (token, clientId = null) => {
-  const query = clientId ? `?client_id=${encodeURIComponent(clientId)}` : ''
+export const obtenerObligaciones = async (token, { clientId = null, dateFrom = null, dateTo = null } = {}) => {
+  const params = new URLSearchParams()
+  if (clientId) params.set('client_id', clientId)
+  if (dateFrom) params.set('date_from', dateFrom)
+  if (dateTo) params.set('date_to', dateTo)
+  const query = params.toString() ? `?${params.toString()}` : ''
   return procesarRespuesta(await fetch(`${API_URL}/portfolio/obligations${query}`, { headers: headers(token) }))
 }
 
