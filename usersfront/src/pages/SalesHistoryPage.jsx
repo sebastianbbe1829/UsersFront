@@ -58,6 +58,14 @@ function SalesHistoryPage() {
     if (sale) setSearch(sale)
   }, [searchParams])
 
+  useEffect(() => {
+    const sale = searchParams.get('sale')?.trim().toLowerCase()
+    if (!sale || !sales.length) return
+
+    const encontrada = sales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
+    if (encontrada) setSelectedSale(encontrada)
+  }, [sales, searchParams])
+
   const filteredSales = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (!term) return sales
