@@ -36,10 +36,7 @@ function InventoryMovementsPage() {
   const cargarProductos = useCallback(async () => { const tokenActual = tokenRef.current; if (!tokenActual) return; try { setCargandoProductos(true); const result = await obtenerProductosInventario(tokenActual, true); setProductos(Array.isArray(result) ? result : []) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) } finally { setCargandoProductos(false) } }, [manejarSesionExpirada])
   const cargarMovimientos = useCallback(async (requestedPage = 1) => { try { setCargando(true); const result = await obtenerMovimientosInventario(productoId, tokenRef.current, { limit: PAGE_SIZE + 1, offset: (requestedPage - 1) * PAGE_SIZE, fromDate, toDate }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, PAGE_SIZE)); setHasNext(rows.length > PAGE_SIZE); setPage(requestedPage); setMensaje(null) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el Kardex.' }) } finally { setCargando(false) } }, [productoId, fromDate, toDate, manejarSesionExpirada])
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargarProductos() } }, [token, cargarProductos])
-  // The effect coordinates the product-loading lifecycle with the movement query.
-  // The query itself owns its state updates, so this is intentionally a narrowly scoped lint exception.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { if (token && !cargandoProductos) void cargarMovimientos(1) }, [token, cargandoProductos, productoId, fromDate, toDate, cargarMovimientos])
+  useEffect(() => { if (token && !cargandoProductos) void Promise.resolve().then(() => cargarMovimientos(1)) }, [token, cargandoProductos, productoId, fromDate, toDate, cargarMovimientos])
 
   const productoPorId = useMemo(() => new Map(productos.map((item) => [item.id, item])), [productos])
   const abrir = () => { setForm({ ...emptyMovement, product_id: productoId }); setModal(true) }
