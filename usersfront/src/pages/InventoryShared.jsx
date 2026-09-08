@@ -1,5 +1,5 @@
 import Can from '../components/Can'
-import { emptyMovement, emptyProduct, emptyType, formatColombiaDateTime, money, number, originLabel, PAGE_SIZE } from './InventoryUtils'
+import { money, number, originLabel, PAGE_SIZE } from './InventoryUtils'
 
 export function Pagination({ total, page, onPageChange, hasNext = false }) {
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE))
