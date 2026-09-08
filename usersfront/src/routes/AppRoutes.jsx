@@ -22,6 +22,7 @@ import InventoryStockPage from '../pages/InventoryStockPage'
 import InventoryTypesPage from '../pages/InventoryTypesPage'
 import InventoryProductsPage from '../pages/InventoryProductsPage'
 import InventoryMovementsPage from '../pages/InventoryMovementsPage'
+import SalesPage from '../pages/SalesPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -73,6 +74,7 @@ function AppRoutes() {
       <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
       <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
       <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
+      <Route path="ventas" element={<RutaConPermiso permission="SALES_READ"><SalesPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
       <Route path="usuarios-super" element={<GlobalSuperAdminPage />} />

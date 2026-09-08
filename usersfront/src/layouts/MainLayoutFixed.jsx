@@ -19,7 +19,8 @@ function MainLayoutFixed() {
   const extintoresPorRuta = location.pathname.includes('/extintores')
   const clientesPorRuta = location.pathname.includes('/clientes')
   const inventariosPorRuta = location.pathname.includes('/inventarios')
-  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : inventariosPorRuta ? 'inventarios' : administracionPorRuta ? 'administracion' : null
+  const ventasPorRuta = location.pathname.includes('/ventas')
+  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : inventariosPorRuta ? 'inventarios' : ventasPorRuta ? 'ventas' : administracionPorRuta ? 'administracion' : null
   const [seccionAbierta, setSeccionAbierta] = useState(seccionPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const primaryColor = config?.primary_color || '#0d6efd'
@@ -69,6 +70,7 @@ function MainLayoutFixed() {
     if (ruta.includes('/inventarios/productos')) return { icono: '🛒', titulo: 'Productos de inventario' }
     if (ruta.includes('/inventarios/tipos')) return { icono: '🏷️', titulo: 'Tipos de inventario' }
     if (ruta.includes('/inventarios')) return { icono: '📦', titulo: 'Inventarios' }
+    if (ruta.includes('/ventas')) return { icono: '🛒', titulo: 'Ventas' }
     if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
     return { icono: '🏠', titulo: 'Panel de administración' }
@@ -117,6 +119,12 @@ function MainLayoutFixed() {
               <NavLink to={`${rutaTenant}/inventarios/productos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Productos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Productos</span>}</NavLink>
               <NavLink to={`${rutaTenant}/inventarios/movimientos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Movimientos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Movimientos</span>}</NavLink>
             </div>}
+          </Can>
+
+          <Can permission="SALES_READ">
+            <NavLink to={`${rutaTenant}/ventas`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ventas">
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Ventas</span>}
+            </NavLink>
           </Can>
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
