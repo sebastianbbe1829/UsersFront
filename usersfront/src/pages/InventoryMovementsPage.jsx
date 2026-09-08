@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
 import { crearMovimientoInventario, devolverMovimientoInventario, exportarKardexExcel, obtenerMovimientosInventario, obtenerProductosInventario } from '../services/inventoryApi'
-import { emptyMovement, EmptyState, money, MovementBadge, MovementModal, Pagination, PAGE_SIZE, number, ReversalModal } from './InventoryShared'
+import { emptyMovement, number, originLabel, PAGE_SIZE, money } from './InventoryUtils'
+import { EmptyState, MovementBadge, MovementModal, Pagination, ReversalModal } from './InventoryShared'
 
 const ORIGIN_LABELS = { PURCHASE: 'Compra', SALE: 'Venta', MANUAL_ADJUSTMENT: 'Ajuste de inventario', SALES_RETURN: 'Devolución de venta', PURCHASE_RETURN: 'Devolución de compra', REVERSAL: 'Reversión' }
 const OPERATION_MOVEMENT_TYPES = { PURCHASE: 'ENTRY', SALE: 'EXIT', SALES_RETURN: 'ENTRY', PURCHASE_RETURN: 'EXIT' }
@@ -35,6 +36,9 @@ function InventoryMovementsPage() {
   const cargarProductos = useCallback(async () => { const tokenActual = tokenRef.current; if (!tokenActual) return; try { setCargandoProductos(true); const result = await obtenerProductosInventario(tokenActual, true); setProductos(Array.isArray(result) ? result : []) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) } finally { setCargandoProductos(false) } }, [manejarSesionExpirada])
   const cargarMovimientos = useCallback(async (requestedPage = 1) => { try { setCargando(true); const result = await obtenerMovimientosInventario(productoId, tokenRef.current, { limit: PAGE_SIZE + 1, offset: (requestedPage - 1) * PAGE_SIZE, fromDate, toDate }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, PAGE_SIZE)); setHasNext(rows.length > PAGE_SIZE); setPage(requestedPage); setMensaje(null) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el Kardex.' }) } finally { setCargando(false) } }, [productoId, fromDate, toDate, manejarSesionExpirada])
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargarProductos() } }, [token, cargarProductos])
+  // The effect coordinates the product-loading lifecycle with the movement query.
+  // The query itself owns its state updates, so this is intentionally a narrowly scoped lint exception.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (token && !cargandoProductos) void cargarMovimientos(1) }, [token, cargandoProductos, productoId, fromDate, toDate, cargarMovimientos])
 
   const productoPorId = useMemo(() => new Map(productos.map((item) => [item.id, item])), [productos])
