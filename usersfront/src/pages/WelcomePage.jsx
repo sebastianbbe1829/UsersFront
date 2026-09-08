@@ -67,7 +67,6 @@ function WelcomePage() {
   const colorHora = ajustarColorParaFondo(primaryColor, modoOscuro)
   const nombreTenant = config?.name || tenant || 'su empresa'
   const tituloAplicacion = config?.app_title || nombreTenant
-  const mostrarNombreTenant = nombreTenant && nombreTenant !== tituloAplicacion
 
   const payload = (() => {
     try {
