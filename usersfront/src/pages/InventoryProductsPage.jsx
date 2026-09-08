@@ -3,7 +3,8 @@ import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
 import { actualizarProductoInventario, crearProductoInventario, obtenerProductosInventario, obtenerTiposInventario } from '../services/inventoryApi'
-import { emptyProduct, EmptyState, PAGE_SIZE, Pagination, ProductModal, SearchBar, TableProducts } from './InventoryShared'
+import { emptyProduct, PAGE_SIZE } from './InventoryUtils'
+import { EmptyState, Pagination, ProductModal, SearchBar, TableProducts } from './InventoryShared'
 
 function InventoryProductsPage() {
   const { token, manejarSesionExpirada } = useAuth()
