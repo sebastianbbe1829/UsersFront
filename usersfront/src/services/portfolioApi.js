@@ -56,3 +56,11 @@ export const registrarPagoCartera = async (datos, token) => procesarRespuesta(aw
     body: JSON.stringify(datos),
   },
 ))
+
+export const revertirPagoCartera = async (paymentId, token) => procesarRespuesta(await fetch(
+  `${API_URL}/portfolio/payments/${encodeURIComponent(paymentId)}/annul`,
+  {
+    method: 'POST',
+    headers: headers(token),
+  },
+))
