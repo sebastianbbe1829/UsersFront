@@ -18,7 +18,8 @@ function MainLayoutFixed() {
   const administracionPorRuta = ['usuarios', 'roles', 'permisos'].some((ruta) => location.pathname.split('/').includes(ruta))
   const extintoresPorRuta = location.pathname.includes('/extintores')
   const clientesPorRuta = location.pathname.includes('/clientes')
-  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : administracionPorRuta ? 'administracion' : null
+  const inventariosPorRuta = location.pathname.includes('/inventarios')
+  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : inventariosPorRuta ? 'inventarios' : administracionPorRuta ? 'administracion' : null
   const [seccionAbierta, setSeccionAbierta] = useState(seccionPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const primaryColor = config?.primary_color || '#0d6efd'
@@ -64,6 +65,10 @@ function MainLayoutFixed() {
     if (ruta.includes('/clientes/demografica/ciudades')) return { icono: '📍', titulo: 'Ciudades' }
     if (ruta.includes('/clientes/informes-listas-restrictivas')) return { icono: '📊', titulo: 'Informes Listas Restrictivas' }
     if (ruta.includes('/clientes')) return { icono: '👥', titulo: 'Clientes' }
+    if (ruta.includes('/inventarios/movimientos')) return { icono: '📋', titulo: 'Movimientos de inventario' }
+    if (ruta.includes('/inventarios/productos')) return { icono: '🛒', titulo: 'Productos de inventario' }
+    if (ruta.includes('/inventarios/tipos')) return { icono: '🏷️', titulo: 'Tipos de inventario' }
+    if (ruta.includes('/inventarios')) return { icono: '📦', titulo: 'Inventarios' }
     if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
     return { icono: '🏠', titulo: 'Panel de administración' }
@@ -101,6 +106,18 @@ function MainLayoutFixed() {
           </Can>
 
           <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} abierto={seccionAbierta === 'clientes'} onToggleSection={() => alternarSeccion('clientes')} />
+
+          <Can permission="INVENTORY_READ">
+            <button type="button" className={obtenerClaseMenu(inventariosPorRuta)} onClick={() => alternarSeccion('inventarios')} title="Inventarios" style={{ background: 'transparent' }}>
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>📦</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Inventarios</span><span>{seccionAbierta === 'inventarios' ? '▾' : '▸'}</span></>}
+            </button>
+            {seccionAbierta === 'inventarios' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <NavLink to={`${rutaTenant}/inventarios`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📦</span>{!menuColapsado && <span className="ms-3">Inventario</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/tipos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Tipos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span>{!menuColapsado && <span className="ms-3">Tipos</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/productos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Productos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Productos</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/movimientos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Movimientos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Movimientos</span>}</NavLink>
+            </div>}
+          </Can>
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
             <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => alternarSeccion('administracion')} title="Administración" style={{ background: 'transparent' }}>
