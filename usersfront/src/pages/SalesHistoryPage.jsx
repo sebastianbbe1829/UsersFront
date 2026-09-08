@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { enviarFacturaPorCorreo, obtenerVentas } from '../services/salesApi'
 import { abrirFactura } from '../utils/salesInvoice'
@@ -12,9 +13,6 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
 const formatDate = (value) => {
   if (!value) return '—'
 
-  // El backend entrega created_at sin offset, pero el valor corresponde a UTC.
-  // Agregamos Z para que el navegador lo convierta correctamente a la hora local
-  // del usuario (Colombia: UTC-5).
   const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
   if (Number.isNaN(fecha.getTime())) return '—'
 
@@ -26,10 +24,11 @@ const formatDate = (value) => {
 
 function SalesHistoryPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const [searchParams] = useSearchParams()
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState(() => searchParams.get('sale') || '')
   const [selectedSale, setSelectedSale] = useState(null)
   const [sendingId, setSendingId] = useState(null)
   const [message, setMessage] = useState(null)
@@ -39,14 +38,21 @@ function SalesHistoryPage() {
     setError(null)
     try {
       const result = await obtenerVentas(token, { limit: 500, offset: 0 })
-      setSales(Array.isArray(result) ? result : [])
+      const loadedSales = Array.isArray(result) ? result : []
+      setSales(loadedSales)
+
+      const sale = searchParams.get('sale')?.trim().toLowerCase()
+      if (sale) {
+        const encontrada = loadedSales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
+        if (encontrada) setSelectedSale(encontrada)
+      }
     } catch (requestError) {
       if (requestError.status === 401) return manejarSesionExpirada()
       setError(requestError.message || 'No fue posible consultar las ventas.')
     } finally {
       setLoading(false)
     }
-  }, [manejarSesionExpirada, token])
+  }, [manejarSesionExpirada, searchParams, token])
 
   useEffect(() => {
     if (!token) return undefined

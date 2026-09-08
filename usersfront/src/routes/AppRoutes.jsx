@@ -5,7 +5,6 @@ import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import ClientsPage from '../pages/ClientsPage'
-import ClientCreditLimitsPage from '../pages/ClientCreditLimitsPage'
 import ClientIdentificationTypesPage from '../pages/ClientIdentificationTypesPage'
 import CountriesPage from '../pages/CountriesPage'
 import DepartmentsPage from '../pages/DepartmentsPage'
@@ -25,6 +24,9 @@ import InventoryProductsPage from '../pages/InventoryProductsPage'
 import InventoryMovementsPage from '../pages/InventoryMovementsPage'
 import SalesCheckoutPage from '../pages/SalesCheckoutPage'
 import SalesHistoryPage from '../pages/SalesHistoryPage'
+import PortfolioPage from '../pages/PortfolioPage'
+import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
+import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -59,7 +61,6 @@ function AppRoutes() {
       <Route index element={<WelcomePage />} />
       <Route path="usuarios" element={<RutaConPermiso permission="USER_READ"><UsersPage /></RutaConPermiso>} />
       <Route path="clientes" element={<RutaConPermiso permission="CLIENT_READ"><ClientsPage /></RutaConPermiso>} />
-      <Route path="clientes/cupos" element={<RutaConPermiso permission="CLIENT_READ"><ClientCreditLimitsPage /></RutaConPermiso>} />
       <Route path="clientes/tipos-identificacion" element={<RutaConPermiso permission="CLIENT_READ"><ClientIdentificationTypesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/paises" element={<RutaConPermiso permission="CLIENT_READ"><CountriesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/departamentos" element={<RutaConPermiso permission="CLIENT_READ"><DepartmentsPage /></RutaConPermiso>} />
@@ -67,6 +68,9 @@ function AppRoutes() {
       <Route path="clientes/informes-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsReportsPage /></RutaConPermiso>} />
       <Route path="clientes/historial-levantamientos" element={<RutaConPermiso permission="CLIENT_READ"><ClientComplianceOverrideHistoryPage /></RutaConPermiso>} />
       <Route path="clientes/ejecuciones-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsSyncExecutionsPage /></RutaConPermiso>} />
+      <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
+      <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
+      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
