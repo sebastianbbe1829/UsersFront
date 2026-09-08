@@ -9,81 +9,26 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     proxy: {
-      '/auth': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/users': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/tenants': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/tenant-config': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/global-users': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      // Solo /bootstrap es API. Las rutas /bootstrap/super y
-      // /bootstrap/tenant pertenecen al SPA y deben llegar a index.html.
-      // La clave regex evita que Vite haga proxy por prefijo.
-      '^/bootstrap$': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/roles': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/permissions': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/permission': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/role-permissions': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/user-tenants': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/user-tenant-roles': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/extinguisher-types': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/extinguishers': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/extinguisher-inspections': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/extinguisher-inspection-items': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/clients': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
-      '/diagnostics': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-      },
+      '/auth': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/users': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/tenants': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/tenant-config': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/global-users': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      // Solo /bootstrap es API. /bootstrap/super y /bootstrap/tenant son SPA.
+      '^/bootstrap$': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/roles': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/permissions': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/permission': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/role-permissions': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/user-tenants': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/user-tenant-roles': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/extinguisher-types': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/extinguishers': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/extinguisher-inspections': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/extinguisher-inspection-items': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/clients': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/inventory': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/diagnostics': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
 })
