@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera } from '../services/portfolioApi'
@@ -34,7 +34,8 @@ const formatDate = (value) => {
 
 export default function PortfolioPaymentsPage() {
   const { token, manejarSesionExpirada } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const cargaInicialRef = useRef(false)
   const [clientes, setClientes] = useState([])
   const [busquedaCliente, setBusquedaCliente] = useState('')
   const [clienteSeleccionado, setClienteSeleccionado] = useState(null)
@@ -47,6 +48,10 @@ export default function PortfolioPaymentsPage() {
   const [guardando, setGuardando] = useState(false)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [mensaje, setMensaje] = useState(null)
+  const [filtroCliente, setFiltroCliente] = useState('')
+  const [filtroDesde, setFiltroDesde] = useState('')
+  const [filtroHasta, setFiltroHasta] = useState('')
+  const [filtroEstado, setFiltroEstado] = useState('')
 
   const cargarPagos = useCallback(async () => {
     const resultado = await obtenerPagosCartera(token)
@@ -68,7 +73,8 @@ export default function PortfolioPaymentsPage() {
   }, [token])
 
   useEffect(() => {
-    if (!token) return undefined
+    if (!token || cargaInicialRef.current) return undefined
+    cargaInicialRef.current = true
     Promise.all([cargarPagos(), cargarClientes()]).catch((error) => {
       if (error.status === 401) manejarSesionExpirada()
       else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los pagos.' })
@@ -219,12 +225,36 @@ export default function PortfolioPaymentsPage() {
     setMensaje(null)
   }
 
+  const limpiarFiltros = () => {
+    setFiltroCliente('')
+    setFiltroDesde('')
+    setFiltroHasta('')
+    setFiltroEstado('')
+    if (searchParams.has('payment')) setSearchParams({}, { replace: true })
+  }
+
   const clientePorId = useMemo(
     () => Object.fromEntries(clientes.map((cliente) => [String(cliente.id), nombreCliente(cliente)])),
     [clientes],
   )
 
-  const pagoSeleccionado = searchParams.get('payment')?.trim().toLowerCase()
+  const pagoSeleccionado = searchParams.get('payment')?.trim()
+  const estadosPago = useMemo(
+    () => [...new Set(pagos.map((pago) => pago?.status).filter(Boolean))].sort(),
+    [pagos],
+  )
+
+  const pagosFiltrados = useMemo(() => {
+    const paymentId = pagoSeleccionado?.toLowerCase()
+    return pagos.filter((pago) => {
+      if (paymentId && String(pago.id).toLowerCase() !== paymentId) return false
+      if (filtroCliente && String(pago.client_id) !== String(filtroCliente)) return false
+      if (filtroDesde && String(pago.payment_date || '').slice(0, 10) < filtroDesde) return false
+      if (filtroHasta && String(pago.payment_date || '').slice(0, 10) > filtroHasta) return false
+      if (filtroEstado && String(pago.status || '') !== filtroEstado) return false
+      return true
+    })
+  }, [pagos, pagoSeleccionado, filtroCliente, filtroDesde, filtroHasta, filtroEstado])
 
   return (
     <div>
@@ -423,6 +453,36 @@ export default function PortfolioPaymentsPage() {
 
       {!mostrarFormulario && (
         <div className="card border-0 shadow-sm">
+          <div className="card-body border-bottom">
+            <div className="row g-3 align-items-end">
+              <div className="col-lg-4">
+                <label className="form-label fw-semibold" htmlFor="pagos-filtro-cliente">Cliente</label>
+                <select id="pagos-filtro-cliente" className="form-select" value={filtroCliente} onChange={(event) => setFiltroCliente(event.target.value)} disabled={cargando}>
+                  <option value="">Todos los clientes</option>
+                  {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{nombreCliente(cliente)} — {cliente.identification_number || 'Sin identificación'}</option>)}
+                </select>
+              </div>
+              <div className="col-sm-6 col-lg-2">
+                <label className="form-label fw-semibold" htmlFor="pagos-filtro-desde">Desde</label>
+                <input id="pagos-filtro-desde" type="date" className="form-control" value={filtroDesde} onChange={(event) => setFiltroDesde(event.target.value)} disabled={cargando} />
+              </div>
+              <div className="col-sm-6 col-lg-2">
+                <label className="form-label fw-semibold" htmlFor="pagos-filtro-hasta">Hasta</label>
+                <input id="pagos-filtro-hasta" type="date" className="form-control" value={filtroHasta} onChange={(event) => setFiltroHasta(event.target.value)} disabled={cargando} />
+              </div>
+              <div className="col-lg-2">
+                <label className="form-label fw-semibold" htmlFor="pagos-filtro-estado">Estado</label>
+                <select id="pagos-filtro-estado" className="form-select" value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)} disabled={cargando || !estadosPago.length}>
+                  <option value="">Todos</option>
+                  {estadosPago.map((estado) => <option key={estado} value={estado}>{estado}</option>)}
+                </select>
+              </div>
+              <div className="col-lg-2 d-flex justify-content-end">
+                <button type="button" className="btn btn-outline-secondary" onClick={limpiarFiltros} disabled={cargando || (!filtroCliente && !filtroDesde && !filtroHasta && !filtroEstado && !pagoSeleccionado)}>Limpiar</button>
+              </div>
+            </div>
+            {pagoSeleccionado && <div className="small text-primary mt-3">Mostrando el pago seleccionado desde la obligación. <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => setSearchParams({}, { replace: true })}>Mostrar todos</button></div>}
+          </div>
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead>
@@ -433,31 +493,30 @@ export default function PortfolioPaymentsPage() {
                   <th>Obligaciones</th>
                   <th className="text-end">Valor</th>
                   <th>Medio de pago</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody>
-                {cargando && <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando pagos...</div></td></tr>}
-                {!cargando && !pagos.length && <tr><td colSpan="6" className="text-center text-muted py-5">No hay pagos registrados.</td></tr>}
-                {!cargando && pagos.map((pago) => {
-                  const seleccionado = pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado
-                  return (
-                    <tr key={pago.id} className={seleccionado ? 'table-active' : ''}>
-                      <td>{formatDate(pago.payment_date)}</td>
-                      <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
-                      <td>{pago.reference || '—'}</td>
-                      <td>
-                        {pago.allocations?.length
-                          ? pago.allocations.map((allocation) => {
-                            const obligation = obligaciones.find((item) => item.id === allocation.obligation_id)
-                            return <div key={allocation.id || allocation.obligation_id} className="small">{obligation?.sale_number || allocation.obligation_id}</div>
-                          })
-                          : '—'}
-                      </td>
-                      <td className="text-end fw-bold">{money(pago.amount)}</td>
-                      <td>{pago.payment_method || '—'}</td>
-                    </tr>
-                  )
-                })}
+                {cargando && <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando pagos...</div></td></tr>}
+                {!cargando && !pagosFiltrados.length && <tr><td colSpan="7" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
+                {!cargando && pagosFiltrados.map((pago) => (
+                  <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
+                    <td>{formatDate(pago.payment_date)}</td>
+                    <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
+                    <td>{pago.reference || '—'}</td>
+                    <td>
+                      {pago.allocations?.length
+                        ? pago.allocations.map((allocation) => {
+                          const obligation = obligaciones.find((item) => item.id === allocation.obligation_id)
+                          return <div key={allocation.id || allocation.obligation_id} className="small">{obligation?.sale_number || allocation.obligation_id}</div>
+                        })
+                        : '—'}
+                    </td>
+                    <td className="text-end fw-bold">{money(pago.amount)}</td>
+                    <td>{pago.payment_method || '—'}</td>
+                    <td>{pago.status || '—'}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
