@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { actualizarCliente, obtenerClientes } from '../services/clientsApi'
@@ -7,6 +8,7 @@ const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', cur
 
 export default function ClientCreditLimitsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const location = useLocation()
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [cargando, setCargando] = useState(true)
@@ -33,7 +35,7 @@ export default function ClientCreditLimitsPage() {
     }
     void cargar()
     return () => { activo = false }
-  }, [manejarSesionExpirada, token])
+  }, [manejarSesionExpirada, token, location.pathname])
 
   const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase()
