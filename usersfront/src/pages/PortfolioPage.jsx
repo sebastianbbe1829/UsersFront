@@ -117,9 +117,21 @@ export default function PortfolioPage() {
         <div className="col-md-4"><div className="card border-0 shadow-sm"><div className="card-body"><div className="text-muted small">Cupo disponible</div><div className="fs-4 fw-bold text-success">{money(totalDisponible)}</div></div></div></div>
       </div>
 
-      <div className="card shadow-sm border-0">
+      <div className="card shadow-sm border-0 position-relative" aria-busy={guardando !== null}>
+        {guardando !== null && (
+          <div
+            className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center rounded"
+            style={{ zIndex: 20, backgroundColor: 'rgba(var(--bs-body-bg-rgb), 0.78)', backdropFilter: 'blur(1px)' }}
+            role="status"
+            aria-live="polite"
+          >
+            <div className="spinner-border mb-3" aria-hidden="true" />
+            <div className="fw-semibold">Registrando...</div>
+            <div className="text-muted small mt-1">Actualizando el cupo aprobado del cliente.</div>
+          </div>
+        )}
         <div className="card-body">
-          <div className="mb-3"><input className="form-control" type="search" placeholder="Buscar cliente por identificación o nombre..." value={busqueda} onChange={(event) => setBusqueda(event.target.value)} /></div>
+          <div className="mb-3"><input className="form-control" type="search" placeholder="Buscar cliente por identificación o nombre..." value={busqueda} onChange={(event) => setBusqueda(event.target.value)} disabled={guardando !== null} /></div>
           {cargando ? (
             <div className="text-center py-5"><div className="spinner-border" role="status" /></div>
           ) : (
@@ -129,16 +141,17 @@ export default function PortfolioPage() {
                 <tbody>
                   {filtrados.map((cliente) => {
                     const cupo = cupos[cliente.id]
+                    const estaGuardando = guardando === cliente.id
                     return (
                       <tr key={cliente.id}>
                         <td className="fw-semibold">{cliente.full_name}</td>
                         <td>{cliente.identification_number}</td>
                         <td style={{ maxWidth: 180 }}>
-                          <input className="form-control" type="number" min="0" step="0.01" value={cupo?.approved_limit ?? ''} onChange={(event) => actualizarValor(cliente.id, event.target.value)} />
+                          <input className="form-control" type="number" min="0" step="0.01" value={cupo?.approved_limit ?? ''} onChange={(event) => actualizarValor(cliente.id, event.target.value)} disabled={guardando !== null} />
                         </td>
                         <td>{money(cupo?.credit_used)}</td>
                         <td className={Number(cupo?.credit_available) > 0 ? 'text-success fw-semibold' : 'text-danger fw-semibold'}>{money(cupo?.credit_available)}</td>
-                        <td><Can permission="PORTFOLIO_CREDIT_UPDATE"><button className="btn btn-primary btn-sm" onClick={() => void guardarCupo(cliente)} disabled={guardando === cliente.id}>{guardando === cliente.id ? 'Guardando...' : 'Guardar'}</button></Can></td>
+                        <td><Can permission="PORTFOLIO_CREDIT_UPDATE"><button className="btn btn-primary btn-sm" onClick={() => void guardarCupo(cliente)} disabled={guardando !== null}>{estaGuardando ? <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Registrando...</> : 'Guardar'}</button></Can></td>
                       </tr>
                     )
                   })}
