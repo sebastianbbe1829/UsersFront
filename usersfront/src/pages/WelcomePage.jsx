@@ -56,8 +56,8 @@ function WelcomePage() {
   const fecha = ahora.toLocaleDateString('es-CO', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   })
-  const hora = ahora.toLocaleTimeString('es-CO', {
-    hour: '2-digit', minute: '2-digit',
+  const hora = ahora.toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', hour12: true,
   })
 
   const primaryColor = config?.primary_color || '#0d6efd'
@@ -114,8 +114,8 @@ function WelcomePage() {
           <span className="welcome-tenant-label">· Empresa activa</span>
         </div>
 
-        <div className="welcome-date text-capitalize" style={{ color: colorSecundario }}>📅 {fecha}</div>
         <div className="welcome-time" style={{ color: colorHora }}>{hora}</div>
+        <div className="welcome-date text-capitalize" style={{ color: colorSecundario }}>📅 {fecha}</div>
       </header>
 
       {accesosVisibles.length > 0 && (
