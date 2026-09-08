@@ -25,6 +25,8 @@ import InventoryMovementsPage from '../pages/InventoryMovementsPage'
 import SalesCheckoutPage from '../pages/SalesCheckoutPage'
 import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
+import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
+import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -67,6 +69,8 @@ function AppRoutes() {
       <Route path="clientes/historial-levantamientos" element={<RutaConPermiso permission="CLIENT_READ"><ClientComplianceOverrideHistoryPage /></RutaConPermiso>} />
       <Route path="clientes/ejecuciones-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsSyncExecutionsPage /></RutaConPermiso>} />
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
+      <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
+      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
