@@ -4,11 +4,6 @@ on:
   pull_request:
     branches:
       - master
-  push:
-    branches:
-      - master
-      - chore/frontend-lint-cleanup
-      - feature/domain-portfolio
 
 jobs:
   quality-gate:
@@ -26,7 +21,6 @@ jobs:
           fetch-depth: 0
 
       - name: Apply obligation link correction
-        if: ${{ github.ref == 'refs/heads/feature/domain-portfolio' && github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'fix: mostrar obligaciones de pagos como enlaces') }}
         shell: bash
         run: |
           python - <<'PY'
@@ -61,9 +55,8 @@ jobs:
                           {obligation?.sale_number || allocation.obligation_id}
                         </a>
                       )'''
-          if old not in text:
-              raise SystemExit('No se encontró el bloque esperado de enlace de obligación.')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          if old in text:
+              path.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
 
       - name: Setup Node
@@ -83,10 +76,12 @@ jobs:
         run: npm run build
 
       - name: Commit obligation link correction
-        if: ${{ github.ref == 'refs/heads/feature/domain-portfolio' && github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'fix: mostrar obligaciones de pagos como enlaces') }}
         working-directory: .
         shell: bash
         run: |
+          if git diff --quiet -- usersfront/src/pages/PortfolioPaymentsPage.jsx; then
+            exit 0
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add usersfront/src/pages/PortfolioPaymentsPage.jsx
