@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
@@ -7,6 +7,8 @@ import { emptyProduct, EmptyState, PAGE_SIZE, Pagination, ProductModal, SearchBa
 
 function InventoryProductsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const tokenRef = useRef(token)
+  const cargaInicialRef = useRef(false)
   const [productos, setProductos] = useState([])
   const [tipos, setTipos] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -18,12 +20,16 @@ function InventoryProductsPage() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
+  useEffect(() => { tokenRef.current = token }, [token])
+
   const cargar = useCallback(async () => {
-    try { setCargando(true); const [productosResult, tiposResult] = await Promise.all([obtenerProductosInventario(token), obtenerTiposInventario(token)]); setProductos(Array.isArray(productosResult) ? productosResult : []); setTipos(Array.isArray(tiposResult) ? tiposResult : []); setMensaje(null) }
+    const tokenActual = tokenRef.current
+    if (!tokenActual) return
+    try { setCargando(true); const [productosResult, tiposResult] = await Promise.all([obtenerProductosInventario(tokenActual), obtenerTiposInventario(tokenActual)]); setProductos(Array.isArray(productosResult) ? productosResult : []); setTipos(Array.isArray(tiposResult) ? tiposResult : []); setMensaje(null) }
     catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) }
     finally { setCargando(false) }
-  }, [token, manejarSesionExpirada])
-  useEffect(() => { if (token) void cargar() }, [token, cargar])
+  }, [manejarSesionExpirada])
+  useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargar() } }, [token, cargar])
 
   const tipoPorId = useMemo(() => new Map(tipos.map((item) => [item.id, item])), [tipos])
   const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
