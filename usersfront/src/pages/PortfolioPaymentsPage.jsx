@@ -530,7 +530,22 @@ export default function PortfolioPaymentsPage() {
                       {pago.allocations?.length
                         ? pago.allocations.map((allocation) => {
                           const obligation = obligaciones.find((item) => item.id === allocation.obligation_id)
-                          return <div key={allocation.id || allocation.obligation_id} className="small">{obligation?.sale_number || allocation.obligation_id}</div>
+                          return (
+                            <button
+                              key={allocation.id || allocation.obligation_id}
+                              type="button"
+                              className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
+                              onClick={() => {
+                                const tenant = window.location.pathname.split('/')[1]
+                                if (tenant && allocation.obligation_id) {
+                                  window.location.href = `/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`
+                                }
+                              }}
+                              title="Abrir esta obligación"
+                            >
+                              {obligation?.sale_number || allocation.obligation_id}
+                            </button>
+                          )
                         })
                         : '—'}
                     </td>

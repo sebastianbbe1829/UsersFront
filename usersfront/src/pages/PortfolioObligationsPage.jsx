@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligaciones, obtenerPagosCartera } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
@@ -19,6 +19,7 @@ const nombreCliente = (cliente) => cliente?.full_name || [cliente?.first_name, c
 export default function PortfolioObligationsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const cargaInicialRef = useRef(false)
   const [obligaciones, setObligaciones] = useState([])
   const [clientes, setClientes] = useState([])
@@ -86,22 +87,26 @@ export default function PortfolioObligationsPage() {
   const cambiarCliente = async (event) => {
     const value = event.target.value
     setClientId(value)
+    if (searchParams.has('obligation')) setSearchParams({}, { replace: true })
     await consultarConFiltros(value, dateFrom, dateTo)
   }
   const cambiarFechaDesde = async (event) => {
     const value = event.target.value
     setDateFrom(value)
+    if (searchParams.has('obligation')) setSearchParams({}, { replace: true })
     await consultarConFiltros(clientId, value, dateTo)
   }
   const cambiarFechaHasta = async (event) => {
     const value = event.target.value
     setDateTo(value)
+    if (searchParams.has('obligation')) setSearchParams({}, { replace: true })
     await consultarConFiltros(clientId, dateFrom, value)
   }
   const limpiarFiltros = async () => {
     setClientId('')
     setDateFrom('')
     setDateTo('')
+    setSearchParams({}, { replace: true })
     setCargando(true)
     await cargar()
   }
@@ -118,6 +123,12 @@ export default function PortfolioObligationsPage() {
     })
     return resultado
   }, [pagos])
+
+  const obligationSeleccionada = searchParams.get('obligation')?.trim().toLowerCase()
+  const obligacionesVisibles = useMemo(() => {
+    if (!obligationSeleccionada) return obligaciones
+    return obligaciones.filter((item) => String(item.id).toLowerCase() === obligationSeleccionada)
+  }, [obligaciones, obligationSeleccionada])
 
   const abrirVenta = (item) => {
     const sale = item.sale_number || item.sale_id
@@ -143,20 +154,26 @@ export default function PortfolioObligationsPage() {
         <div><h2 className="fw-bold mb-1">Obligaciones</h2><p className="text-muted mb-0">Consulta y seguimiento de las obligaciones generadas por ventas a crédito.</p></div>
       </div>
       {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
+      {obligationSeleccionada && (
+        <div className="alert alert-primary d-flex justify-content-between align-items-center gap-3" role="status">
+          <span>Mostrando la obligación seleccionada desde el pago.</span>
+          <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setSearchParams({}, { replace: true })}>Mostrar todas</button>
+        </div>
+      )}
       <div className="card border-0 shadow-sm mb-4"><div className="card-body"><div className="row g-3 align-items-end">
         <div className="col-lg-5"><label className="form-label fw-semibold" htmlFor="obligaciones-cliente">Cliente</label><select id="obligaciones-cliente" className="form-select" value={clientId} onChange={(event) => void cambiarCliente(event)} disabled={cargandoClientes || cargando}><option value="">{cargandoClientes ? 'Cargando clientes...' : 'Todos los clientes'}</option>{clientesOrdenados.map((cliente) => <option key={cliente.id} value={cliente.id}>{nombreCliente(cliente)} — {cliente.identification_number || 'Sin identificación'}</option>)}</select></div>
         <div className="col-sm-6 col-lg-2"><label className="form-label fw-semibold" htmlFor="obligaciones-desde">Desde</label><input id="obligaciones-desde" type="date" className="form-control" value={dateFrom} onChange={(event) => void cambiarFechaDesde(event)} disabled={cargando} /></div>
         <div className="col-sm-6 col-lg-2"><label className="form-label fw-semibold" htmlFor="obligaciones-hasta">Hasta</label><input id="obligaciones-hasta" type="date" className="form-control" value={dateTo} onChange={(event) => void cambiarFechaHasta(event)} disabled={cargando} /></div>
-        <div className="col-lg-3 d-flex justify-content-end"><button type="button" className="btn btn-outline-secondary" onClick={() => void limpiarFiltros()} disabled={cargando || (!clientId && !dateFrom && !dateTo)}>Limpiar</button></div>
+        <div className="col-lg-3 d-flex justify-content-end"><button type="button" className="btn btn-outline-secondary" onClick={() => void limpiarFiltros()} disabled={cargando || (!clientId && !dateFrom && !dateTo && !obligationSeleccionada)}>Limpiar</button></div>
       </div><div className="small text-muted mt-3">La consulta se actualiza automáticamente al cambiar cliente o fechas.</div></div></div>
 
       <div className="card border-0 shadow-sm"><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Cliente</th><th>Venta</th><th>Fecha</th><th className="text-end">Valor inicial</th><th className="text-end">Saldo</th><th>Estado</th><th>Pagos</th></tr></thead><tbody>
         {cargando && <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando obligaciones...</div></td></tr>}
-        {!cargando && !obligaciones.length && <tr><td colSpan="7" className="text-center text-muted py-5">No hay obligaciones para los filtros seleccionados.</td></tr>}
-        {!cargando && obligaciones.map((item) => {
+        {!cargando && !obligacionesVisibles.length && <tr><td colSpan="7" className="text-center text-muted py-5">{obligationSeleccionada ? 'No se encontró la obligación seleccionada.' : 'No hay obligaciones para los filtros seleccionados.'}</td></tr>}
+        {!cargando && obligacionesVisibles.map((item) => {
           const cliente = clientePorId[String(item.client_id)]
           const pagosAsociados = pagosPorObligacion[item.id] || []
-          return <tr key={item.id}>
+          return <tr key={item.id} className={obligationSeleccionada === String(item.id).toLowerCase() ? 'table-active' : ''}>
             <td><div className="fw-semibold">{nombreCliente(cliente)}</div><div className="small text-muted">{cliente?.identification_number || '—'}</div></td>
             <td>{item.sale_number || item.sale_id ? <button type="button" className="btn btn-link btn-sm p-0 fw-semibold text-decoration-none" onClick={() => abrirVenta(item)} title="Abrir esta venta">{item.sale_number || 'Ver venta'}</button> : '—'}</td>
             <td>{formatDate(item.created_at)}</td><td className="text-end">{money(item.initial_amount)}</td><td className="text-end fw-bold">{money(item.balance)}</td>
