@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerClientes } from '../services/clientsApi'
 import { obtenerInventario, obtenerProductosInventario } from '../services/inventoryApi'
@@ -28,27 +28,38 @@ function SalesPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
 
-  const load = useCallback(async () => {
-    if (!token) return
-    try {
-      const [productsResult, inventoryResult, clientsResult] = await Promise.all([
-        obtenerProductosInventario(token, true),
-        obtenerInventario(token),
-        obtenerClientes(token, { page: 1, pageSize: 100 }),
-      ])
-      setProducts(Array.isArray(productsResult) ? productsResult : [])
-      setInventory(Array.isArray(inventoryResult) ? inventoryResult : [])
-      setClients(Array.isArray(clientsResult?.items) ? clientsResult.items : Array.isArray(clientsResult) ? clientsResult : [])
-      setMessage(null)
-    } catch (error) {
-      if (error.status === 401) return manejarSesionExpirada()
-      setMessage({ type: 'danger', text: error.message || 'No fue posible cargar el punto de venta.' })
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    if (!token) return undefined
+
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const [productsResult, inventoryResult, clientsResult] = await Promise.all([
+          obtenerProductosInventario(token, true),
+          obtenerInventario(token),
+          obtenerClientes(token, { page: 1, pageSize: 100 }),
+        ])
+        if (cancelled) return
+        setProducts(Array.isArray(productsResult) ? productsResult : [])
+        setInventory(Array.isArray(inventoryResult) ? inventoryResult : [])
+        setClients(Array.isArray(clientsResult?.items) ? clientsResult.items : Array.isArray(clientsResult) ? clientsResult : [])
+        setMessage(null)
+      } catch (error) {
+        if (cancelled) return
+        if (error.status === 401) return manejarSesionExpirada()
+        setMessage({ type: 'danger', text: error.message || 'No fue posible cargar el punto de venta.' })
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    void load()
+
+    return () => {
+      cancelled = true
     }
   }, [manejarSesionExpirada, token])
-
-  useEffect(() => { void load() }, [load])
 
   const inventoryByProduct = useMemo(
     () => new Map(inventory.map((item) => [item.product_id, item])),
@@ -187,7 +198,13 @@ function SalesPage() {
       }, token)
       setMessage({ type: 'success', text: `Venta ${sale.sale_number} realizada correctamente por ${money(sale.total)}.` })
       resetSale()
-      await load()
+      // Refresh inventory and products after a successful sale without reusing the initial-load effect.
+      const [productsResult, inventoryResult] = await Promise.all([
+        obtenerProductosInventario(token, true),
+        obtenerInventario(token),
+      ])
+      setProducts(Array.isArray(productsResult) ? productsResult : [])
+      setInventory(Array.isArray(inventoryResult) ? inventoryResult : [])
     } catch (error) {
       if (error.status === 401) return manejarSesionExpirada()
       setMessage({ type: 'danger', text: error.message || 'No fue posible registrar la venta.' })
