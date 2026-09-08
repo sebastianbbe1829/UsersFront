@@ -76,7 +76,19 @@ export default function SalesCheckoutPage() {
   const addProduct = (product) => { const max = Number(stock.get(product.id)?.quantity || 0); if (max <= 0) return; setCart((c) => { const f = c.find((x) => x.product.id === product.id); if (!f) return [...c, { product, quantity: 1, price: Number(stock.get(product.id)?.sale_price || 0) }]; if (f.quantity >= max) return c; return c.map((x) => x.product.id === product.id ? { ...x, quantity: x.quantity + 1 } : x) }) }
   const changeQty = (id, delta) => setCart((c) => c.map((x) => x.product.id !== id ? x : { ...x, quantity: Math.min(Number(stock.get(id)?.quantity || 0), Math.max(0, x.quantity + delta)) }).filter((x) => x.quantity > 0))
   const changeMode = (nextMode) => { setMode(nextMode); if (nextMode === 'split') setPayments((current) => current.map((p) => p.method === 'CREDITO' ? { ...p, method: 'EFECTIVO' } : p)); if (nextMode === 'generic') setParticipants([]); if (nextMode === 'client' && participants.length > 1) setParticipants((current) => current.slice(0, 1)) }
-  const addClient = (client) => { if (mode === 'client' && participants.length) return; if (mode === 'split' && remaining <= 0) return; setParticipants((p) => [...p, { ...client, percentage: remaining || 0 }]); setClientSearch('') }
+  const addClient = (client) => {
+    if (mode === 'client' && participants.length) return
+    if (mode === 'split') {
+      setParticipants((current) => {
+        const next = [...current, { ...client, percentage: 0 }]
+        const percentage = 100 / next.length
+        return next.map((participant) => ({ ...participant, percentage }))
+      })
+    } else {
+      setParticipants((current) => [...current, { ...client, percentage: 100 }])
+    }
+    setClientSearch('')
+  }
   const removeClient = (id) => setParticipants((p) => p.filter((x) => x.id !== id)); const setClientPct = (id, value) => setParticipants((p) => p.map((x) => x.id === id ? { ...x, percentage: value } : x))
   const addPayment = () => { const rCents = Math.max(0, totalCents - paidCents); setPayments((p) => [...p, { method: 'EFECTIVO', amount: rCents ? String(fromCents(rCents)) : '' }]) }
   const removePayment = (i) => setPayments((p) => p.filter((_, n) => n !== i))
