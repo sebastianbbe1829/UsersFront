@@ -1,0 +1,64 @@
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import Can from '../components/Can'
+import SessionManager from '../components/SessionManager'
+import { crearMovimientoInventario, obtenerMovimientosInventario, obtenerProductosInventario } from '../services/inventoryApi'
+import { emptyMovement, EmptyState, MovementBadge, MovementModal, Pagination, PAGE_SIZE, number } from './InventoryShared'
+
+function InventoryMovementsPage() {
+  const { token, manejarSesionExpirada } = useAuth()
+  const [productos, setProductos] = useState([])
+  const [productoId, setProductoId] = useState('')
+  const [movimientos, setMovimientos] = useState([])
+  const [page, setPage] = useState(1)
+  const [hasNext, setHasNext] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const [cargandoProductos, setCargandoProductos] = useState(true)
+  const [guardando, setGuardando] = useState(false)
+  const [modal, setModal] = useState(false)
+  const [form, setForm] = useState(emptyMovement)
+  const [mensaje, setMensaje] = useState(null)
+
+  const cargarProductos = useCallback(async () => {
+    try { setCargandoProductos(true); const result = await obtenerProductosInventario(token, true); setProductos(Array.isArray(result) ? result : []) }
+    catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) }
+    finally { setCargandoProductos(false) }
+  }, [token, manejarSesionExpirada])
+
+  const cargarMovimientos = useCallback(async (id, requestedPage = 1) => {
+    if (!id) { setMovimientos([]); setHasNext(false); return }
+    try { setCargando(true); const result = await obtenerMovimientosInventario(id, token, { limit: PAGE_SIZE + 1, offset: (requestedPage - 1) * PAGE_SIZE }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, PAGE_SIZE)); setHasNext(rows.length > PAGE_SIZE); setPage(requestedPage); setMensaje(null) }
+    catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el kardex.' }) }
+    finally { setCargando(false) }
+  }, [token, manejarSesionExpirada])
+
+  useEffect(() => { if (token) void cargarProductos() }, [token, cargarProductos])
+  useEffect(() => { if (productoId) void cargarMovimientos(productoId, 1); else setMovimientos([]) }, [productoId, cargarMovimientos])
+
+  const abrir = () => { setForm({ ...emptyMovement, product_id: productoId }); setModal(true) }
+  const cerrar = () => { setModal(false); setForm(emptyMovement) }
+  const origenCambia = (value) => setForm({ ...form, origin_type: value, movement_type: value === 'PURCHASE' || value === 'SALES_RETURN' ? 'ENTRY' : 'EXIT' })
+  const guardar = async (event) => {
+    event.preventDefault(); setGuardando(true); setMensaje(null)
+    try {
+      const data = { ...form, product_id: Number(form.product_id), quantity: Number(form.quantity), unit_purchase_price: form.unit_purchase_price === '' ? null : Number(form.unit_purchase_price), profit_percentage: form.profit_percentage === '' ? null : Number(form.profit_percentage), notes: form.notes.trim() || null }
+      await crearMovimientoInventario(data, token); const id = String(data.product_id); setProductoId(id); cerrar(); await cargarMovimientos(id, 1); setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente.' })
+    } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible registrar el movimiento.' }) }
+    finally { setGuardando(false) }
+  }
+
+  return <>
+    <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
+    <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><h2 className="fw-bold mb-1">Movimientos</h2><p className="text-muted mb-0">Registra entradas y salidas y consulta el Kardex. El inventario solo cambia mediante movimientos.</p></div><Can permission="INVENTORY_MOVEMENT_CREATE"><button type="button" className="btn btn-primary" onClick={abrir}>+ Registrar movimiento</button></Can></div>
+    {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
+    <div className="card shadow-sm border-0"><div className="card-body">
+      <div className="mb-4"><label className="form-label fw-semibold">Producto</label>{cargandoProductos ? <div className="text-muted">Cargando productos...</div> : <select className="form-select" value={productoId} onChange={(e) => { setProductoId(e.target.value); setPage(1) }}><option value="">Seleccione producto...</option>{productos.map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select>}</div>
+      {cargando && <div className="text-center py-4"><div className="spinner-border spinner-border-sm" /> <span className="text-muted ms-2">Cargando Kardex...</span></div>}
+      {!cargando && !productoId && <EmptyState text="Seleccione un producto para consultar sus movimientos." />}
+      {!cargando && productoId && movimientos.length === 0 && <EmptyState text="Este producto todavía no tiene movimientos." />}
+      {!cargando && movimientos.length > 0 && <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th className="text-end">Cantidad</th><th className="text-end">Antes</th><th className="text-end">Después</th><th>Notas</th></tr></thead><tbody>{movimientos.map((item) => <tr key={item.id}><td>{new Date(item.created_at).toLocaleString('es-CO')}</td><td><MovementBadge type={item.movement_type} /></td><td>{item.origin_type}</td><td className="text-end">{number(item.quantity)}</td><td className="text-end">{number(item.balance_before)}</td><td className="text-end fw-semibold">{number(item.balance_after)}</td><td>{item.notes || '-'}</td></tr>)}</tbody></table></div><Pagination total={page * PAGE_SIZE + (hasNext ? 1 : 0)} page={page} onPageChange={(next) => cargarMovimientos(productoId, next)} hasNext={hasNext} /></>}
+    </div></div>
+    {modal && <MovementModal form={form} setForm={setForm} productos={productos} guardando={guardando} onClose={cerrar} onSubmit={guardar} onOriginChange={origenCambia} />}
+  </>
+}
+export default InventoryMovementsPage
