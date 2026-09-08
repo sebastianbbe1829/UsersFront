@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligaciones } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
 const money = (value) => new Intl.NumberFormat('es-CO', {
   style: 'currency', currency: 'COP', maximumFractionDigits: 0,
@@ -57,7 +58,6 @@ export default function PortfolioObligationsPage() {
         const resultado = await obtenerClientes(token, { page, pageSize, search: '' })
         const items = Array.isArray(resultado) ? resultado : Array.isArray(resultado?.items) ? resultado.items : []
         acumulados.push(...items)
-
         if (items.length < pageSize) break
         page += 1
       }
@@ -132,11 +132,12 @@ export default function PortfolioObligationsPage() {
 
   const abrirVenta = (item) => {
     const sale = item.sale_number || item.sale_id
-    if (!sale) {
+    const tenant = obtenerTenantDesdeUrl()
+    if (!sale || !tenant) {
       setMensaje({ tipo: 'warning', texto: 'Esta obligación no tiene una venta asociada.' })
       return
     }
-    navigate(`../../ventas/consulta?sale=${encodeURIComponent(sale)}`)
+    navigate(`/${encodeURIComponent(tenant)}/ventas/consulta?sale=${encodeURIComponent(sale)}`)
   }
 
   return (
@@ -200,11 +201,10 @@ export default function PortfolioObligationsPage() {
               {!cargando && !obligaciones.length && <tr><td colSpan="6" className="text-center text-muted py-5">No hay obligaciones para los filtros seleccionados.</td></tr>}
               {!cargando && obligaciones.map((item) => {
                 const cliente = clientePorId[String(item.client_id)]
-                const nombre = nombreCliente(cliente)
                 return (
                   <tr key={item.id}>
                     <td>
-                      <div className="fw-semibold">{nombre}</div>
+                      <div className="fw-semibold">{nombreCliente(cliente)}</div>
                       <div className="small text-muted">{cliente?.identification_number || '—'}</div>
                     </td>
                     <td>
