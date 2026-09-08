@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
@@ -24,9 +24,8 @@ export default function PortfolioPage() {
   const [guardando, setGuardando] = useState(null)
   const [mensaje, setMensaje] = useState(null)
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     try {
-      setCargando(true)
       const [clientesResult, obligacionesResult] = await Promise.all([
         obtenerClientes(token, { page: 1, pageSize: 100, search: '' }),
         obtenerObligaciones(token),
@@ -52,13 +51,13 @@ export default function PortfolioPage() {
     } finally {
       setCargando(false)
     }
-  }
+  }, [token, manejarSesionExpirada])
 
   useEffect(() => {
     if (!token) return undefined
-    void cargar()
+    Promise.resolve().then(() => cargar())
     return undefined
-  }, [token])
+  }, [token, cargar])
 
   const filtrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase()
