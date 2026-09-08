@@ -47,6 +47,14 @@ const claseEstado = {
   ERROR: 'text-bg-danger',
 }
 
+const resultadoDetalle = (item) => {
+  const fuentes = item.result?.sources
+  if (!Array.isArray(fuentes) || fuentes.length === 0) {
+    return item.error_message || '-'
+  }
+  return fuentes
+}
+
 function ClientRestrictedListsSyncExecutionsPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const [ejecuciones, setEjecuciones] = useState([])
@@ -113,7 +121,7 @@ function ClientRestrictedListsSyncExecutionsPage() {
 
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="d-flex justify-content-between align-items-center mb-3"><div><h5 className="fw-bold mb-0">Historial de ejecuciones</h5><small className="text-muted">Las ejecuciones activas se actualizan automáticamente.</small></div>{hayEjecucionActiva && <span className="badge text-bg-primary">Sincronización en curso</span>}</div>
-      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando ejecuciones...</div></div> : ejecuciones.length === 0 ? <div className="alert alert-info mb-0">Todavía no hay ejecuciones registradas.</div> : <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Tiempo total</th><th>Origen</th><th>Estado</th><th>Fuentes</th><th>Resultado</th></tr></thead><tbody>{ejecuciones.map((item) => <tr key={item.id}><td>{fecha(item.created_at)}</td><td>{fecha(item.started_at)}</td><td>{fecha(item.finished_at)}</td><td className="fw-semibold">{duracion(item)}</td><td>{item.trigger_type === 'MANUAL' ? 'Manual' : 'Cronjob'}{item.triggered_by_email && <><br /><small className="text-muted">{item.triggered_by_email}</small></>}</td><td><span className={`badge ${claseEstado[item.status] || 'text-bg-secondary'}`}>{etiquetaEstado[item.status] || item.status}</span></td><td>{item.total_sources ?? '-'}</td><td>{item.successful_sources != null || item.failed_sources != null ? `${item.successful_sources ?? 0} OK / ${item.failed_sources ?? 0} con error` : item.error_message || '-'}</td></tr>)}</tbody></table></div>}
+      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando ejecuciones...</div></div> : ejecuciones.length === 0 ? <div className="alert alert-info mb-0">Todavía no hay ejecuciones registradas.</div> : <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Fecha</th><th>Inicio</th><th>Fin</th><th>Tiempo total</th><th>Origen</th><th>Estado</th><th>Fuentes</th><th>Resultado detalle</th></tr></thead><tbody>{ejecuciones.map((item) => { const detalle = resultadoDetalle(item); return <tr key={item.id}><td>{fecha(item.created_at)}</td><td>{fecha(item.started_at)}</td><td>{fecha(item.finished_at)}</td><td className="fw-semibold">{duracion(item)}</td><td>{item.trigger_type === 'MANUAL' ? 'Manual' : 'Cronjob'}{item.triggered_by_email && <><br /><small className="text-muted">{item.triggered_by_email}</small></>}</td><td><span className={`badge ${claseEstado[item.status] || 'text-bg-secondary'}`}>{etiquetaEstado[item.status] || item.status}</span></td><td>{item.total_sources ?? '-'}</td><td style={{ minWidth: '430px' }}>{Array.isArray(detalle) ? <div className="d-flex flex-column gap-1">{detalle.map((fuente) => <div key={fuente.source} className="small"><strong>{fuente.source}</strong> <span className={fuente.status === 'SUCCESS' ? 'text-success' : 'text-danger'}>{fuente.status}</span> — Total: {fuente.total ?? 0} Created: {fuente.created ?? 0} Updated: {fuente.updated ?? 0}{fuente.deactivated ? ` Deactivated: ${fuente.deactivated}` : ''}{fuente.error ? ` — Error: ${fuente.error}` : ''}</div>)}</div> : detalle}</td></tr> })}</tbody></table></div>}
     </div></div>
   </>
 }
