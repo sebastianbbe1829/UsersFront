@@ -28,13 +28,9 @@ function MainLayoutFixed() {
   const appTitle = config?.app_title || 'Fenix SaS'
   const rutaTenant = tenant ? `/${tenant}` : ''
 
-  useEffect(() => {
-    setSeccionAbierta(seccionPorRuta)
-  }, [seccionPorRuta])
+  useEffect(() => { setSeccionAbierta(seccionPorRuta) }, [seccionPorRuta])
 
-  const alternarSeccion = (seccion) => {
-    setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
-  }
+  const alternarSeccion = (seccion) => { setSeccionAbierta((actual) => (actual === seccion ? null : seccion)) }
 
   const cambiarModoOscuro = () => {
     setModoOscuro((valor) => {
@@ -45,10 +41,7 @@ function MainLayoutFixed() {
     })
   }
 
-  const manejarCerrarSesion = () => {
-    cerrarSesion()
-    navigate(tenant ? `/${tenant}/login` : '/login', { replace: true })
-  }
+  const manejarCerrarSesion = () => { cerrarSesion(); navigate(tenant ? `/${tenant}/login` : '/login', { replace: true }) }
 
   const obtenerTituloPagina = () => {
     const ruta = location.pathname
@@ -70,6 +63,7 @@ function MainLayoutFixed() {
     if (ruta.includes('/inventarios/productos')) return { icono: '🛒', titulo: 'Productos de inventario' }
     if (ruta.includes('/inventarios/tipos')) return { icono: '🏷️', titulo: 'Tipos de inventario' }
     if (ruta.includes('/inventarios')) return { icono: '📦', titulo: 'Inventarios' }
+    if (ruta.includes('/ventas/consulta')) return { icono: '📋', titulo: 'Consulta de ventas' }
     if (ruta.includes('/ventas')) return { icono: '🛒', titulo: 'Ventas' }
     if (ruta.includes('/configuracion-ui')) return { icono: '🎨', titulo: 'Configuración de la interfaz' }
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
@@ -122,9 +116,13 @@ function MainLayoutFixed() {
           </Can>
 
           <Can permission="SALES_READ">
-            <NavLink to={`${rutaTenant}/ventas`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Ventas">
-              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Ventas</span>}
-            </NavLink>
+            <button type="button" className={obtenerClaseMenu(ventasPorRuta)} onClick={() => alternarSeccion('ventas')} title="Ventas" style={{ background: 'transparent' }}>
+              <span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Ventas</span><span>{seccionAbierta === 'ventas' ? '▾' : '▸'}</span></>}
+            </button>
+            {seccionAbierta === 'ventas' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <Can permission="SALES_READ"><NavLink to={`${rutaTenant}/ventas`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Punto de venta"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Punto de venta</span>}</NavLink></Can>
+              <Can permission="SALES_READ"><NavLink to={`${rutaTenant}/ventas/consulta`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Consulta de ventas"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Consulta de ventas</span>}</NavLink></Can>
+            </div>}
           </Can>
 
           <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
