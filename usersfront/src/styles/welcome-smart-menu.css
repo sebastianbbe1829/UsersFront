@@ -1,0 +1,112 @@
+.welcome-quick-access {
+  width: min(980px, 100%);
+  margin-top: 1.75rem;
+}
+
+.welcome-quick-access-title {
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  opacity: .68;
+}
+
+.welcome-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.welcome-quick-card {
+  position: relative;
+  display: flex;
+  min-height: 150px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 1.1rem;
+  background: var(--bs-body-bg);
+  box-shadow: 0 .35rem 1.2rem rgba(0, 0, 0, .08);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.welcome-quick-card::after {
+  content: '';
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  right: -28px;
+  top: -28px;
+  border-radius: 50%;
+  background: var(--welcome-card-accent);
+  opacity: .10;
+}
+
+.welcome-quick-card:hover,
+.welcome-quick-card:focus-visible {
+  color: inherit;
+  text-decoration: none;
+  transform: translateY(-5px);
+  border-color: var(--welcome-card-accent);
+  box-shadow: 0 .8rem 1.8rem rgba(0, 0, 0, .14);
+  outline: none;
+}
+
+.welcome-quick-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: .9rem;
+  background: color-mix(in srgb, var(--welcome-card-accent) 14%, var(--bs-body-bg));
+  color: var(--welcome-card-accent);
+  font-size: 1.55rem;
+}
+
+.welcome-quick-card-title {
+  margin-top: 1rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.welcome-quick-card-description {
+  margin-top: .25rem;
+  font-size: .78rem;
+  color: var(--bs-secondary-color);
+}
+
+.welcome-quick-arrow {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  color: var(--welcome-card-accent);
+  font-size: 1.1rem;
+  transition: transform .2s ease;
+}
+
+.welcome-quick-card:hover .welcome-quick-arrow,
+.welcome-quick-card:focus-visible .welcome-quick-arrow {
+  transform: translateX(4px);
+}
+
+@media (max-width: 900px) {
+  .welcome-quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .welcome-quick-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-quick-card {
+    min-height: 125px;
+  }
+}
