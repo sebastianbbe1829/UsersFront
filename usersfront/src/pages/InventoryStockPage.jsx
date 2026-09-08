@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import SessionManager from '../components/SessionManager'
 import { exportarInventarioExcel, obtenerInventario, obtenerProductosInventario, obtenerTiposInventario } from '../services/inventoryApi'
-import { EmptyState, PAGE_SIZE, Pagination, SearchBar, TableStock, number } from './InventoryShared'
+import { PAGE_SIZE, number } from './InventoryUtils'
+import { EmptyState, Pagination, SearchBar, TableStock } from './InventoryShared'
 
 function descargarArchivo(blob, filename) {
   const url = URL.createObjectURL(blob)
