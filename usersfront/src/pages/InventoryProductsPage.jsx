@@ -33,14 +33,38 @@ function InventoryProductsPage() {
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargar() } }, [token, cargar])
 
   const tipoPorId = useMemo(() => new Map(tipos.map((item) => [item.id, item])), [tipos])
-  const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
+  const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${item.brand || ''} ${item.presentation || ''} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
   const filas = useMemo(() => filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtrados, page])
   const cerrar = () => { setModal(false); setEditando(null); setForm(emptyProduct) }
-  const editar = (item) => { setEditando(item.id); setForm({ name: item.name, inventory_type_id: String(item.inventory_type_id), active: item.active }); setModal(true) }
+  const editar = (item) => {
+    setEditando(item.id)
+    setForm({
+      name: item.name,
+      inventory_type_id: String(item.inventory_type_id),
+      brand: item.brand || '',
+      presentation: item.presentation || '',
+      active: item.active,
+      image_url: item.image_url || '',
+      image_source: item.image_source || '',
+      image_source_url: item.image_source_url || '',
+      image_credit: item.image_credit || '',
+    })
+    setModal(true)
+  }
   const guardar = async (event) => {
     event.preventDefault(); setGuardando(true); setMensaje(null)
     try {
-      const data = { name: form.name.trim(), inventory_type_id: Number(form.inventory_type_id), active: form.active }
+      const data = {
+        name: form.name.trim(),
+        inventory_type_id: Number(form.inventory_type_id),
+        brand: form.brand.trim() || null,
+        presentation: form.presentation.trim() || null,
+        active: form.active,
+        image_url: form.image_url || null,
+        image_source: form.image_source || null,
+        image_source_url: form.image_source_url || null,
+        image_credit: form.image_credit || null,
+      }
       if (editando) await actualizarProductoInventario(editando, data, token); else await crearProductoInventario(data, token)
       await cargar(); setMensaje({ tipo: 'success', texto: editando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.' }); cerrar()
     } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el producto.' }) }

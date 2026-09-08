@@ -5,6 +5,7 @@ import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import ClientsPage from '../pages/ClientsPage'
+import ClientCreditLimitsPage from '../pages/ClientCreditLimitsPage'
 import ClientIdentificationTypesPage from '../pages/ClientIdentificationTypesPage'
 import CountriesPage from '../pages/CountriesPage'
 import DepartmentsPage from '../pages/DepartmentsPage'
@@ -22,7 +23,8 @@ import InventoryStockPage from '../pages/InventoryStockPage'
 import InventoryTypesPage from '../pages/InventoryTypesPage'
 import InventoryProductsPage from '../pages/InventoryProductsPage'
 import InventoryMovementsPage from '../pages/InventoryMovementsPage'
-import SalesPage from '../pages/SalesPage'
+import SalesCheckoutPage from '../pages/SalesCheckoutPage'
+import SalesHistoryPage from '../pages/SalesHistoryPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -57,6 +59,7 @@ function AppRoutes() {
       <Route index element={<WelcomePage />} />
       <Route path="usuarios" element={<RutaConPermiso permission="USER_READ"><UsersPage /></RutaConPermiso>} />
       <Route path="clientes" element={<RutaConPermiso permission="CLIENT_READ"><ClientsPage /></RutaConPermiso>} />
+      <Route path="clientes/cupos" element={<RutaConPermiso permission="CLIENT_READ"><ClientCreditLimitsPage /></RutaConPermiso>} />
       <Route path="clientes/tipos-identificacion" element={<RutaConPermiso permission="CLIENT_READ"><ClientIdentificationTypesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/paises" element={<RutaConPermiso permission="CLIENT_READ"><CountriesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/departamentos" element={<RutaConPermiso permission="CLIENT_READ"><DepartmentsPage /></RutaConPermiso>} />
@@ -74,7 +77,8 @@ function AppRoutes() {
       <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
       <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
       <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
-      <Route path="ventas" element={<RutaConPermiso permission="SALES_READ"><SalesPage /></RutaConPermiso>} />
+      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><SalesCheckoutPage /></RutaConPermiso>} />
+      <Route path="ventas/consulta" element={<RutaConPermiso permission="SALES_READ"><SalesHistoryPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
       <Route path="usuarios-super" element={<GlobalSuperAdminPage />} />

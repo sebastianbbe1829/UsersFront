@@ -198,7 +198,6 @@ function SalesPage() {
       }, token)
       setMessage({ type: 'success', text: `Venta ${sale.sale_number} realizada correctamente por ${money(sale.total)}.` })
       resetSale()
-      // Refresh inventory and products after a successful sale without reusing the initial-load effect.
       const [productsResult, inventoryResult] = await Promise.all([
         obtenerProductosInventario(token, true),
         obtenerInventario(token),
@@ -241,11 +240,11 @@ function SalesPage() {
               const stock = Number(inventoryByProduct.get(product.id)?.quantity || 0)
               const price = Number(inventoryByProduct.get(product.id)?.sale_price || 0)
               return <div className="col-sm-6 col-lg-4" key={product.id}>
-                <button type="button" className="card h-100 w-100 text-start border-0 shadow-sm" onClick={() => addProduct(product)} disabled={stock <= 0}>
+                <button type="button" className="card h-100 w-100 text-start border-0 shadow-sm overflow-hidden" onClick={() => addProduct(product)} disabled={stock <= 0}>
+                  {product.image_url ? <img src={product.image_url} alt={product.name} className="w-100" style={{ height: 170, objectFit: 'cover' }} onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <div className="d-flex align-items-center justify-content-center bg-body-tertiary" style={{ height: 170, fontSize: 52 }}>📦</div>}
                   <div className="card-body">
-                    <div className="d-flex justify-content-between gap-2 mb-3"><span className="fs-2">📦</span><span className={stock > 0 ? 'badge text-bg-success align-self-start' : 'badge text-bg-secondary align-self-start'}>{stock > 0 ? `${stock} disponibles` : 'Sin stock'}</span></div>
+                    <div className="d-flex justify-content-between gap-2 mb-3"><span className="small text-muted">{product.code}</span><span className={stock > 0 ? 'badge text-bg-success align-self-start' : 'badge text-bg-secondary align-self-start'}>{stock > 0 ? `${stock} disponibles` : 'Sin stock'}</span></div>
                     <div className="fw-bold">{product.name}</div>
-                    <small className="text-muted">{product.code}</small>
                     <div className="mt-3 fw-bold fs-5">{money(price)}</div>
                   </div>
                 </button>
