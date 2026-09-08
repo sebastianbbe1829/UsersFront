@@ -86,3 +86,28 @@ export function MovementModal({ form, setForm, productos, guardando, onClose, on
   const isManualAdjustment = form.origin_type === 'MANUAL_ADJUSTMENT'
   return <Modal title="Registrar movimiento de inventario" onClose={onClose} size="modal-lg"><Can permission="INVENTORY_MOVEMENT_CREATE"><form onSubmit={onSubmit}><div className="row g-3"><div className="col-12 col-md-6"><label className="form-label">Producto</label><select className="form-select" required value={form.product_id} onChange={(e) => setForm({ ...form, product_id: e.target.value })}><option value="">Seleccione producto...</option>{productos.filter((item) => item.active).map((item) => <option key={item.id} value={item.id}>{item.code} — {item.name}</option>)}</select></div><div className="col-12 col-md-6"><label className="form-label">Operación</label><select className="form-select" value={form.origin_type} onChange={(e) => onOriginChange(e.target.value)}><option value="PURCHASE">Compra</option><option value="SALE">Venta</option><option value="MANUAL_ADJUSTMENT">Ajuste de inventario</option><option value="SALES_RETURN">Devolución de venta</option><option value="PURCHASE_RETURN">Devolución de compra</option></select></div>{isManualAdjustment && <div className="col-12 col-md-4"><label className="form-label">Tipo de ajuste</label><select className="form-select" value={form.movement_type} onChange={(e) => setForm({ ...form, movement_type: e.target.value })}><option value="ENTRY">Entrada</option><option value="EXIT">Salida</option></select></div>}<div className={`col-12 col-md-${isManualAdjustment ? '4' : '6'}${!isManualAdjustment ? '' : ''}`}><label className="form-label">Cantidad</label><input className="form-control" type="number" min="0.001" step="0.001" required value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div><div className={`col-12 col-md-${isManualAdjustment ? '4' : '6'}`}><label className="form-label">Precio compra unitario</label><input className="form-control" type="number" min="0" step="0.01" required={requiresPurchasePrice} value={form.unit_purchase_price} onChange={(e) => setForm({ ...form, unit_purchase_price: e.target.value })} /></div><div className="col-12 col-md-6"><label className="form-label">Ganancia</label><input className="form-control" type="number" min="0" step="0.0001" placeholder="0.50 = 50%" value={form.profit_percentage} onChange={(e) => setForm({ ...form, profit_percentage: e.target.value })} /></div><div className="col-12"><label className="form-label">Notas</label><textarea className="form-control" rows="3" maxLength="500" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div></div><div className="alert alert-warning small mt-3 mb-0">La existencia no se modifica directamente. Cada cambio queda registrado en el kardex.</div><ModalActions submitLabel="Registrar movimiento" disabled={guardando || !form.product_id} onCancel={onClose} /></form></Can></Modal>
 }
+
+export function ReversalModal({ movement, product, devolviendo, onClose, onConfirm }) {
+  if (!movement) return null
+  return <Modal title="Reversar movimiento" onClose={devolviendo ? undefined : onClose} size="modal-md">
+    <div className="text-center mb-4">
+      <div className="mx-auto d-flex align-items-center justify-content-center rounded-circle bg-warning-subtle text-warning-emphasis" style={{ width: 56, height: 56, fontSize: 26 }}>↩</div>
+      <h5 className="fw-bold mt-3 mb-1">¿Desea reversar este movimiento?</h5>
+      <p className="text-muted mb-0">Esta acción creará un nuevo movimiento inverso y conservará el historial del movimiento original.</p>
+    </div>
+    <div className="bg-body-tertiary rounded p-3">
+      <div className="row g-3 small">
+        <div className="col-6"><span className="text-muted d-block">Producto</span><strong>{product?.code || `#${movement.product_id}`}</strong>{product?.name && <span className="d-block">{product.name}</span>}</div>
+        <div className="col-6"><span className="text-muted d-block">Operación</span><strong>{originLabel(movement.origin_type)}</strong></div>
+        <div className="col-6"><span className="text-muted d-block">Cantidad</span><strong>{number(movement.quantity)}</strong></div>
+        <div className="col-6"><span className="text-muted d-block">Precio compra</span><strong>{money(movement.unit_purchase_price)}</strong></div>
+        <div className="col-12"><span className="text-muted d-block">ID movimiento original</span><small className="font-monospace text-break">{movement.id}</small></div>
+      </div>
+    </div>
+    <div className="alert alert-warning small mt-3 mb-0">El movimiento original no se elimina. Se registrará una reversión relacionada para mantener la trazabilidad del Kardex.</div>
+    <div className="d-flex flex-column flex-sm-row justify-content-end gap-2 mt-4">
+      <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={devolviendo}>Cancelar</button>
+      <button type="button" className="btn btn-warning" onClick={onConfirm} disabled={devolviendo}>{devolviendo ? 'Reversando...' : 'Sí, reversar movimiento'}</button>
+    </div>
+  </Modal>
+}
