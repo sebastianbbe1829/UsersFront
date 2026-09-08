@@ -20,7 +20,7 @@ export default function ClientCreditLimitsPage() {
     const cargar = async () => {
       try {
         setCargando(true)
-        const resultado = await obtenerClientes(token, { page: 1, pageSize: 500, search: '' })
+        const resultado = await obtenerClientes(token, { page: 1, pageSize: 100, search: '' })
         const datos = Array.isArray(resultado?.items) ? resultado.items : Array.isArray(resultado) ? resultado : []
         if (!activo) return
         setClientes(datos)
