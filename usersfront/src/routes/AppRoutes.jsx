@@ -5,6 +5,7 @@ import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
 import WelcomePage from '../pages/WelcomePage'
 import UsersPage from '../pages/UsersPage'
 import ClientsPage from '../pages/ClientsPage'
+import ClientCreditLimitsPage from '../pages/ClientCreditLimitsPage'
 import ClientIdentificationTypesPage from '../pages/ClientIdentificationTypesPage'
 import CountriesPage from '../pages/CountriesPage'
 import DepartmentsPage from '../pages/DepartmentsPage'
@@ -58,6 +59,7 @@ function AppRoutes() {
       <Route index element={<WelcomePage />} />
       <Route path="usuarios" element={<RutaConPermiso permission="USER_READ"><UsersPage /></RutaConPermiso>} />
       <Route path="clientes" element={<RutaConPermiso permission="CLIENT_READ"><ClientsPage /></RutaConPermiso>} />
+      <Route path="clientes/cupos" element={<RutaConPermiso permission="CLIENT_READ"><ClientCreditLimitsPage /></RutaConPermiso>} />
       <Route path="clientes/tipos-identificacion" element={<RutaConPermiso permission="CLIENT_READ"><ClientIdentificationTypesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/paises" element={<RutaConPermiso permission="CLIENT_READ"><CountriesPage /></RutaConPermiso>} />
       <Route path="clientes/demografica/departamentos" element={<RutaConPermiso permission="CLIENT_READ"><DepartmentsPage /></RutaConPermiso>} />
