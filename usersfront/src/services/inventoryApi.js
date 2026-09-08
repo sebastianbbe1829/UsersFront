@@ -31,14 +31,11 @@ export const obtenerTiposInventario = (token, activeOnly = false) => {
 }
 
 export const crearTipoInventario = (datos, token) => request(
-  `${API_URL}/inventory/types`,
-  token,
-  { method: 'POST', body: JSON.stringify(datos) },
+  `${API_URL}/inventory/types`, token, { method: 'POST', body: JSON.stringify(datos) },
 )
 
 export const actualizarTipoInventario = (id, datos, token) => request(
-  `${API_URL}/inventory/types/${encodeURIComponent(id)}`,
-  token,
+  `${API_URL}/inventory/types/${encodeURIComponent(id)}`, token,
   { method: 'PATCH', body: JSON.stringify(datos) },
 )
 
@@ -48,30 +45,26 @@ export const obtenerProductosInventario = (token, activeOnly = false) => {
 }
 
 export const crearProductoInventario = (datos, token) => request(
-  `${API_URL}/inventory/products`,
-  token,
-  { method: 'POST', body: JSON.stringify(datos) },
+  `${API_URL}/inventory/products`, token, { method: 'POST', body: JSON.stringify(datos) },
 )
 
 export const actualizarProductoInventario = (id, datos, token) => request(
-  `${API_URL}/inventory/products/${encodeURIComponent(id)}`,
-  token,
+  `${API_URL}/inventory/products/${encodeURIComponent(id)}`, token,
   { method: 'PATCH', body: JSON.stringify(datos) },
 )
 
 export const obtenerInventario = (token) => request(`${API_URL}/inventory`, token)
 
 export const crearMovimientoInventario = (datos, token) => request(
-  `${API_URL}/inventory/movements`,
-  token,
-  { method: 'POST', body: JSON.stringify(datos) },
+  `${API_URL}/inventory/movements`, token, { method: 'POST', body: JSON.stringify(datos) },
 )
 
 export const obtenerMovimientosInventario = (productId, token, { limit = 100, offset = 0 } = {}) => {
-  const params = new URLSearchParams({
-    product_id: String(productId),
-    limit: String(limit),
-    offset: String(offset),
-  })
+  const params = new URLSearchParams({ product_id: String(productId), limit: String(limit), offset: String(offset) })
   return request(`${API_URL}/inventory/movements?${params.toString()}`, token)
+}
+
+export const devolverMovimientoInventario = (movementId, token, quantity = null) => {
+  const query = quantity == null ? '' : `?quantity=${encodeURIComponent(quantity)}`
+  return request(`${API_URL}/inventory/movements/${encodeURIComponent(movementId)}/reverse${query}`, token, { method: 'POST' })
 }
