@@ -157,6 +157,10 @@ export const revisarClienteListas = async (id, token) => {
 export const obtenerInformeListasRestrictivas = (token) => consultaCacheada(informeCache, informeEnCurso, token, `${API_URL}/clients/restricted-report`)
 export const obtenerHistorialLevantamientos = (token) => consultaCacheada(historialCache, historialEnCurso, token, `${API_URL}/clients/compliance/override-history`)
 
+export const obtenerEjecucionesSincronizacionListas = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/screenings/sync/executions`, { headers: headers(token) }))
+
+export const ejecutarSincronizacionListasManual = async (token) => procesarRespuesta(await fetch(`${API_URL}/clients/screenings/sync/manual`, { method: 'POST', headers: headers(token) }))
+
 export const obtenerTiposIdentificacionCliente = async (token) => catalogoLista('identification-types', token)
 export const obtenerTipoIdentificacionCliente = async (id, token) => catalogo('identification-types', token, 'GET', null, id)
 export const crearTipoIdentificacionCliente = async (datos, token) => catalogo('identification-types', token, 'POST', datos)
