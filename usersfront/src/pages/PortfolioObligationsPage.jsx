@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligaciones } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
@@ -15,9 +15,8 @@ export default function PortfolioObligationsPage() {
   const [cargando, setCargando] = useState(true)
   const [mensaje, setMensaje] = useState(null)
 
-  const cargar = async (filtro = null) => {
+  const cargar = useCallback(async (filtro = null) => {
     try {
-      setCargando(true)
       const resultado = await obtenerObligaciones(token, filtro || null)
       setObligaciones(Array.isArray(resultado) ? resultado : [])
     } catch (error) {
@@ -26,26 +25,24 @@ export default function PortfolioObligationsPage() {
     } finally {
       setCargando(false)
     }
-  }
+  }, [token, manejarSesionExpirada])
 
   useEffect(() => {
     if (!token) return undefined
-    Promise.all([
-      cargar(),
-      obtenerClientes(token, { page: 1, pageSize: 100, search: '' }),
-    ]).then(([, clientesResult]) => {
+    Promise.resolve().then(() => cargar()).then(() => obtenerClientes(token, { page: 1, pageSize: 100, search: '' })).then((clientesResult) => {
       const datos = Array.isArray(clientesResult?.items) ? clientesResult.items : []
       setClientes(datos)
     }).catch((error) => {
       if (error.status === 401) manejarSesionExpirada()
     })
     return undefined
-  }, [token])
+  }, [token, cargar, manejarSesionExpirada])
 
   const filtrar = async (event) => {
     const value = event.target.value
     setClientId(value)
     setMensaje(null)
+    setCargando(true)
     await cargar(value || null)
   }
 
