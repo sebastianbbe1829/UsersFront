@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
   obtenerObligacionesCliente,
@@ -24,17 +24,17 @@ export default function PortfolioPaymentsPage() {
   const [guardando, setGuardando] = useState(false)
   const [mensaje, setMensaje] = useState(null)
 
-  const cargarPagos = async () => {
+  const cargarPagos = useCallback(async () => {
     const resultado = await obtenerPagosCartera(token)
     setPagos(Array.isArray(resultado) ? resultado : [])
-  }
+  }, [token])
 
   useEffect(() => {
     if (!token) return undefined
-    Promise.all([
+    Promise.resolve().then(() => Promise.all([
       obtenerClientes(token, { page: 1, pageSize: 100, search: '' }),
       cargarPagos(),
-    ]).then(([clientesResult]) => {
+    ])).then(([clientesResult]) => {
       const datos = Array.isArray(clientesResult?.items) ? clientesResult.items : []
       setClientes(datos)
     }).catch((error) => {
@@ -42,7 +42,7 @@ export default function PortfolioPaymentsPage() {
       else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los pagos.' })
     }).finally(() => setCargando(false))
     return undefined
-  }, [token])
+  }, [token, cargarPagos, manejarSesionExpirada])
 
   const cargarObligaciones = async (clientId) => {
     if (!clientId) {
