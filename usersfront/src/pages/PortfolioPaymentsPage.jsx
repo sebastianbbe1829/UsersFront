@@ -243,14 +243,26 @@ export default function PortfolioPaymentsPage() {
       {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
 
       {mostrarFormulario && (
-        <div className="card border-0 shadow-sm mb-4">
+        <div className="card border-0 shadow-sm mb-4 position-relative" aria-busy={guardando}>
+          {guardando && (
+            <div
+              className="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center rounded"
+              style={{ zIndex: 20, backgroundColor: 'rgba(var(--bs-body-bg-rgb), 0.78)', backdropFilter: 'blur(1px)' }}
+              role="status"
+              aria-live="polite"
+            >
+              <div className="spinner-border mb-3" aria-hidden="true" />
+              <div className="fw-semibold">Registrando pago...</div>
+              <div className="text-muted small mt-1">Aplicando el pago a las obligaciones seleccionadas.</div>
+            </div>
+          )}
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
                 <h5 className="mb-1">Registrar pago</h5>
                 <div className="text-muted small">Cliente → obligación/referencia → valor aplicado.</div>
               </div>
-              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={cancelarRegistro}>Cancelar</button>
+              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={cancelarRegistro} disabled={guardando}>Cancelar</button>
             </div>
 
             <form onSubmit={guardar}>
@@ -271,11 +283,12 @@ export default function PortfolioPaymentsPage() {
                   placeholder="Digita nombre o identificación..."
                   autoComplete="off"
                   required={!clienteSeleccionado}
+                  disabled={guardando}
                 />
                 {busquedaCliente.trim() && !clienteSeleccionado && (
                   <div className="list-group position-absolute w-100 shadow-sm" style={{ zIndex: 10 }}>
                     {clientesFiltrados.map((cliente) => (
-                      <button key={cliente.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => void seleccionarCliente(cliente)}>
+                      <button key={cliente.id} type="button" className="list-group-item list-group-item-action text-start" onClick={() => void seleccionarCliente(cliente)} disabled={guardando}>
                         <div className="fw-semibold">{nombreCliente(cliente)}</div>
                         <div className="small text-muted">{cliente.identification_number || 'Sin identificación'}</div>
                       </button>
@@ -300,7 +313,7 @@ export default function PortfolioPaymentsPage() {
                           <div className="small text-muted">Selecciona la obligación y el valor a aplicar. Por defecto se propone el saldo pendiente.</div>
                         </div>
                         {asignaciones.length > 0 && obligaciones.length > asignaciones.length && (
-                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={agregarAsignacion}>+ Otra obligación</button>
+                          <button type="button" className="btn btn-outline-primary btn-sm" onClick={agregarAsignacion} disabled={guardando}>+ Otra obligación</button>
                         )}
                       </div>
 
@@ -312,7 +325,7 @@ export default function PortfolioPaymentsPage() {
                       {!cargandoObligaciones && obligaciones.length > 0 && asignaciones.length === 0 && (
                         <div>
                           <label className="form-label fw-semibold" htmlFor="pago-obligacion">Obligación / Referencia</label>
-                          <select id="pago-obligacion" className="form-select" value="" onChange={seleccionarPrimeraObligacion} required>
+                          <select id="pago-obligacion" className="form-select" value="" onChange={seleccionarPrimeraObligacion} required disabled={guardando}>
                             <option value="">Selecciona una obligación...</option>
                             {obligaciones.map((item) => (
                               <option key={item.id} value={item.id}>{item.sale_number || item.id} — saldo {money(item.balance)}</option>
@@ -329,7 +342,7 @@ export default function PortfolioPaymentsPage() {
                             <div className="row g-3 align-items-end">
                               <div className="col-lg-7">
                                 <label className="form-label fw-semibold">Obligación / Referencia</label>
-                                <select className="form-select" value={asignacion.obligation_id} onChange={(event) => seleccionarObligacion(index, event.target.value)}>
+                                <select className="form-select" value={asignacion.obligation_id} onChange={(event) => seleccionarObligacion(index, event.target.value)} disabled={guardando}>
                                   {otras.map((item) => (
                                     <option key={item.id} value={item.id}>{item.sale_number || item.id} — saldo {money(item.balance)}</option>
                                   ))}
@@ -347,11 +360,12 @@ export default function PortfolioPaymentsPage() {
                                   value={asignacion.amount}
                                   onChange={(event) => actualizarAsignacion(index, event.target.value)}
                                   required
+                                  disabled={guardando}
                                 />
                                 <div className="form-text">Puedes registrar un valor menor al saldo.</div>
                               </div>
                               <div className="col-lg-1 text-end">
-                                {asignaciones.length > 1 && <button type="button" className="btn btn-outline-danger" onClick={() => eliminarAsignacion(index)} title="Quitar obligación">×</button>}
+                                {asignaciones.length > 1 && <button type="button" className="btn btn-outline-danger" onClick={() => eliminarAsignacion(index)} title="Quitar obligación" disabled={guardando}>×</button>}
                               </div>
                             </div>
                           </div>
@@ -372,11 +386,11 @@ export default function PortfolioPaymentsPage() {
                       <div className="row g-3">
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Fecha del pago</label>
-                          <input className="form-control" type="date" value={formulario.payment_date} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_date: event.target.value }))} />
+                          <input className="form-control" type="date" value={formulario.payment_date} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_date: event.target.value }))} disabled={guardando} />
                         </div>
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Medio de pago</label>
-                          <select className="form-select" value={formulario.payment_method} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_method: event.target.value }))}>
+                          <select className="form-select" value={formulario.payment_method} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_method: event.target.value }))} disabled={guardando}>
                             <option>TRANSFERENCIA</option>
                             <option>EFECTIVO</option>
                             <option>TARJETA</option>
@@ -385,11 +399,11 @@ export default function PortfolioPaymentsPage() {
                         </div>
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Referencia del pago</label>
-                          <input className="form-control" maxLength="100" value={formulario.reference} onChange={(event) => setFormulario((actual) => ({ ...actual, reference: event.target.value }))} placeholder="Comprobante, consignación..." />
+                          <input className="form-control" maxLength="100" value={formulario.reference} onChange={(event) => setFormulario((actual) => ({ ...actual, reference: event.target.value }))} placeholder="Comprobante, consignación..." disabled={guardando} />
                         </div>
                         <div className="col-12">
                           <label className="form-label fw-semibold">Notas</label>
-                          <input className="form-control" maxLength="500" value={formulario.notes} onChange={(event) => setFormulario((actual) => ({ ...actual, notes: event.target.value }))} />
+                          <input className="form-control" maxLength="500" value={formulario.notes} onChange={(event) => setFormulario((actual) => ({ ...actual, notes: event.target.value }))} disabled={guardando} />
                         </div>
                       </div>
                     </div>
@@ -397,7 +411,7 @@ export default function PortfolioPaymentsPage() {
 
                   <div className="text-end">
                     <button className="btn btn-primary" type="submit" disabled={guardando || cargandoObligaciones || !asignaciones.length || totalAsignado <= 0}>
-                      {guardando ? 'Registrando...' : 'Registrar pago'}
+                      {guardando ? <><span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />Registrando...</> : 'Registrar pago'}
                     </button>
                   </div>
                 </>
