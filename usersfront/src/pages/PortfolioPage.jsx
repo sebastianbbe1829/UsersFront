@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
@@ -16,6 +16,7 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
 
 export default function PortfolioPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const cargaInicialRef = useRef(false)
   const [clientes, setClientes] = useState([])
   const [obligaciones, setObligaciones] = useState([])
   const [cupos, setCupos] = useState({})
@@ -54,8 +55,9 @@ export default function PortfolioPage() {
   }, [token, manejarSesionExpirada])
 
   useEffect(() => {
-    if (!token) return undefined
-    Promise.resolve().then(() => cargar())
+    if (!token || cargaInicialRef.current) return undefined
+    cargaInicialRef.current = true
+    void cargar()
     return undefined
   }, [token, cargar])
 
