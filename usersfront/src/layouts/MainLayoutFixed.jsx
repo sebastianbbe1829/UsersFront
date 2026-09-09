@@ -59,7 +59,7 @@ function MainLayoutFixed() {
     setModoOscuro((valor) => {
       const nuevoValor = !valor
       localStorage.setItem('modo_oscuro', nuevoValor)
-      window.dispatchEvent(new Event('modo-oscuro-cambiado'))
+      window.dispatchEvent(new CustomEvent('modo-oscuro-cambiado', { detail: nuevoValor }))
       return nuevoValor
     })
   }
