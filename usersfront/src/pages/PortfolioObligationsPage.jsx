@@ -151,7 +151,13 @@ export default function PortfolioObligationsPage() {
   return (
     <div>
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-        <div><h2 className="fw-bold mb-1">Obligaciones</h2><p className="text-muted mb-0">Consulta y seguimiento de las obligaciones generadas por ventas a crédito.</p></div>
+        <div>
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button>
+            <h2 className="fw-bold mb-1">Obligaciones</h2>
+          </div>
+          <p className="text-muted mb-0">Consulta y seguimiento de las obligaciones generadas por ventas a crédito.</p>
+        </div>
       </div>
       {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
       {obligationSeleccionada && (
