@@ -34,6 +34,7 @@ const formatDate = (value) => {
 }
 
 const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
+const PAYMENT_METHODS = ['TRANSFERENCIA', 'EFECTIVO', 'TARJETA', 'PSE', 'OTRO', 'CARTERA']
 
 export default function PortfolioPaymentsPage() {
   const { token, manejarSesionExpirada } = useAuth()
@@ -447,10 +448,7 @@ export default function PortfolioPaymentsPage() {
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Medio de pago</label>
                           <select className="form-select" value={formulario.payment_method} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_method: event.target.value }))} disabled={guardando}>
-                            <option>TRANSFERENCIA</option>
-                            <option>EFECTIVO</option>
-                            <option>TARJETA</option>
-                            <option>OTRO</option>
+                            {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method}</option>)}
                           </select>
                         </div>
                         <div className="col-md-4">
