@@ -3,10 +3,18 @@ import Can from './Can'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerMovimientosInventario } from '../services/inventoryApi'
 
-const formatFecha = (value) => {
+const formatFechaHoraColombia = (value) => {
   if (!value) return '-'
   const normalized = typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value
-  return new Date(normalized).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
+  return new Intl.DateTimeFormat('es-CO', {
+    timeZone: 'America/Bogota',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  }).format(new Date(normalized))
 }
 
 const formatMoney = (value) => {
@@ -111,9 +119,10 @@ export function InventoryMovementModal({ form, setForm, productos, guardando, on
                   {!loadingLastPurchase && !lastPurchaseError && lastPurchase && <div className="alert alert-light border py-2 mb-0">
                     <div className="small fw-semibold mb-1">Última compra registrada</div>
                     <div className="row g-2 small">
-                      <div className="col-12 col-sm-4"><span className="text-muted">Valor de compra:</span> <strong>{formatMoney(lastPurchase.unit_purchase_price)}</strong></div>
-                      <div className="col-12 col-sm-4"><span className="text-muted">Fecha:</span> <strong>{formatFecha(lastPurchase.created_at)}</strong></div>
-                      <div className="col-12 col-sm-4"><span className="text-muted">Ganancia:</span> <strong>{formatProfit(lastPurchase.profit_percentage)}</strong></div>
+                      <div className="col-12 col-sm-6 col-lg-3"><span className="text-muted">Valor de compra:</span> <strong>{formatMoney(lastPurchase.unit_purchase_price)}</strong></div>
+                      <div className="col-12 col-sm-6 col-lg-3"><span className="text-muted">Fecha y hora:</span> <strong>{formatFechaHoraColombia(lastPurchase.created_at)}</strong></div>
+                      <div className="col-12 col-sm-6 col-lg-3"><span className="text-muted">Ganancia:</span> <strong>{formatProfit(lastPurchase.profit_percentage)}</strong></div>
+                      <div className="col-12 col-sm-6 col-lg-3"><span className="text-muted">Registrado por:</span> <strong>{lastPurchase.created_by || '-'}</strong></div>
                     </div>
                   </div>}
                   {!loadingLastPurchase && !lastPurchaseError && !lastPurchase && <div className="alert alert-secondary py-2 mb-0 small">No hay compras registradas para este producto.</div>}
