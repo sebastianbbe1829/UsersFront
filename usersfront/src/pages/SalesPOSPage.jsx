@@ -139,6 +139,7 @@ export default function SalesPOSPage() {
     if (Number.isFinite(explicit)) return explicit
     return Math.max(0, Number(client?.credit_limit || 0) - Number(client?.credit_used || 0))
   }
+  const amountForParticipant = (participant) => Math.max(0, Math.round(total * (Number(participant?.percentage) || 0) / 100))
 
   const addProduct = (product) => {
     const inv = stock.get(product.id)
@@ -181,7 +182,7 @@ export default function SalesPOSPage() {
   const setClientPct = (id, value) => setParticipants((p) => p.map((x) => x.id === id ? { ...x, percentage: value } : x))
   const changePayment = (i, field, value) => setPayments((p) => p.map((x, n) => n === i ? { ...x, [field]: value } : x))
   const changePaymentMethod = (i, method) => setPayments((current) => current.map((p, n) => n === i ? { ...p, method, amount: String(Math.max(0, total - current.reduce((s, x, k) => k === i ? s : s + Number(x.amount || 0), 0))) } : p))
-  const addPayment = () => setPayments((p) => [...p, { method: 'EFECTIVO', amount: String(Math.max(0, total - paid)) }])
+  const addPayment = () => setPayments((p) => [...p, { method: 'EFECTIVO', amount: String(Math.max(0, total - paidCents)) }])
   const removePayment = (i) => setPayments((p) => p.filter((_, n) => n !== i))
   const customersPayload = () => mode === 'generic' ? [{ allocation_percentage: 100, is_generic: true }] : participants.map((p) => ({ client_id: p.id, allocation_percentage: Number(p.percentage), is_generic: false }))
   const draftPayload = () => ({ items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), discount_percentage: discountValue, alias: mode === 'generic' ? (genericAlias.trim() || null) : null })
@@ -289,6 +290,7 @@ export default function SalesPOSPage() {
             <strong className="small">{p.full_name}</strong>
             <div className="small text-muted">Participación en la venta: <strong>{Number(p.percentage || 0).toFixed(2)}%</strong></div>
             <div className="small text-muted">Cupo disponible: <strong>{money(availableCredit(p))}</strong></div>
+            <div className="small text-primary">Debe pagar: <strong>{money(amountForParticipant(p))}</strong></div>
           </div>
           <button className="btn btn-sm btn-link text-danger p-0" onClick={() => removeClient(p.id)}>×</button>
         </div>
