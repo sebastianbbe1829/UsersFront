@@ -5,13 +5,61 @@
 
 .sales-product .sales-img,
 .sales-product .sales-placeholder {
-  height: 150px;
-  min-height: 150px;
+  height: 110px;
+  min-height: 110px;
 }
 
 .sales-product .sales-img {
   width: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--bs-tertiary-bg);
+  padding: .25rem;
+}
+
+/* En pantallas con poca altura, compactamos Cliente y Resumen/Pago
+   antes de permitir que aparezca scrollbar. Productos no se modifica aquí. */
+@media (max-height: 900px) and (min-width: 992px) {
+  .sales-pos {
+    height: calc(100vh - 210px) !important;
+    min-height: 0 !important;
+  }
+
+  /* Cliente y Resumen/Pago deben poder desplazarse si su contenido crece.
+     El !important permite conservar este comportamiento incluso cuando
+     el STYLE inline del POS aplica overflow:hidden en alturas muy bajas. */
+  .sales-pos-col:not(.sales-product-col) {
+    overflow-y: auto !important;
+  }
+
+  .sales-pos-col > .mb-3 {
+    margin-bottom: .5rem !important;
+  }
+
+  .sales-pos-col > .mb-2 {
+    margin-bottom: .35rem !important;
+  }
+
+  .sales-pos-col .p-3 {
+    padding: .65rem !important;
+  }
+
+  .sales-pos-col .p-2 {
+    padding: .4rem !important;
+  }
+
+  .sales-customer {
+    padding: .45rem;
+  }
+
+  .sales-customer-title {
+    font-size: .78rem;
+  }
+}
+
+@media (max-height: 800px) and (min-width: 992px) {
+  .sales-product:nth-child(n + 4) {
+    display: none;
+  }
 }
 
 @media (max-width: 991.98px) {
@@ -24,7 +72,7 @@
 @media (max-width: 575.98px) {
   .sales-product .sales-img,
   .sales-product .sales-placeholder {
-    height: 120px;
-    min-height: 120px;
+    height: 100px;
+    min-height: 100px;
   }
 }
