@@ -33,7 +33,6 @@ function WelcomePage() {
   const colorPrincipal = modoOscuro ? '#f8f9fa' : '#212529'
   const colorSecundario = ajustarColorParaFondo(secondaryColor, modoOscuro)
   const nombreTenant = config?.name || tenant || 'su empresa'
-
   const payload = (() => { try { return token ? JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) : null } catch { return null } })()
   const permisos = Array.isArray(payload?.permissions) ? payload.permissions : []
   const esSuper = payload?.user_type === 'SUPER'
@@ -48,6 +47,7 @@ function WelcomePage() {
     { title: 'Consulta de ventas', description: 'Consulta ventas registradas.', icon: '📊', path: 'ventas/consulta', permission: 'SALES_READ', accent: '#6610f2' },
   ]
   const accesosVisibles = accesos.filter((acceso) => esSuper || permisos.includes(acceso.permission))
+  const cambiarModoOscuro = () => { const nuevoValor = !modoOscuro; localStorage.setItem('modo_oscuro', nuevoValor); setModoOscuro(nuevoValor); window.dispatchEvent(new Event('modo-oscuro-cambiado')) }
   const manejarCerrarSesion = () => { cerrarSesion(); navigate(tenant ? `/${tenant}/login` : '/login', { replace: true }) }
 
   return (
@@ -58,7 +58,8 @@ function WelcomePage() {
           <div className="welcome-user-block"><strong>{usuarioLogueado?.name || 'Usuario'}</strong><span>👤 {usuarioLogueado?.dni ? `Número de identificación: ${usuarioLogueado.dni}` : 'Sesión activa'}</span></div>
         </div>
         <div className="welcome-compact-meta">
-          <span>🏢 {nombreTenant} · Empresa activa</span><span className="welcome-meta-separator">|</span><span>🟢 Activa</span><span className="welcome-meta-separator">|</span><span>🕘 {hora}</span><span className="welcome-meta-separator">|</span><span>📅 {fecha}</span>
+          <span>🏢 {nombreTenant} · Empresa activa</span><span className="welcome-meta-separator">|</span><span>🟢 Activa</span><span className="welcome-meta-separator">|</span><span>📅 {fecha}</span><span className="welcome-meta-separator">|</span><span>🕘 {hora}</span>
+          <button type="button" className="welcome-mode-button" onClick={cambiarModoOscuro}>{modoOscuro ? '☀️ Modo Claro' : '🌙 Modo Oscuro'}</button>
           <button type="button" className="welcome-logout-placeholder" onClick={manejarCerrarSesion}>Cerrar Sesión</button>
         </div>
       </header>
