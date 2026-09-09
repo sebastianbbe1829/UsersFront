@@ -24,13 +24,82 @@
     width: min(86vw, 300px) !important;
   }
 
+  /* Solo mobile: el encabezado queda en una sola linea compacta. */
   main header {
     min-height: 58px !important;
+    height: 58px !important;
     padding: .45rem .65rem !important;
+    gap: .5rem !important;
+    flex-wrap: nowrap !important;
+    overflow: hidden;
   }
 
-  main header h5 {
+  main header > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  main header > div:first-child h5 {
     font-size: .9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Solo mobile: evita que los datos del usuario y las acciones creen
+     varias filas y terminen ocupando gran parte de la pantalla. */
+  main header > div:last-child {
+    flex: 0 0 auto;
+    flex-wrap: nowrap !important;
+    gap: .3rem !important;
+    min-width: 0;
+  }
+
+  /* Conservamos los iconos, pero ocultamos la información textual extensa. */
+  main header > div:last-child > div:nth-of-type(1) {
+    display: none !important;
+  }
+
+  main header > div:last-child > div:nth-of-type(2) > div {
+    display: none !important;
+  }
+
+  main header > div:last-child > div:nth-of-type(2) {
+    gap: 0 !important;
+  }
+
+  main header > div:last-child > span {
+    display: none !important;
+  }
+
+  /* Modo oscuro y cerrar sesión pasan a botones compactos de icono. */
+  main header > div:last-child > button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: .25rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+    font-size: 0;
+  }
+
+  main header > div:last-child > button:first-of-type::after {
+    content: '🌙';
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  main header > div:last-child > button:first-of-type[title="Cambiar a modo claro"]::after {
+    content: '☀️';
+  }
+
+  main header > div:last-child > button:last-of-type::after {
+    content: '🚪';
+    font-size: 1rem;
+    line-height: 1;
   }
 
   main > section {
