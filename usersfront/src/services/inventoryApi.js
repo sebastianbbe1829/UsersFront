@@ -28,6 +28,7 @@ export const obtenerTiposInventario = (token, activeOnly = false) => request(`${
 export const crearTipoInventario = (datos, token) => request(`${API_URL}/inventory/types`, token, { method: 'POST', body: JSON.stringify(datos) })
 export const actualizarTipoInventario = (id, datos, token) => request(`${API_URL}/inventory/types/${encodeURIComponent(id)}`, token, { method: 'PATCH', body: JSON.stringify(datos) })
 export const obtenerProductosInventario = (token, activeOnly = false) => request(`${API_URL}/inventory/products${activeOnly ? '?active_only=true' : ''}`, token)
+export const obtenerProductosTopVenta = (token, limit = 6) => request(`${API_URL}/inventory/products/top-selling?limit=${encodeURIComponent(limit)}`, token)
 export const buscarImagenesProducto = (query, token) => request(`${API_URL}/inventory/products/images/search?query=${encodeURIComponent(query.trim())}`, token)
 export const crearProductoInventario = (datos, token) => request(`${API_URL}/inventory/products`, token, { method: 'POST', body: JSON.stringify(datos) })
 export const actualizarProductoInventario = (id, datos, token) => request(`${API_URL}/inventory/products/${encodeURIComponent(id)}`, token, { method: 'PATCH', body: JSON.stringify(datos) })
