@@ -10,6 +10,15 @@
   box-shadow: 0 0 28px rgba(0, 0, 0, .28) !important;
 }
 
+/* El POS reserva espacio para encabezado, mensajes y ventas congeladas,
+   evitando que el documento completo genere scrollbar vertical. */
+@media (min-width: 992px) {
+  .sales-pos {
+    height: calc(100vh - 300px) !important;
+    min-height: 0 !important;
+  }
+}
+
 @media (max-width: 768px) {
   .app-navigation-drawer {
     width: min(86vw, 300px) !important;
