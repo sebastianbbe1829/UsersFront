@@ -1,7 +1,7 @@
 .sales-product .sales-img,
 .sales-product .sales-placeholder {
-  height: 120px;
-  min-height: 120px;
+  height: 150px;
+  min-height: 150px;
 }
 
 .sales-product .sales-img {
@@ -12,7 +12,7 @@
 @media (max-width: 575.98px) {
   .sales-product .sales-img,
   .sales-product .sales-placeholder {
-    height: 100px;
-    min-height: 100px;
+    height: 120px;
+    min-height: 120px;
   }
 }
