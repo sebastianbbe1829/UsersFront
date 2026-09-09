@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
@@ -16,6 +17,7 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
 
 export default function PortfolioPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const cargaInicialRef = useRef(false)
   const [clientes, setClientes] = useState([])
   const [obligaciones, setObligaciones] = useState([])
@@ -106,7 +108,10 @@ export default function PortfolioPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Cartera</h2>
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button>
+            <h2 className="fw-bold mb-1">Cartera</h2>
+          </div>
           <p className="text-muted mb-0">Cupos, obligaciones y saldos de los clientes.</p>
         </div>
       </div>
