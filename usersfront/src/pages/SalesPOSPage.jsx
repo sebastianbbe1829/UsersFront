@@ -274,7 +274,7 @@ export default function SalesPOSPage() {
       reset()
       setTab('products')
       await loadFrozen()
-      setMessage({ type: 'success', text: `${draft.alias || data.alias ? `Venta ${draft.alias || data.alias} ` : 'Venta '}congelada correctamente.` })
+
     } catch (e) {
       if (e.status === 401) return manejarSesionExpirada()
       setMessage({ type: 'danger', text: userMessage(e, 'No fue posible congelar la venta.') })
