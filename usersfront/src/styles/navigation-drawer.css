@@ -24,16 +24,78 @@
     width: min(86vw, 300px) !important;
   }
 
+  /* En mobile el encabezado debe ocupar una sola linea compacta.
+     Estas reglas NO se aplican en desktop. */
   main header {
     min-height: 58px !important;
+    height: 58px !important;
     padding: .45rem .65rem !important;
+    gap: .5rem !important;
+    flex-wrap: nowrap !important;
+    overflow: hidden;
   }
 
-  main header h5 {
+  main header > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  main header > div:first-child h5 {
     font-size: .9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* El bloque derecho deja de envolver sus elementos y muestra solamente
+     los indicadores esenciales en el ancho reducido del telefono. */
+  main header > div:last-child {
+    flex: 0 0 auto;
+    flex-wrap: nowrap !important;
+    gap: .3rem !important;
+    min-width: 0;
+  }
+
+  main header > div:last-child > .mobile-header-tenant,
+  main header > div:last-child > .mobile-header-separator {
+    display: none !important;
+  }
+
+  main header > div:last-child > .mobile-header-user {
+    gap: 0 !important;
+  }
+
+  main header > div:last-child > .mobile-header-user > div {
+    display: none !important;
+  }
+
+  main header > div:last-child > .mobile-header-action {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: .25rem !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+  }
+
+  main header > div:last-child > .mobile-header-action .desktop-action-label {
+    display: none !important;
+  }
+
+  main header > div:last-child > .mobile-header-action .mobile-action-icon {
+    display: inline !important;
+    font-size: 1rem;
+    line-height: 1;
   }
 
   main > section {
     padding: .65rem !important;
   }
+}
+
+.mobile-action-icon {
+  display: none;
 }
