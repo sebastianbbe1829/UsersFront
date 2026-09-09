@@ -41,18 +41,20 @@ function SalesHistoryPage() {
     setLoading(true)
     setError(null)
     try {
-      const [salesResult, obligationsResult] = await Promise.all([
-        obtenerVentas(token, { limit: 500, offset: 0 }),
-        obtenerObligaciones(token),
-      ])
-      const loadedSales = Array.isArray(salesResult) ? salesResult : []
-      const loadedObligations = Array.isArray(obligationsResult) ? obligationsResult : []
-      setSales(loadedSales)
-      setObligaciones(loadedObligations)
+      const loadedSales = await obtenerVentas(token, { limit: 500, offset: 0 })
+      setSales(Array.isArray(loadedSales) ? loadedSales : [])
+
+      try {
+        const loadedObligations = await obtenerObligaciones(token)
+        setObligaciones(Array.isArray(loadedObligations) ? loadedObligations : [])
+      } catch (obligationError) {
+        if (obligationError.status === 401) return manejarSesionExpirada()
+        setObligaciones([])
+      }
 
       const sale = searchParams.get('sale')?.trim().toLowerCase()
       if (sale) {
-        const encontrada = loadedSales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
+        const encontrada = (Array.isArray(loadedSales) ? loadedSales : []).find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
         if (encontrada) setSelectedSale(encontrada)
       }
     } catch (requestError) {
