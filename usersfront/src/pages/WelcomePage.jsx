@@ -19,13 +19,9 @@ function WelcomePage() {
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
 
   useEffect(() => {
-    const sincronizarModo = () => {
-      setModoOscuro(localStorage.getItem('modo_oscuro') === 'true')
-    }
-
+    const sincronizarModo = () => setModoOscuro(localStorage.getItem('modo_oscuro') === 'true')
     window.addEventListener('modo-oscuro-cambiado', sincronizarModo)
     window.addEventListener('storage', sincronizarModo)
-
     return () => {
       window.removeEventListener('modo-oscuro-cambiado', sincronizarModo)
       window.removeEventListener('storage', sincronizarModo)
@@ -47,13 +43,13 @@ function WelcomePage() {
 
   const accesos = [
     { title: 'Puntos de venta', description: 'Registra y gestiona tus ventas.', icon: '🛒', path: 'ventas', permission: 'SALES_CREATE', accent: primaryColor },
-    { title: 'Pagos', description: 'Registra y consulta los pagos.', icon: '💳', path: 'cartera/pagos', permission: 'PORTFOLIO_PAYMENT_CREATE', accent: '#198754' },
-    { title: 'Obligaciones', description: 'Consulta y administra la cartera.', icon: '📋', path: 'cartera/obligaciones', permission: 'PORTFOLIO_READ', accent: '#fd7e14' },
-    { title: 'Clientes', description: 'Consulta y gestiona tus clientes.', icon: '👥', path: 'clientes', permission: 'CLIENT_READ', accent: '#6f42c1' },
-    { title: 'Inventarios', description: 'Controla existencias y movimientos.', icon: '📦', path: 'inventarios', permission: 'INVENTORY_READ', accent: '#20c997' },
-    { title: 'Extintores', description: 'Gestiona inventario y revisiones.', icon: '🧯', path: 'extintores', permission: 'EXTINGUISHER_READ', accent: '#dc3545' },
-    { title: 'Administración', description: 'Usuarios, roles y permisos.', icon: '⚙️', path: 'usuarios', permission: 'USER_READ', accent: '#6c757d' },
-    { title: 'Consulta de ventas', description: 'Consulta ventas registradas.', icon: '📊', path: 'ventas/consulta', permission: 'SALES_READ', accent: '#6610f2' },
+    { title: 'Cartera', description: 'Consulta y administra las obligaciones.', icon: '💰', path: 'cartera/obligaciones', permission: 'PORTFOLIO_READ', accent: '#fd7e14' },
+    { title: 'Resumen de cartera', description: 'Consulta saldos, cupos y cartera activa.', icon: '📊', path: 'cartera', permission: 'PORTFOLIO_READ', accent: '#6f42c1' },
+    { title: 'Pagos', description: 'Registra y consulta los pagos de cartera.', icon: '💳', path: 'cartera/pagos', permission: 'PORTFOLIO_PAYMENT_CREATE', accent: '#198754' },
+    { title: 'Clientes', description: 'Consulta y gestiona tus clientes.', icon: '👥', path: 'clientes', permission: 'CLIENT_READ', accent: '#0dcaf0' },
+    { title: 'Inventarios', description: 'Consulta existencias y productos.', icon: '📦', path: 'inventarios', permission: 'INVENTORY_READ', accent: '#20c997' },
+    { title: 'Movimientos', description: 'Consulta los movimientos de inventario.', icon: '🔄', path: 'inventarios/movimientos', permission: 'INVENTORY_MOVEMENT_READ', accent: '#0d6efd' },
+    { title: 'Consulta de ventas', description: 'Consulta las ventas registradas.', icon: '📈', path: 'ventas/consulta', permission: 'SALES_READ', accent: '#6610f2' },
   ]
   const accesosVisibles = accesos.filter((acceso) => permisos.esSuper || permisos.permissions.includes(acceso.permission))
 
