@@ -3,48 +3,21 @@
 // ============================================================
 
 export const obtenerTenantDesdeUrl = () => {
+  const path = window.location.pathname
 
-  const path =
-    window.location.pathname
-
-
-  // ==========================================================
-  // SEPARAR SEGMENTOS
-  // ==========================================================
-
-  const partes =
-    path
-      .split('/')
-      .filter(Boolean)
-
-
-  // ==========================================================
-  // URL SIN SEGMENTOS
-  // ==========================================================
+  const partes = path
+    .split('/')
+    .filter(Boolean)
 
   if (partes.length === 0) {
-
     return null
-
   }
 
-
-  // ==========================================================
-  // EL PRIMER SEGMENTO SIEMPRE ES EL TENANT
-  //
-  // Ejemplos:
-  //
-  // /empresa-demo
-  // /empresa-demo/login
-  // /empresa-demo/usuarios
-  // /empresa-demo/roles
-  // /empresa-demo/permisos
-  //
-  // En todos los casos:
-  //
-  // tenant = empresa-demo
-  // ==========================================================
+  // /welcome fue una ruta legacy sin tenant.
+  // "welcome" NO es un slug válido de empresa.
+  if (partes[0].toLowerCase() === 'welcome') {
+    return null
+  }
 
   return partes[0]
-
 }
