@@ -1,87 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
 import { actualizarProductoInventario, crearProductoInventario, obtenerProductosInventario, obtenerTiposInventario } from '../services/inventoryApi'
 import { emptyProduct, PAGE_SIZE } from './InventoryUtils'
-import { EmptyState, Pagination, ProductModal, SearchBar, TableProducts } from './InventoryShared'
+import { EmptyState, ProductModal, SearchBar, TableProducts } from './InventoryShared'
+
+const PAGE_SIZES = [5, 10, 20, 50]
+const Paginacion = ({ total, page, pageSize, onPageChange }) => { const pages = Math.max(1, Math.ceil(total / pageSize)); if (pages === 1) return null; return <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {page} de {pages}</small><div className="btn-group" role="group" aria-label="Paginación"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={page >= pages} onClick={() => onPageChange(page + 1)}>Siguiente</button></div></div> }
 
 function InventoryProductsPage() {
-  const { token, manejarSesionExpirada } = useAuth()
-  const tokenRef = useRef(token)
-  const cargaInicialRef = useRef(false)
-  const [productos, setProductos] = useState([])
-  const [tipos, setTipos] = useState([])
-  const [busqueda, setBusqueda] = useState('')
-  const [page, setPage] = useState(1)
-  const [form, setForm] = useState(emptyProduct)
-  const [editando, setEditando] = useState(null)
-  const [modal, setModal] = useState(false)
-  const [cargando, setCargando] = useState(true)
-  const [guardando, setGuardando] = useState(false)
-  const [mensaje, setMensaje] = useState(null)
-
+  const { token, manejarSesionExpirada } = useAuth(); const navigate = useNavigate(); const tokenRef = useRef(token); const cargaInicialRef = useRef(false)
+  const [productos, setProductos] = useState([]); const [tipos, setTipos] = useState([]); const [busqueda, setBusqueda] = useState(''); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(PAGE_SIZE); const [form, setForm] = useState(emptyProduct); const [editando, setEditando] = useState(null); const [modal, setModal] = useState(false); const [cargando, setCargando] = useState(true); const [guardando, setGuardando] = useState(false); const [mensaje, setMensaje] = useState(null)
   useEffect(() => { tokenRef.current = token }, [token])
-
-  const cargar = useCallback(async () => {
-    const tokenActual = tokenRef.current
-    if (!tokenActual) return
-    try { setCargando(true); const [productosResult, tiposResult] = await Promise.all([obtenerProductosInventario(tokenActual), obtenerTiposInventario(tokenActual)]); setProductos(Array.isArray(productosResult) ? productosResult : []); setTipos(Array.isArray(tiposResult) ? tiposResult : []); setMensaje(null) }
-    catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) }
-    finally { setCargando(false) }
-  }, [manejarSesionExpirada])
+  const cargar = useCallback(async () => { const tokenActual = tokenRef.current; if (!tokenActual) return; try { setCargando(true); const [productosResult, tiposResult] = await Promise.all([obtenerProductosInventario(tokenActual), obtenerTiposInventario(tokenActual)]); setProductos(Array.isArray(productosResult) ? productosResult : []); setTipos(Array.isArray(tiposResult) ? tiposResult : []); setMensaje(null) } catch (error) { if (error.status === 401) return manejarSesionExpirada(); setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) } finally { setCargando(false) } }, [manejarSesionExpirada])
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargar() } }, [token, cargar])
-
   const tipoPorId = useMemo(() => new Map(tipos.map((item) => [item.id, item])), [tipos])
   const filtrados = useMemo(() => { const term = busqueda.trim().toLowerCase(); return term ? productos.filter((item) => `${item.code} ${item.name} ${item.brand || ''} ${item.presentation || ''} ${tipoPorId.get(item.inventory_type_id)?.name || ''}`.toLowerCase().includes(term)) : productos }, [productos, tipoPorId, busqueda])
-  const filas = useMemo(() => filtrados.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtrados, page])
+  const filas = useMemo(() => filtrados.slice((page - 1) * pageSize, page * pageSize), [filtrados, page, pageSize])
   const cerrar = () => { setModal(false); setEditando(null); setForm(emptyProduct) }
-  const editar = (item) => {
-    setEditando(item.id)
-    setForm({
-      name: item.name,
-      inventory_type_id: String(item.inventory_type_id),
-      brand: item.brand || '',
-      presentation: item.presentation || '',
-      active: item.active,
-      image_url: item.image_url || '',
-      image_source: item.image_source || '',
-      image_source_url: item.image_source_url || '',
-      image_credit: item.image_credit || '',
-    })
-    setModal(true)
-  }
-  const guardar = async (event) => {
-    event.preventDefault(); setGuardando(true); setMensaje(null)
-    try {
-      const data = {
-        name: form.name.trim(),
-        inventory_type_id: Number(form.inventory_type_id),
-        brand: form.brand.trim() || null,
-        presentation: form.presentation.trim() || null,
-        active: form.active,
-        image_url: form.image_url || null,
-        image_source: form.image_source || null,
-        image_source_url: form.image_source_url || null,
-        image_credit: form.image_credit || null,
-      }
-      if (editando) await actualizarProductoInventario(editando, data, token); else await crearProductoInventario(data, token)
-      await cargar(); setMensaje({ tipo: 'success', texto: editando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.' }); cerrar()
-    } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el producto.' }) }
-    finally { setGuardando(false) }
-  }
-
-  return <>
-    <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
-    <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><h2 className="fw-bold mb-1">Productos</h2><p className="text-muted mb-0">Administración del catálogo de productos. Crear o editar un producto no modifica existencias.</p></div><Can permission="INVENTORY_CREATE"><button type="button" className="btn btn-primary" onClick={() => setModal(true)}>+ Nuevo producto</button></Can></div>
-    {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
-    <div className="card shadow-sm border-0"><div className="card-body">
-      <div className="mb-3"><SearchBar value={busqueda} onChange={(value) => { setBusqueda(value); setPage(1) }} /></div>
-      {cargando && <div className="text-center py-5" role="status"><div className="spinner-border" /><div className="text-muted mt-2">Cargando productos...</div></div>}
-      {!cargando && filtrados.length === 0 && <EmptyState text="No hay productos." />}
-      {!cargando && filtrados.length > 0 && <><TableProducts rows={filas} tipoPorId={tipoPorId} onEdit={editar} /><Pagination total={filtrados.length} page={page} onPageChange={setPage} /></>}
-    </div></div>
-    {modal && <ProductModal editando={Boolean(editando)} form={form} setForm={setForm} tipos={tipos} guardando={guardando} onClose={cerrar} onSubmit={guardar} />}
-  </>
+  const editar = (item) => { setEditando(item.id); setForm({ name: item.name, inventory_type_id: String(item.inventory_type_id), brand: item.brand || '', presentation: item.presentation || '', active: item.active, image_url: item.image_url || '', image_source: item.image_source || '', image_source_url: item.image_source_url || '', image_credit: item.image_credit || '' }); setModal(true) }
+  const guardar = async (event) => { event.preventDefault(); setGuardando(true); setMensaje(null); try { const data = { name: form.name.trim(), inventory_type_id: Number(form.inventory_type_id), brand: form.brand.trim() || null, presentation: form.presentation.trim() || null, active: form.active, image_url: form.image_url || null, image_source: form.image_source || null, image_source_url: form.image_source_url || null, image_credit: form.image_credit || null }; if (editando) await actualizarProductoInventario(editando, data, token); else await crearProductoInventario(data, token); await cargar(); setMensaje({ tipo: 'success', texto: editando ? 'Producto actualizado correctamente.' : 'Producto creado correctamente.' }); cerrar() } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible guardar el producto.' }) } finally { setGuardando(false) } }
+  return <><SessionManager token={token} onSesionExpirada={manejarSesionExpirada} /><div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><div className="d-flex align-items-center gap-2"><button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button><h2 className="fw-bold mb-1">Productos</h2></div><p className="text-muted mb-0">Administración del catálogo de productos. Crear o editar un producto no modifica existencias.</p></div><Can permission="INVENTORY_CREATE"><button type="button" className="btn btn-primary" onClick={() => setModal(true)}>+ Nuevo producto</button></Can></div>{mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}<div className="card shadow-sm border-0"><div className="card-body"><div className="d-flex flex-wrap align-items-center gap-2 mb-3"><SearchBar value={busqueda} onChange={(value) => { setBusqueda(value); setPage(1) }} /><label className="d-flex align-items-center gap-2 mb-0 ms-auto small text-muted">Mostrar<select className="form-select form-select-sm" style={{ width: 82 }} value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label><span className="text-muted small">{filtrados.length} registros</span></div>{cargando && <div className="text-center py-5" role="status"><div className="spinner-border" /><div className="text-muted mt-2">Cargando productos...</div></div>}{!cargando && filtrados.length === 0 && <EmptyState text="No hay productos." />}{!cargando && filtrados.length > 0 && <><TableProducts rows={filas} tipoPorId={tipoPorId} onEdit={editar} /><Paginacion total={filtrados.length} page={page} pageSize={pageSize} onPageChange={setPage} /></>}</div></div>{modal && <ProductModal editando={Boolean(editando)} form={form} setForm={setForm} tipos={tipos} guardando={guardando} onClose={cerrar} onSubmit={guardar} />}</>
 }
 export default InventoryProductsPage
