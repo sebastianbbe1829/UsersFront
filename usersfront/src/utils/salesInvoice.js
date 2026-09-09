@@ -23,7 +23,16 @@ export const abrirFactura = (sale) => {
     <tr><td>${escapeHtml(item.product_code)}</td><td>${escapeHtml(item.product_name)}</td>
     <td>${escapeHtml(item.quantity)}</td><td>${money(item.unit_price)}</td><td>${money(item.line_total)}</td></tr>`).join('')
   const customers = (sale.customers || []).map((customer) => `<li>${escapeHtml(customer.customer_name)} — ${customer.allocation_percentage}% — ${money(customer.allocation_amount)}</li>`).join('')
-  const payments = (sale.payments || []).map((payment) => `<li>${escapeHtml(payment.payment_method)} — ${money(payment.amount)}</li>`).join('')
+  const recordedPayments = sale.payments || []
+  // CREDITO is a sale modality that creates an obligation; it is deliberately
+  // not stored as a SalePaymentDB record. PENDING sales are the credit sales,
+  // so the invoice must still show the modality even when there are no
+  // recorded payment rows.
+  const payments = recordedPayments.length
+    ? recordedPayments.map((payment) => `<li>${escapeHtml(payment.payment_method)} — ${money(payment.amount)}</li>`).join('')
+    : sale.status === 'PENDING'
+      ? `<li>${escapeHtml('CREDITO')} — ${money(sale.total)}</li>`
+      : ''
 
   invoiceWindow.document.open()
   invoiceWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Factura ${escapeHtml(sale.sale_number)}</title>
