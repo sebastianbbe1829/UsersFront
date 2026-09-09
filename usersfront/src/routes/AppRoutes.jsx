@@ -36,6 +36,7 @@ import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
 import PermissionRoute from '../components/PermissionRoute'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
+import { obtenerPayloadToken } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 const MainLayout = lazy(() => import('../layouts/MainLayoutFixed'))
@@ -50,12 +51,22 @@ function RutaConPermiso({ permission, children }) { return <PermissionRoute perm
 
 function AppRoutes() {
   const location = useLocation()
-  const { usuarioLogueado } = useAuth()
+  const { usuarioLogueado, token } = useAuth()
   const rutaActual = location.pathname
+
+  // /welcome fue una ruta antigua sin tenant. Nunca debe tratarse como si
+  // "welcome" fuera el slug de una empresa: recuperamos el tenant real del JWT.
+  const payload = obtenerPayloadToken(token)
+  const tenantDelToken = payload?.tenant_slug || usuarioLogueado?.tenant_slug || null
   const tenantDesdeUrl = obtenerTenantDesdeUrl()
-  // Algunas pantallas antiguas todavía navegan a /welcome. Si eso ocurre,
-  // recuperamos el tenant de la sesión actual para que el fallback siga siendo multitenant.
-  const tenant = tenantDesdeUrl || (rutaActual === '/welcome' ? usuarioLogueado?.tenant_slug : null)
+  const esRutaLegacyWelcome = rutaActual === '/welcome'
+  const tenant = esRutaLegacyWelcome ? tenantDelToken : (tenantDesdeUrl || tenantDelToken)
+
+  if (esRutaLegacyWelcome) {
+    if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />
+    return <TenantRequired />
+  }
+
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
