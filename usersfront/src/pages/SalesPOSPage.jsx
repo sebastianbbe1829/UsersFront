@@ -45,6 +45,7 @@ export default function SalesPOSPage() {
   const [clientSearch, setClientSearch] = useState('')
   const [mode, setMode] = useState('generic')
   const [participants, setParticipants] = useState([])
+  const [genericAlias, setGenericAlias] = useState('')
   const [discount, setDiscount] = useState('0')
   const [payments, setPayments] = useState([{ method: 'EFECTIVO', amount: '' }])
   const [autoconsumption, setAutoconsumption] = useState(false)
@@ -120,9 +121,11 @@ export default function SalesPOSPage() {
     if (!p.amount && payments.length === 1) return { ...p, amount: String(Math.round(total)) }
     return p
   }), [payments, mode, total])
-  const paid = effectivePayments.reduce((s, p) => s + (Number(p.amount) || 0), 0)
-  const difference = total - paid
-  const paidOk = Math.abs(difference) < .01
+  const totalCents = toCents(total)
+  const paidCents = effectivePayments.reduce((s, p) => s + toCents(p.amount), 0)
+  const differenceCents = totalCents - paidCents
+  const difference = fromCents(differenceCents)
+  const paidOk = differenceCents === 0
   const allocated = participants.reduce((s, p) => s + (Number(p.percentage) || 0), 0)
   const remaining = Math.max(0, 100 - allocated)
   const creditSelected = effectivePayments.some((p) => p.method === 'CREDITO' && Number(p.amount) > 0)
@@ -159,6 +162,7 @@ export default function SalesPOSPage() {
   const changeMode = (next) => {
     setMode(next)
     if (next === 'generic') setParticipants([])
+    if (next !== 'generic') setGenericAlias('')
     if (next === 'client' && participants.length > 1) setParticipants((p) => p.slice(0, 1))
     if (next === 'split') setPayments((p) => p.map((x) => x.method === 'CREDITO' ? { ...x, method: 'EFECTIVO' } : x))
   }
@@ -180,8 +184,9 @@ export default function SalesPOSPage() {
   const addPayment = () => setPayments((p) => [...p, { method: 'EFECTIVO', amount: String(Math.max(0, total - paid))])
   const removePayment = (i) => setPayments((p) => p.filter((_, n) => n !== i))
   const customersPayload = () => mode === 'generic' ? [{ allocation_percentage: 100, is_generic: true }] : participants.map((p) => ({ client_id: p.id, allocation_percentage: Number(p.percentage), is_generic: false }))
+  const draftPayload = () => ({ items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), discount_percentage: discountValue, alias: mode === 'generic' ? (genericAlias.trim() || null) : null })
   const reset = ({ keepLastSale = false } = {}) => {
-    setCart([]); setSearch(''); setMode('generic'); setParticipants([]); setClientSearch(''); setDiscount('0'); setPayments([{ method: 'EFECTIVO', amount: '' }]); setAutoconsumption(false); setActiveDraftId(null)
+    setCart([]); setSearch(''); setMode('generic'); setParticipants([]); setClientSearch(''); setGenericAlias(''); setDiscount('0'); setPayments([{ method: 'EFECTIVO', amount: '' }]); setAutoconsumption(false); setActiveDraftId(null)
     if (!keepLastSale) setLastSale(null)
   }
 
@@ -191,9 +196,9 @@ export default function SalesPOSPage() {
     if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     setFreezing(true); setMessage(null)
     try {
-      const data = { items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), discount_percentage: discountValue }
+      const data = draftPayload()
       const draft = autoconsumption ? await congelarVentaAutoconsumo(data, token) : await congelarVenta(data, token)
-      setMessage({ type: 'success', text: `Venta ${draft.draft_number} congelada. Puedes atender a otro cliente.` })
+      setMessage({ type: 'success', text: `Venta ${draft.draft_number}${draft.payload?.alias ? ` · ${draft.payload.alias}` : ''} congelada. Puedes atender a otro cliente.` })
       reset()
       await loadFrozen()
     } catch (e) {
@@ -213,7 +218,7 @@ export default function SalesPOSPage() {
       const client = clients.find((x) => x.id === c.client_id)
       return client ? { ...client, percentage: Number(c.allocation_percentage) } : null
     }).filter(Boolean)
-    setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number} recuperada.` })
+    setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setGenericAlias(restoredClients.length ? '' : String(payload.alias || '')); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number}${payload.alias ? ` · ${payload.alias}` : ''} recuperada.` })
   }
 
   const submit = async () => {
@@ -221,7 +226,7 @@ export default function SalesPOSPage() {
     if (mode === 'client' && participants.length !== 1) return openValidation('Cliente requerido', 'Selecciona un cliente registrado para registrar la venta.')
     if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     if (creditSelected && mode !== 'client') return openValidation('Cliente requerido para crédito', 'Una venta a crédito requiere un único cliente registrado. Selecciona Cliente y asigna la venta antes de registrarla.')
-    if (!paidOk) return openValidation('Pago incompleto', difference > 0 ? `Aún falta completar ${money(difference)}.` : `El pago supera el total en ${money(Math.abs(difference))}.`)
+    if (!paidOk) return openValidation('Pago incompleto', differenceCents > 0 ? `Aún falta completar ${money(difference)}.` : `El pago supera el total en ${money(Math.abs(difference))}.`)
     setSaving(true); setMessage(null)
     try {
       const data = { items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), payments: effectivePayments.map((p) => ({ payment_method: p.method, amount: Number(p.amount) })), discount_percentage: discountValue }
@@ -256,7 +261,12 @@ export default function SalesPOSPage() {
         <button className={`btn ${mode === 'client' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => changeMode('client')}>Cliente</button>
         <button className={`btn ${mode === 'split' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => changeMode('split')}>Venta dividida</button>
       </div>
-      {mode === 'generic' && <div className="small text-muted">La venta se registrará como consumidor final.</div>}
+      {mode === 'generic' && <>
+        <div className="small text-muted mb-2">La venta se registrará como consumidor final.</div>
+        <label className="form-label small mb-1">Alias de la cuenta (opcional)</label>
+        <input className="form-control form-control-sm" value={genericAlias} maxLength={100} onChange={(e) => setGenericAlias(e.target.value)} placeholder="Ej.: Mesa 1, Cliente barra, Cliente alto..." />
+        <div className="form-text">Úsalo para reconocer una venta congelada sin registrar al cliente.</div>
+      </>}
       {mode !== 'generic' && <>
         <label className="form-label small mb-1">Buscar cliente</label>
         <input className="form-control form-control-sm mb-2" value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} placeholder="Nombre o identificación..." />
@@ -284,9 +294,9 @@ export default function SalesPOSPage() {
     <div className="row g-2 sales-pos">
       <div className={`col-lg-4 sales-pos-col sales-product-col sales-panel ${tab === 'products' ? 'active' : ''}`}><div className="card border-0 shadow-sm h-100"><div className="card-body p-2"><div className="input-group input-group-sm mb-2"><span className="input-group-text">🔎</span><input className="form-control" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar producto..." /></div><div className="small text-muted mb-2">⭐ Productos destacados · busca por nombre o código para encontrar otros</div><div className="sales-grid">{shownProducts.map((p) => { const inv = stock.get(p.id); const qty = Number(inv?.quantity || 0); const price = Number(autoconsumption ? inv?.purchase_price : inv?.sale_price) || 0; return <button key={p.id} className="sales-product p-0" onClick={() => addProduct(p)} disabled={!qty}>{p.image_url ? <img src={p.image_url} alt={p.name} className="sales-img" /> : <div className="sales-placeholder">📦</div>}<div className="p-2"><div className="small text-muted text-truncate">{p.code}</div><div className="fw-semibold small text-truncate">{p.name}</div><div className="fw-bold small">{money(price)}</div><span className={`badge ${qty ? 'text-bg-success' : 'text-bg-secondary'}`}>{qty}</span></div></button> })}</div></div></div></div>
       <div className={`col-lg-5 sales-pos-col sales-panel ${tab === 'sale' ? 'active' : ''}`}><div className="card border-0 shadow-sm h-100"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>🧾 Venta actual</strong><Can permission="SALES_AUTOCONSUME"><div className="form-check form-switch mb-0"><input className="form-check-input" type="checkbox" checked={autoconsumption} onChange={(e) => toggleAutoconsumption(e.target.checked)} id="sale-autoconsumption" /><label className="form-check-label small" htmlFor="sale-autoconsumption">Precio de compra</label></div></Can></div><div className="card-body p-2">{customerBlock}{autoconsumption && <div className="alert alert-warning py-2 small">🎁 Autoconsumo: precio de compra, sin ganancia.</div>}{!cart.length && <div className="text-center text-muted py-4">Selecciona productos del catálogo.<br />La venta aparecerá aquí.</div>}{cart.map((x) => <div className="border-bottom py-2" key={x.product.id}><div className="d-flex justify-content-between"><div><div className="fw-semibold small">{x.product.name}</div><div className="text-muted small">{money(x.price)} c/u</div></div><strong className="small">{money(x.price * x.quantity)}</strong></div><div className="d-flex justify-content-between mt-1"><div className="btn-group btn-group-sm"><button className="btn btn-outline-secondary" onClick={() => changeQty(x.product.id,-1)}>−</button><span className="btn btn-light disabled">{x.quantity}</span><button className="btn btn-outline-secondary" onClick={() => changeQty(x.product.id,1)}>+</button></div><button className="btn btn-sm btn-link text-danger" onClick={() => changeQty(x.product.id,-x.quantity)}>Quitar</button></div></div>)}</div></div></div>
-      <div className={`col-lg-3 sales-pos-col sales-panel ${tab === 'payment' ? 'active' : ''}`}><div className="card border-0 shadow-sm h-100"><div className="card-header bg-body fw-bold">💳 Cobro</div><div className="card-body p-2 d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr className="my-2"/><div className="d-flex justify-content-between"><strong>TOTAL</strong><strong className="fs-4">{money(total)}</strong></div>{!autoconsumption && <div className="input-group input-group-sm my-2"><span className="input-group-text">%</span><input className="form-control" type="number" min="0" max="100" value={discount} onChange={(e) => setDiscount(e.target.value)} /><span className="input-group-text">descuento</span></div>}<div className="d-flex justify-content-between align-items-center mt-2 mb-1"><span className="small fw-semibold">Pagos</span><button className="btn btn-sm btn-link p-0" onClick={addPayment}>+ método</button></div>{effectivePayments.map((p, i) => <div className="input-group input-group-sm mb-2" key={i}><select className="form-select" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((m) => <option key={m}>{m}</option>)}</select><input className="form-control" type="number" min="0" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} /><button className="btn btn-outline-danger" disabled={payments.length === 1} onClick={() => removePayment(i)}>×</button></div>)}<div className={`alert py-2 small ${paidOk ? 'alert-success' : 'alert-warning'}`}>{paidOk ? '✓ Pago completo' : difference > 0 ? `Faltan ${money(difference)}` : `Sobran ${money(Math.abs(difference))}`}</div><div className="mt-auto d-grid gap-2"><button className="btn btn-outline-warning" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? 'Congelando...' : '⏸️ Congelar venta'}</button><button className="btn btn-primary btn-lg" disabled={!cart.length || !paidOk || saving || freezing} onClick={() => void submit()}>{saving ? 'Registrando...' : '✓ Registrar venta'}</button></div></div></div></div>
+      <div className={`col-lg-3 sales-pos-col sales-panel ${tab === 'payment' ? 'active' : ''}`}><div className="card border-0 shadow-sm h-100"><div className="card-header bg-body fw-bold">💳 Cobro</div><div className="card-body p-2 d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr className="my-2"/><div className="d-flex justify-content-between"><strong>TOTAL</strong><strong className="fs-4">{money(total)}</strong></div>{!autoconsumption && <div className="input-group input-group-sm my-2"><span className="input-group-text">%</span><input className="form-control" type="number" min="0" max="100" value={discount} onChange={(e) => setDiscount(e.target.value)} /><span className="input-group-text">descuento</span></div>}<div className="d-flex justify-content-between align-items-center mt-2 mb-1"><span className="small fw-semibold">Pagos</span><button className="btn btn-sm btn-link p-0" onClick={addPayment}>+ método</button></div>{effectivePayments.map((p, i) => <div className="input-group input-group-sm mb-2" key={i}><select className="form-select" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((m) => <option key={m}>{m}</option>)}</select><input className="form-control" type="number" min="0" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} /><button className="btn btn-outline-danger" disabled={payments.length === 1} onClick={() => removePayment(i)}>×</button></div>)}<div className={`alert py-2 small ${paidOk ? 'alert-success' : 'alert-warning'}`}>{paidOk ? '✓ Pago completo' : differenceCents > 0 ? `Faltan ${money(difference)}.` : `Sobran ${money(Math.abs(difference))}.`}</div><div className="mt-auto d-grid gap-2"><button className="btn btn-outline-warning" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? 'Congelando...' : '⏸️ Congelar venta'}</button><button className="btn btn-primary btn-lg" disabled={!cart.length || !paidOk || saving || freezing} onClick={() => void submit()}>{saving ? 'Registrando...' : '✓ Registrar venta'}</button></div></div></div></div>
     </div>
-    <div className="card border-0 shadow-sm mt-2"><div className="card-header bg-body d-flex justify-content-between"><strong>⏸️ Ventas congeladas</strong><span className="badge text-bg-secondary">{frozen.length}</span></div><div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.draft_number}</strong><div className="small text-muted">{d.payload?.items?.length || 0} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div>)}</div>}</div></div>
+    <div className="card border-0 shadow-sm mt-2"><div className="card-header bg-body d-flex justify-content-between"><strong>⏸️ Ventas congeladas</strong><span className="badge text-bg-secondary">{frozen.length}</span></div><div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.payload?.alias ? `${d.payload.alias} · ` : ''}{d.draft_number}</strong><div className="small text-muted">{d.payload?.items?.length || 0} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div>)}</div>}</div></div>
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-validation-title"><div className="sales-modal-header"><strong id="sales-validation-title">⚠️ {validationModal.title}</strong><button className="btn-close" aria-label="Cerrar" onClick={closeValidation}></button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary" onClick={closeValidation}>Entendido</button></div></div></div>}
   </>
 }
