@@ -5,13 +5,21 @@
 
 .sales-product .sales-img,
 .sales-product .sales-placeholder {
-  height: 150px;
-  min-height: 150px;
+  height: 110px;
+  min-height: 110px;
 }
 
 .sales-product .sales-img {
   width: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  background: var(--bs-tertiary-bg);
+  padding: .25rem;
+}
+
+@media (max-height: 800px) and (min-width: 992px) {
+  .sales-product:nth-child(n + 4) {
+    display: none;
+  }
 }
 
 @media (max-width: 991.98px) {
@@ -24,7 +32,7 @@
 @media (max-width: 575.98px) {
   .sales-product .sales-img,
   .sales-product .sales-placeholder {
-    height: 120px;
-    min-height: 120px;
+    height: 100px;
+    min-height: 100px;
   }
 }
