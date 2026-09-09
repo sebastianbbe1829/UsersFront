@@ -14,14 +14,19 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
 
 const formatDate = (value) => {
   if (!value) return '—'
-
   const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
   if (Number.isNaN(fecha.getTime())) return '—'
+  return new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
+}
 
-  return new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(fecha)
+const dateKey = (value) => {
+  if (!value) return ''
+  const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
+  if (Number.isNaN(fecha.getTime())) return ''
+  const year = fecha.getFullYear()
+  const month = String(fecha.getMonth() + 1).padStart(2, '0')
+  const day = String(fecha.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function SalesHistoryPage() {
@@ -33,6 +38,8 @@ function SalesHistoryPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [search, setSearch] = useState(() => searchParams.get('sale') || '')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
   const [selectedSale, setSelectedSale] = useState(null)
   const [sendingId, setSendingId] = useState(null)
   const [message, setMessage] = useState(null)
@@ -73,12 +80,15 @@ function SalesHistoryPage() {
 
   const filteredSales = useMemo(() => {
     const term = search.trim().toLowerCase()
-    if (!term) return sales
     return sales.filter((sale) => {
       const customers = sale.customers?.map((customer) => customer.customer_name).join(' ') || ''
-      return `${sale.sale_number} ${sale.status} ${customers}`.toLowerCase().includes(term)
+      const matchesSearch = !term || `${sale.sale_number} ${sale.status} ${customers}`.toLowerCase().includes(term)
+      const saleDate = dateKey(sale.created_at)
+      const matchesDesde = !desde || (saleDate && saleDate >= desde)
+      const matchesHasta = !hasta || (saleDate && saleDate <= hasta)
+      return matchesSearch && matchesDesde && matchesHasta
     })
-  }, [sales, search])
+  }, [sales, search, desde, hasta])
 
   const obligacionesPorVenta = useMemo(() => {
     const resultado = {}
@@ -101,6 +111,12 @@ function SalesHistoryPage() {
     const tenant = obtenerTenantDesdeUrl()
     if (!tenant || !obligationId) return
     navigate(`/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(obligationId)}`)
+  }
+
+  const limpiarFiltros = () => {
+    setSearch('')
+    setDesde('')
+    setHasta('')
   }
 
   const printSale = (sale) => {
@@ -142,9 +158,25 @@ function SalesHistoryPage() {
 
     <div className="card shadow-sm border-0 mb-4">
       <div className="card-body">
-        <div className="input-group input-group-lg">
-          <span className="input-group-text">🔎</span>
-          <input className="form-control" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por número, estado o cliente..." />
+        <div className="row g-3 align-items-end">
+          <div className="col-lg-6">
+            <label className="form-label fw-semibold" htmlFor="ventas-busqueda">Buscar</label>
+            <div className="input-group">
+              <span className="input-group-text">🔎</span>
+              <input id="ventas-busqueda" className="form-control" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Número, estado o cliente..." />
+            </div>
+          </div>
+          <div className="col-sm-6 col-lg-2">
+            <label className="form-label fw-semibold" htmlFor="ventas-desde">Desde</label>
+            <input id="ventas-desde" type="date" className="form-control" value={desde} onChange={(event) => setDesde(event.target.value)} />
+          </div>
+          <div className="col-sm-6 col-lg-2">
+            <label className="form-label fw-semibold" htmlFor="ventas-hasta">Hasta</label>
+            <input id="ventas-hasta" type="date" className="form-control" value={hasta} onChange={(event) => setHasta(event.target.value)} />
+          </div>
+          <div className="col-lg-2 d-flex justify-content-end">
+            <button type="button" className="btn btn-outline-secondary" onClick={limpiarFiltros} disabled={!search && !desde && !hasta}>Limpiar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -155,7 +187,7 @@ function SalesHistoryPage() {
           <thead><tr><th>Venta</th><th>Fecha</th><th>Cliente(s)</th><th>Total</th><th>Estado</th><th>Pagos</th><th>Obligaciones</th><th className="text-end">Acciones</th></tr></thead>
           <tbody>
             {loading && <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando ventas...</div></td></tr>}
-            {!loading && !filteredSales.length && <tr><td colSpan="8" className="text-center text-muted py-5">No encontramos ventas.</td></tr>}
+            {!loading && !filteredSales.length && <tr><td colSpan="8" className="text-center text-muted py-5">No encontramos ventas para los filtros seleccionados.</td></tr>}
             {!loading && filteredSales.map((sale) => {
               const saleObligations = obligacionesPorVenta[String(sale.id)] || []
               return <tr key={sale.id}>
