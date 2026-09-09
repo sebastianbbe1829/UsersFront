@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
+import { obtenerCupoCliente } from '../services/portfolioApi'
 import { obtenerInventario, obtenerProductosInventario } from '../services/inventoryApi'
 import { abrirFactura } from '../utils/salesInvoice'
 import {
@@ -39,6 +40,7 @@ export default function SalesPOSPage() {
   const [products, setProducts] = useState([])
   const [inventory, setInventory] = useState([])
   const [clients, setClients] = useState([])
+  const [clientCredits, setClientCredits] = useState({})
   const [frozen, setFrozen] = useState([])
   const [cart, setCart] = useState([])
   const [search, setSearch] = useState('')
@@ -54,6 +56,9 @@ export default function SalesPOSPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [freezing, setFreezing] = useState(false)
+  const [sendingEmail, setSendingEmail] = useState(false)
+  const [saleCanEmail, setSaleCanEmail] = useState(false)
+  const [saleEmailMessage, setSaleEmailMessage] = useState(null)
   const [message, setMessage] = useState(null)
   const [lastSale, setLastSale] = useState(null)
   const [validationModal, setValidationModal] = useState(null)
@@ -61,7 +66,7 @@ export default function SalesPOSPage() {
 
   const openValidation = (title, text) => setValidationModal({ title, text })
   const closeValidation = () => setValidationModal(null)
-  const closeSaleSuccess = () => setSaleSuccessModal(null)
+  const closeSaleSuccess = () => { setSaleSuccessModal(null); setSaleEmailMessage(null) }
 
   useEffect(() => {
     document.body.style.overflow = (validationModal || saleSuccessModal || saving) ? 'hidden' : ''
@@ -108,6 +113,30 @@ export default function SalesPOSPage() {
     return () => { cancelled = true }
   }, [manejarSesionExpirada, token])
 
+  const participantIds = participants.map((p) => p.id).join(',')
+  useEffect(() => {
+    if (!token || !participantIds) return undefined
+    let cancelled = false
+    const loadCredits = async () => {
+      const entries = await Promise.all(participants.map(async (participant) => {
+        try {
+          const credit = await obtenerCupoCliente(participant.id, token)
+          return [participant.id, credit]
+        } catch (e) {
+          if (e.status === 401) manejarSesionExpirada()
+          return [participant.id, null]
+        }
+      }))
+      if (cancelled) return
+      setClientCredits((current) => ({
+        ...current,
+        ...Object.fromEntries(entries),
+      }))
+    }
+    void loadCredits()
+    return () => { cancelled = true }
+  }, [manejarSesionExpirada, participantIds, token])
+
   const stock = useMemo(() => new Map(inventory.map((i) => [i.product_id, i])), [inventory])
   const shownProducts = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -137,9 +166,9 @@ export default function SalesPOSPage() {
     return (term ? available.filter((c) => `${c.full_name || ''} ${c.identification_number || ''}`.toLowerCase().includes(term)) : available).slice(0, 8)
   }, [clientSearch, clients, participants])
   const availableCredit = (client) => {
-    const explicit = Number(client?.credit_available)
-    if (Number.isFinite(explicit)) return explicit
-    return Math.max(0, Number(client?.credit_limit || 0) - Number(client?.credit_used || 0))
+    const credit = clientCredits[client?.id]
+    if (credit && credit.credit_available != null) return Number(credit.credit_available)
+    return null
   }
   const amountForParticipant = (participant) => Math.max(0, Math.round(total * (Number(participant?.percentage) || 0) / 100))
 
@@ -190,7 +219,7 @@ export default function SalesPOSPage() {
   const draftPayload = () => ({ items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), discount_percentage: discountValue, alias: mode === 'generic' ? (genericAlias.trim() || null) : null })
   const reset = ({ keepLastSale = false } = {}) => {
     setCart([]); setSearch(''); setMode('generic'); setParticipants([]); setClientSearch(''); setGenericAlias(''); setDiscount('0'); setPayments([{ method: 'EFECTIVO', amount: '' }]); setAutoconsumption(false); setActiveDraftId(null)
-    if (!keepLastSale) setLastSale(null)
+    if (!keepLastSale) { setLastSale(null); setSaleCanEmail(false); setSaleEmailMessage(null) }
   }
 
   const freeze = async () => {
@@ -221,7 +250,7 @@ export default function SalesPOSPage() {
       const client = clients.find((x) => x.id === c.client_id)
       return client ? { ...client, percentage: Number(c.allocation_percentage) } : null
     }).filter(Boolean)
-    setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setGenericAlias(restoredClients.length ? '' : String(payload.alias || '')); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number}${payload.alias ? ` · ${payload.alias}` : ''} recuperada.` })
+    setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setGenericAlias(restoredClients.length ? '' : String(payload.alias || '')); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setSaleCanEmail(false); setSaleEmailMessage(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number}${payload.alias ? ` · ${payload.alias}` : ''} recuperada.` })
   }
 
   const deleteFrozen = async (draft) => {
@@ -241,12 +270,14 @@ export default function SalesPOSPage() {
     if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     if (creditSelected && mode !== 'client') return openValidation('Cliente requerido para crédito', 'Una venta a crédito requiere un único cliente registrado. Selecciona Cliente y asigna la venta antes de registrarla.')
     if (!paidOk) return openValidation('Pago incompleto', differenceCents > 0 ? `Aún falta completar ${money(difference)}.` : `El pago supera el total en ${money(Math.abs(difference))}.`)
-    setSaving(true); setMessage(null); setSaleSuccessModal(null)
+    setSaving(true); setMessage(null); setSaleSuccessModal(null); setSaleEmailMessage(null)
     try {
       const data = { items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), payments: effectivePayments.map((p) => ({ payment_method: p.method, amount: Number(p.amount) })), discount_percentage: discountValue }
       const sale = autoconsumption ? await crearVentaAutoconsumo(data, token) : await crearVenta(data, token)
       if (activeDraftId) await eliminarVentaCongelada(activeDraftId, token)
+      const canEmail = mode !== 'generic' && participants.some((participant) => String(participant.email || '').trim())
       setLastSale(sale)
+      setSaleCanEmail(canEmail)
       setSaleSuccessModal(sale)
       reset({ keepLastSale: true })
       await Promise.all([loadCatalog(), loadFrozen()])
@@ -256,15 +287,17 @@ export default function SalesPOSPage() {
     } finally { setSaving(false) }
   }
 
-  const print = () => { try { abrirFactura(lastSale) } catch { setMessage({ type: 'warning', text: 'No fue posible generar la factura.' }) } }
+  const print = () => { try { abrirFactura(lastSale) } catch { setSaleEmailMessage({ type: 'warning', text: 'No fue posible generar la factura.' }) } }
   const email = async () => {
+    if (!saleCanEmail || !lastSale || sendingEmail) return
+    setSendingEmail(true); setSaleEmailMessage(null)
     try {
       const r = await enviarFacturaPorCorreo(lastSale.id, token)
-      setMessage({ type: 'success', text: `Factura enviada correctamente a ${r.recipients.join(', ')}.` })
+      setSaleEmailMessage({ type: 'success', text: `Factura enviada correctamente a ${r.recipients.join(', ')}.` })
     } catch (e) {
       if (e.status === 401) return manejarSesionExpirada()
-      setMessage({ type: 'danger', text: userMessage(e, 'No fue posible enviar la factura.') })
-    }
+      setSaleEmailMessage({ type: 'danger', text: userMessage(e, 'No fue posible enviar la factura.') })
+    } finally { setSendingEmail(false) }
   }
 
   const customerBlock = (
@@ -291,7 +324,7 @@ export default function SalesPOSPage() {
           <div>
             <strong className="small">{p.full_name}</strong>
             <div className="small text-muted">Participación en la venta: <strong>{Number(p.percentage || 0).toFixed(2)}%</strong></div>
-            <div className="small text-muted">Cupo disponible: <strong>{money(availableCredit(p))}</strong></div>
+            <div className="small text-muted">Cupo disponible: <strong>{availableCredit(p) == null ? 'Consultando...' : money(availableCredit(p))}</strong></div>
             <div className="small text-primary">Debe pagar: <strong>{money(amountForParticipant(p))}</strong></div>
           </div>
           <button className="btn btn-sm btn-link text-danger p-0" onClick={() => removeClient(p.id)}>×</button>
@@ -316,7 +349,7 @@ export default function SalesPOSPage() {
     </div>
     <div className="card border-0 shadow-sm mt-2"><div className="card-header bg-body d-flex justify-content-between"><strong>⏸️ Ventas congeladas</strong><span className="badge text-bg-secondary">{frozen.length}</span></div><div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.payload?.alias ? `${d.payload.alias} · ` : ''}{d.draft_number}</strong><div className="small text-muted">{d.payload?.items?.length || 0} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div>)}</div>}</div></div>
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-validation-title"><div className="sales-modal-header"><strong id="sales-validation-title">⚠️ {validationModal.title}</strong><button className="btn-close" aria-label="Cerrar" onClick={closeValidation}></button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary" onClick={closeValidation}>Entendido</button></div></div></div>}
-    {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-success-title"><div className="sales-modal-header"><strong id="sales-success-title">✓ Venta realizada correctamente</strong><button className="btn-close" aria-label="Cerrar" onClick={closeSaleSuccess}></button></div><div className="sales-modal-body"><div className="fs-5 fw-semibold mb-1">{saleSuccessModal.sale_number}</div><div className="text-muted">Total de la venta</div><div className="fs-3 fw-bold mb-3">{money(saleSuccessModal.total)}</div><div className="alert alert-success py-2 mb-0">La venta fue registrada correctamente.</div></div><div className="sales-modal-footer"><div className="d-flex gap-2"><button className="btn btn-outline-success" onClick={print}>🖨️ Factura</button><Can permission="SALES_EMAIL"><button className="btn btn-success" onClick={() => void email()}>✉️ Enviar</button></Can><button className="btn btn-primary" onClick={closeSaleSuccess}>Entendido</button></div></div></div></div>}
+    {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-success-title"><div className="sales-modal-header"><strong id="sales-success-title">✓ Venta realizada correctamente</strong><button className="btn-close" aria-label="Cerrar" onClick={closeSaleSuccess}></button></div><div className="sales-modal-body"><div className="fs-5 fw-semibold mb-1">{saleSuccessModal.sale_number}</div><div className="text-muted">Total de la venta</div><div className="fs-3 fw-bold mb-3">{money(saleSuccessModal.total)}</div><div className="alert alert-success py-2 mb-0">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2 mt-2 mb-0`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer"><div className="d-flex gap-2"><button className="btn btn-outline-success" onClick={print}>🖨️ Factura</button>{saleCanEmail && <Can permission="SALES_EMAIL"><button className="btn btn-success" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : '✉️ Enviar'}</button></Can>}<button className="btn btn-primary" onClick={closeSaleSuccess}>Entendido</button></div></div></div></div>}
     {saving && <div className="sales-processing" role="presentation"><div className="sales-processing-card" role="status" aria-live="polite" aria-label="Registrando venta"><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold fs-5">Registrando venta...</div><div className="small text-muted mt-1">Por favor espera mientras procesamos la venta.</div></div></div>}
   </>
 }
