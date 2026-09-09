@@ -24,8 +24,11 @@
     min-height: 0 !important;
   }
 
-  .sales-pos-col {
-    overflow-y: hidden;
+  /* Cliente y Resumen/Pago deben poder desplazarse si su contenido crece.
+     El !important permite conservar este comportamiento incluso cuando
+     el STYLE inline del POS aplica overflow:hidden en alturas muy bajas. */
+  .sales-pos-col:not(.sales-product-col) {
+    overflow-y: auto !important;
   }
 
   .sales-pos-col > .mb-3 {
