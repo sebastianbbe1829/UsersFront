@@ -16,6 +16,18 @@
   padding: .25rem;
 }
 
+/* Los nombres comerciales no deben truncarse en el POS. */
+.sales-product .text-truncate {
+  display: block !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-height: 2.5em;
+  line-height: 1.25;
+}
+
 /* En pantallas con poca altura, compactamos Cliente y Resumen/Pago
    antes de permitir que aparezca scrollbar. Productos no se modifica aquí. */
 @media (max-height: 900px) and (min-width: 992px) {
