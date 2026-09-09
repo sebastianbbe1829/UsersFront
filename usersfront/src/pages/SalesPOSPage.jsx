@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
 import { obtenerCupoCliente } from '../services/portfolioApi'
 import { obtenerInventario, obtenerProductosInventario, obtenerProductosTopVenta } from '../services/inventoryApi'
