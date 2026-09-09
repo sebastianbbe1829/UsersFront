@@ -1,0 +1,11 @@
+.sales-pos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .65rem;
+}
+
+@media (max-width: 991.98px) {
+  .sales-pos {
+    display: block;
+  }
+}
