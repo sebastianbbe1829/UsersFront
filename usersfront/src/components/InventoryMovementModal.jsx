@@ -105,7 +105,6 @@ export function InventoryMovementModal({ form, setForm, productos, guardando, on
                   </div>
                   {selectedProduct && form.product_id && <div className="small text-success mt-1">✓ {selectedProduct.code} — {selectedProduct.name}</div>}
                 </div>
-
                 {form.product_id && <div className="col-12">
                   {loadingLastPurchase && <div className="alert alert-info py-2 mb-0 small">⏳ Consultando última compra del producto...</div>}
                   {!loadingLastPurchase && lastPurchaseError && <div className="alert alert-warning py-2 mb-0 small">{lastPurchaseError}</div>}
@@ -119,13 +118,7 @@ export function InventoryMovementModal({ form, setForm, productos, guardando, on
                   </div>}
                   {!loadingLastPurchase && !lastPurchaseError && !lastPurchase && <div className="alert alert-secondary py-2 mb-0 small">No hay compras registradas para este producto.</div>}
                 </div>}
-
-                <div className="col-12 col-md-6">
-                  <label className="form-label">Operación</label>
-                  <select className="form-select" value={form.origin_type} onChange={(e) => onOriginChange(e.target.value)}>
-                    <option value="PURCHASE">Compra</option><option value="SALE">Venta</option><option value="MANUAL_ADJUSTMENT">Ajuste de inventario</option><option value="SALES_RETURN">Devolución de venta</option><option value="PURCHASE_RETURN">Devolución de compra</option>
-                  </select>
-                </div>
+                <div className="col-12 col-md-6"><label className="form-label">Operación</label><select className="form-select" value={form.origin_type} onChange={(e) => onOriginChange(e.target.value)}><option value="PURCHASE">Compra</option><option value="SALE">Venta</option><option value="MANUAL_ADJUSTMENT">Ajuste de inventario</option><option value="SALES_RETURN">Devolución de venta</option><option value="PURCHASE_RETURN">Devolución de compra</option></select></div>
                 {isManualAdjustment && <div className="col-12 col-md-4"><label className="form-label">Tipo de ajuste</label><select className="form-select" value={form.movement_type} onChange={(e) => setForm({ ...form, movement_type: e.target.value })}><option value="ENTRY">Entrada</option><option value="EXIT">Salida</option></select></div>}
                 <div className={`col-12 col-md-${isManualAdjustment ? '4' : '6'}`}><label className="form-label">Cantidad</label><input className="form-control" type="number" min="0.001" step="0.001" required value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} /></div>
                 <div className={`col-12 col-md-${isManualAdjustment ? '4' : '6'}`}><label className="form-label">Precio compra unitario</label><input className="form-control" type="number" min="0" step="0.01" required={requiresPurchasePrice} value={form.unit_purchase_price} onChange={(e) => setForm({ ...form, unit_purchase_price: e.target.value })} /></div>
