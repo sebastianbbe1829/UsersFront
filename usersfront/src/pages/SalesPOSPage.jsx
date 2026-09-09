@@ -247,8 +247,9 @@ export default function SalesPOSPage() {
       const restoredClients = payload.customers.filter((c) => c.client_id).map((c) => ({ ...clients.find((x) => x.id === c.client_id), id: c.client_id, percentage: Number(c.allocation_percentage) }))
       setParticipants(restoredClients)
       setMode(restoredClients.length > 1 ? 'split' : 'client')
+      setGenericAlias('')
     } else {
-      setParticipants([]); setMode('generic')
+      setParticipants([]); setMode('generic'); setGenericAlias(String(draft.alias ?? payload.alias ?? ''))
     }
     setActiveDraftId(draft.id)
     setTab('sale')
@@ -259,11 +260,14 @@ export default function SalesPOSPage() {
     if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     setFreezing(true); setMessage(null)
     try {
+      await new Promise((resolve) => setTimeout(resolve, 0))
       const data = draftPayload()
       if (activeDraftId) await eliminarVentaCongelada(activeDraftId, token)
       const draft = autoconsumption ? await congelarVentaAutoconsumo(data, token) : await congelarVenta(data, token)
-      setActiveDraftId(draft.id)
+      reset()
+      setTab('products')
       await loadFrozen()
+      setMessage({ type: 'success', text: `${draft.alias || data.alias ? `Venta ${draft.alias || data.alias} ` : 'Venta '}congelada correctamente.` })
     } catch (e) {
       if (e.status === 401) return manejarSesionExpirada()
       setMessage({ type: 'danger', text: userMessage(e, 'No fue posible congelar la venta.') })
@@ -344,7 +348,7 @@ export default function SalesPOSPage() {
       </div>
       <div className="card border-0 shadow-sm mt-2">
         <div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>⏸️ Ventas congeladas</strong><span className="badge text-bg-secondary">{frozen.length}</span></div>
-        <div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.payload?.alias ? `${d.payload.alias} · ` : ''}{d.draft_number}</strong><div className="small text-muted">{d.payload?.items?.length || 0} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div>)}</div>}</div>
+        <div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.alias || d.payload?.alias ? `${d.alias || d.payload?.alias} · ` : ''}{d.draft_number}</strong><div className="small text-muted">{d.payload?.items?.length || 0} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div>)}</div>}</div>
       </div>
     </div>
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-validation-title"><div className="sales-modal-header"><strong id="sales-validation-title">⚠️ {validationModal.title}</strong><button className="btn-close" aria-label="Cerrar" onClick={closeValidation}></button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary" onClick={closeValidation}>Entendido</button></div></div></div>}
