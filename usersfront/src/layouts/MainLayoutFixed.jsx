@@ -56,12 +56,10 @@ function MainLayoutFixed() {
   const alternarSeccion = (seccion) => setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
 
   const cambiarModoOscuro = () => {
-    setModoOscuro((valor) => {
-      const nuevoValor = !valor
-      localStorage.setItem('modo_oscuro', nuevoValor)
-      window.dispatchEvent(new CustomEvent('modo-oscuro-cambiado', { detail: nuevoValor }))
-      return nuevoValor
-    })
+    const nuevoValor = !modoOscuro
+    localStorage.setItem('modo_oscuro', String(nuevoValor))
+    setModoOscuro(nuevoValor)
+    window.dispatchEvent(new CustomEvent('modo-oscuro-cambiado', { detail: nuevoValor }))
   }
 
   const manejarCerrarSesion = () => {
