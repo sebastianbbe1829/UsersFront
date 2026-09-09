@@ -1,156 +1,31 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { enviarFacturaPorCorreo, obtenerVentas } from '../services/salesApi'
+import { obtenerObligaciones, obtenerPagosCartera } from '../services/portfolioApi'
 import { abrirFactura } from '../utils/salesInvoice'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
-const money = (value) => new Intl.NumberFormat('es-CO', {
-  style: 'currency',
-  currency: 'COP',
-  maximumFractionDigits: 0,
-}).format(Number(value || 0))
-
-const formatDate = (value) => {
-  if (!value) return '—'
-
-  const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
-  if (Number.isNaN(fecha.getTime())) return '—'
-
-  return new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(fecha)
-}
+const money = (value) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(value || 0))
+const formatDate = (value) => { if (!value) return '—'; const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value); if (Number.isNaN(fecha.getTime())) return '—'; return new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha) }
+const dateKey = (value) => { if (!value) return ''; const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value); if (Number.isNaN(fecha.getTime())) return ''; return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}` }
+const PAGE_SIZES = [5, 10, 20, 50]
 
 function SalesHistoryPage() {
-  const { token, manejarSesionExpirada } = useAuth()
-  const [searchParams] = useSearchParams()
-  const [sales, setSales] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [search, setSearch] = useState(() => searchParams.get('sale') || '')
-  const [selectedSale, setSelectedSale] = useState(null)
-  const [sendingId, setSendingId] = useState(null)
-  const [message, setMessage] = useState(null)
-
-  const loadSales = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await obtenerVentas(token, { limit: 500, offset: 0 })
-      const loadedSales = Array.isArray(result) ? result : []
-      setSales(loadedSales)
-
-      const sale = searchParams.get('sale')?.trim().toLowerCase()
-      if (sale) {
-        const encontrada = loadedSales.find((item) => String(item.sale_number || '').trim().toLowerCase() === sale)
-        if (encontrada) setSelectedSale(encontrada)
-      }
-    } catch (requestError) {
-      if (requestError.status === 401) return manejarSesionExpirada()
-      setError(requestError.message || 'No fue posible consultar las ventas.')
-    } finally {
-      setLoading(false)
-    }
-  }, [manejarSesionExpirada, searchParams, token])
-
-  useEffect(() => {
-    if (!token) return undefined
-    const timer = setTimeout(() => void loadSales(), 0)
-    return () => clearTimeout(timer)
-  }, [loadSales, token])
-
-  const filteredSales = useMemo(() => {
-    const term = search.trim().toLowerCase()
-    if (!term) return sales
-    return sales.filter((sale) => {
-      const customers = sale.customers?.map((customer) => customer.customer_name).join(' ') || ''
-      return `${sale.sale_number} ${sale.status} ${customers}`.toLowerCase().includes(term)
-    })
-  }, [sales, search])
-
-  const printSale = (sale) => {
-    try {
-      abrirFactura(sale)
-    } catch (requestError) {
-      setMessage({ type: 'warning', text: requestError.message })
-    }
-  }
-
-  const emailSale = async (sale) => {
-    setSendingId(sale.id)
-    setMessage(null)
-    try {
-      const result = await enviarFacturaPorCorreo(sale.id, token)
-      setMessage({ type: 'success', text: `Factura ${sale.sale_number} enviada a ${result.recipients.join(', ')}.` })
-    } catch (requestError) {
-      if (requestError.status === 401) return manejarSesionExpirada()
-      setMessage({ type: requestError.status === 503 ? 'warning' : 'danger', text: requestError.message || 'No fue posible enviar la factura.' })
-    } finally {
-      setSendingId(null)
-    }
-  }
-
-  return <div>
-    <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-      <div>
-        <h2 className="fw-bold mb-1">📋 Consulta de ventas</h2>
-        <p className="text-muted mb-0">Consulta el historial, revisa el detalle y gestiona la factura.</p>
-      </div>
-      <button type="button" className="btn btn-outline-secondary" onClick={() => void loadSales()} disabled={loading}>↻ Actualizar</button>
-    </div>
-
-    {message && <div className={`alert alert-${message.type}`} role="alert">{message.text}</div>}
-    {error && <div className="alert alert-danger" role="alert">{error}</div>}
-
-    <div className="card shadow-sm border-0 mb-4">
-      <div className="card-body">
-        <div className="input-group input-group-lg">
-          <span className="input-group-text">🔎</span>
-          <input className="form-control" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por número, estado o cliente..." />
-        </div>
-      </div>
-    </div>
-
-    <div className="card shadow-sm border-0">
-      <div className="table-responsive">
-        <table className="table table-hover align-middle mb-0">
-          <thead><tr><th>Venta</th><th>Fecha</th><th>Cliente(s)</th><th>Total</th><th>Estado</th><th className="text-end">Acciones</th></tr></thead>
-          <tbody>
-            {loading && <tr><td colSpan="6" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando ventas...</div></td></tr>}
-            {!loading && !filteredSales.length && <tr><td colSpan="6" className="text-center text-muted py-5">No encontramos ventas.</td></tr>}
-            {!loading && filteredSales.map((sale) => <tr key={sale.id}>
-              <td><strong>{sale.sale_number}</strong></td>
-              <td>{formatDate(sale.created_at)}</td>
-              <td>{sale.customers?.map((customer) => customer.customer_name).join(', ') || 'Consumidor final'}</td>
-              <td className="fw-bold">{money(sale.total)}</td>
-              <td><span className="badge text-bg-success">{sale.status}</span></td>
-              <td><div className="d-flex justify-content-end gap-2 flex-wrap">
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setSelectedSale(sale)}>👁️ Ver</button>
-                <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => printSale(sale)}>🖨️ Imprimir</button>
-                <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => void emailSale(sale)} disabled={sendingId === sale.id}>{sendingId === sale.id ? 'Enviando...' : '✉️ Enviar'}</button>
-              </div></td>
-            </tr>)}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    {selectedSale && <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,.45)' }}>
-      <div className="modal-dialog modal-lg modal-dialog-scrollable" role="document">
-        <div className="modal-content">
-          <div className="modal-header"><h5 className="modal-title">🧾 Venta {selectedSale.sale_number}</h5><button type="button" className="btn-close" onClick={() => setSelectedSale(null)} aria-label="Cerrar" /></div>
-          <div className="modal-body">
-            <div className="row g-3 mb-4"><div className="col-md-6"><strong>Fecha:</strong> {formatDate(selectedSale.created_at)}</div><div className="col-md-6"><strong>Estado:</strong> {selectedSale.status}</div></div>
-            <div className="table-responsive"><table className="table table-sm"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead><tbody>{selectedSale.items?.map((item) => <tr key={item.id}><td>{item.product_name}</td><td>{item.quantity}</td><td>{money(item.unit_price)}</td><td>{money(item.line_total)}</td></tr>)}</tbody></table></div>
-            <div className="row g-4 mt-2"><div className="col-md-6"><h6>Cliente(s)</h6><ul>{selectedSale.customers?.map((customer) => <li key={customer.id}>{customer.customer_name} — {customer.allocation_percentage}% — {money(customer.allocation_amount)}</li>)}</ul></div><div className="col-md-6"><h6>Pagos</h6><ul>{selectedSale.payments?.map((payment) => <li key={payment.id}>{payment.payment_method} — {money(payment.amount)}</li>)}</ul></div></div>
-            <div className="text-end mt-3"><div>Subtotal: {money(selectedSale.subtotal)}</div><div>Descuento: {money(selectedSale.discount_amount)}</div><div className="fs-5 fw-bold">Total: {money(selectedSale.total)}</div></div>
-          </div>
-          <div className="modal-footer"><button type="button" className="btn btn-outline-secondary" onClick={() => printSale(selectedSale)}>🖨️ Imprimir factura</button><button type="button" className="btn btn-primary" onClick={() => void emailSale(selectedSale)} disabled={sendingId === selectedSale.id}>{sendingId === selectedSale.id ? 'Enviando...' : '✉️ Enviar factura'}</button><button type="button" className="btn btn-secondary" onClick={() => setSelectedSale(null)}>Cerrar</button></div>
-        </div>
-      </div>
-    </div>}
-  </div>
+  const { token, manejarSesionExpirada } = useAuth(); const navigate = useNavigate(); const [searchParams] = useSearchParams(); const [sales, setSales] = useState([]); const [obligaciones, setObligaciones] = useState([]); const [portfolioPayments, setPortfolioPayments] = useState([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(null); const [search, setSearch] = useState(() => searchParams.get('sale') || ''); const [desde, setDesde] = useState(''); const [hasta, setHasta] = useState(''); const [selectedSale, setSelectedSale] = useState(null); const [sendingId, setSendingId] = useState(null); const [message, setMessage] = useState(null); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(10)
+  const loadSales = useCallback(async () => { setLoading(true); setError(null); try { const loadedSales = await obtenerVentas(token, { limit: 500, offset: 0 }); setSales(Array.isArray(loadedSales) ? loadedSales : []); try { const [loadedObligations, loadedPortfolioPayments] = await Promise.all([obtenerObligaciones(token), obtenerPagosCartera(token)]); setObligaciones(Array.isArray(loadedObligations) ? loadedObligations : []); setPortfolioPayments(Array.isArray(loadedPortfolioPayments) ? loadedPortfolioPayments : []) } catch (portfolioError) { if (portfolioError.status === 401) return manejarSesionExpirada(); setObligaciones([]); setPortfolioPayments([]) } const sale = searchParams.get('sale')?.trim().toLowerCase(); if (sale) { const encontrada = (Array.isArray(loadedSales) ? loadedSales : []).find((item) => String(item.sale_number || '').trim().toLowerCase() === sale); if (encontrada) setSelectedSale(encontrada) } } catch (requestError) { if (requestError.status === 401) return manejarSesionExpirada(); setError(requestError.message || 'No fue posible consultar las ventas.') } finally { setLoading(false) } }, [manejarSesionExpirada, searchParams, token])
+  useEffect(() => { if (!token) return undefined; const timer = setTimeout(() => void loadSales(), 0); return () => clearTimeout(timer) }, [loadSales, token])
+  const filteredSales = useMemo(() => { const term = search.trim().toLowerCase(); return sales.filter((sale) => { const customers = sale.customers?.map((customer) => customer.customer_name).join(' ') || ''; const matchesSearch = !term || `${sale.sale_number} ${sale.status} ${customers}`.toLowerCase().includes(term); const saleDate = dateKey(sale.created_at); const matchesDesde = !desde || (saleDate && saleDate >= desde); const matchesHasta = !hasta || (saleDate && saleDate <= hasta); return matchesSearch && matchesDesde && matchesHasta }) }, [sales, search, desde, hasta])
+  const obligacionesPorVenta = useMemo(() => { const resultado = {}; obligaciones.forEach((obligation) => { if (!obligation.sale_id) return; const saleId = String(obligation.sale_id); if (!resultado[saleId]) resultado[saleId] = []; resultado[saleId].push(obligation) }); return resultado }, [obligaciones])
+  const pagosPorObligacion = useMemo(() => { const resultado = {}; portfolioPayments.forEach((payment) => { (payment.allocations || []).forEach((allocation) => { const obligationId = String(allocation.obligation_id || ''); if (!obligationId) return; if (!resultado[obligationId]) resultado[obligationId] = []; resultado[obligationId].push({ ...payment, allocated_amount: allocation.amount }) }) }); return resultado }, [portfolioPayments])
+  const pagosPorVenta = useMemo(() => { const resultado = {}; obligaciones.forEach((obligation) => { const saleId = String(obligation.sale_id || ''); if (!saleId) return; const pagos = pagosPorObligacion[String(obligation.id)] || []; if (!resultado[saleId]) resultado[saleId] = []; pagos.forEach((payment) => { if (!resultado[saleId].some((item) => item.id === payment.id)) resultado[saleId].push(payment) }) }); return resultado }, [obligaciones, pagosPorObligacion])
+  const totalPages = Math.max(1, Math.ceil(filteredSales.length / pageSize)); const currentPage = Math.min(page, totalPages); const visibleSales = useMemo(() => filteredSales.slice((currentPage - 1) * pageSize, currentPage * pageSize), [filteredSales, currentPage, pageSize])
+  const abrirPago = (paymentId) => { const tenant = obtenerTenantDesdeUrl(); if (!tenant || !paymentId) return; navigate(`/${encodeURIComponent(tenant)}/cartera/pagos?payment=${encodeURIComponent(paymentId)}`) }; const abrirObligacion = (obligationId) => { const tenant = obtenerTenantDesdeUrl(); if (!tenant || !obligationId) return; navigate(`/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(obligationId)}`) }
+  const limpiarFiltros = () => { setSearch(''); setDesde(''); setHasta(''); setPage(1) }; const printSale = (sale) => { try { abrirFactura(sale) } catch (requestError) { setMessage({ type: 'warning', text: requestError.message }) } }; const emailSale = async (sale) => { setSendingId(sale.id); setMessage(null); try { const result = await enviarFacturaPorCorreo(sale.id, token); setMessage({ type: 'success', text: `Factura ${sale.sale_number} enviada a ${result.recipients.join(', ')}.` }) } catch (requestError) { if (requestError.status === 401) return manejarSesionExpirada(); setMessage({ type: requestError.status === 503 ? 'warning' : 'danger', text: requestError.message || 'No fue posible enviar la factura.' }) } finally { setSendingId(null) } }
+  const volverWelcome = () => { const tenant = obtenerTenantDesdeUrl(); navigate(tenant ? `/${encodeURIComponent(tenant)}/welcome` : '/welcome') }
+  // Los pagos del POS (sale.payments) son medios de pago de la venta y NO son PaymentDB de cartera. Esta columna solo muestra pagos reales registrados posteriormente contra una obligación de cartera.
+  const paymentsForSale = (sale) => pagosPorVenta[String(sale.id)] || []
+  return <div><div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><div className="d-flex align-items-center gap-2"><button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={volverWelcome}>← Volver</button><h2 className="fw-bold mb-1">📋 Consulta de ventas</h2></div><p className="text-muted mb-0">Consulta el historial, revisa el detalle y gestiona la factura.</p></div><button type="button" className="btn btn-outline-secondary" onClick={() => void loadSales()} disabled={loading}>↻ Actualizar</button></div>{message && <div className={`alert alert-${message.type}`} role="alert">{message.text}</div>}{error && <div className="alert alert-danger" role="alert">{error}</div>}<div className="card shadow-sm border-0 mb-4"><div className="card-body"><div className="row g-3 align-items-end"><div className="col-lg-6"><label className="form-label fw-semibold" htmlFor="ventas-busqueda">Buscar</label><div className="input-group"><span className="input-group-text">🔎</span><input id="ventas-busqueda" className="form-control" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="Número, estado o cliente..." /></div></div><div className="col-sm-6 col-lg-2"><label className="form-label fw-semibold" htmlFor="ventas-desde">Desde</label><input id="ventas-desde" type="date" className="form-control" value={desde} onChange={(event) => { setDesde(event.target.value); setPage(1) }} /></div><div className="col-sm-6 col-lg-2"><label className="form-label fw-semibold" htmlFor="ventas-hasta">Hasta</label><input id="ventas-hasta" type="date" className="form-control" value={hasta} onChange={(event) => { setHasta(event.target.value); setPage(1) }} /></div><div className="col-lg-2 d-flex justify-content-end"><button type="button" className="btn btn-outline-secondary" onClick={limpiarFiltros} disabled={!search && !desde && !hasta}>Limpiar</button></div></div></div></div><div className="card shadow-sm border-0"><div className="card-body border-bottom"><div className="d-flex justify-content-end align-items-center gap-3"><label className="d-flex align-items-center gap-2 mb-0 small text-muted">Mostrar<select className="form-select form-select-sm" style={{ width: 82 }} value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select></label><span className="text-muted small">{filteredSales.length} registros</span></div></div><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Venta</th><th>Fecha</th><th>Cliente(s)</th><th>Total</th><th>Estado</th><th>Pagos</th><th>Obligaciones</th><th className="text-end">Acciones</th></tr></thead><tbody>{loading && <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando ventas...</div></td></tr>}{!loading && !filteredSales.length && <tr><td colSpan="8" className="text-center text-muted py-5">No encontramos ventas para los filtros seleccionados.</td></tr>}{!loading && visibleSales.map((sale) => { const saleObligations = obligacionesPorVenta[String(sale.id)] || []; const realPayments = paymentsForSale(sale); return <tr key={sale.id}><td><strong>{sale.sale_number}</strong></td><td>{formatDate(sale.created_at)}</td><td>{sale.customers?.map((customer) => customer.customer_name).join(', ') || 'Consumidor final'}</td><td className="fw-bold">{money(sale.total)}</td><td><span className="badge text-bg-success">{sale.status}</span></td><td>{realPayments.length ? realPayments.map((payment) => <button key={payment.id} type="button" className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start" onClick={() => abrirPago(payment.id)} title="Abrir este pago">{payment.payment_method} — {money(payment.allocated_amount ?? payment.amount)}</button>) : <span className="text-muted">—</span>}</td><td>{saleObligations.length ? saleObligations.map((obligation) => <button key={obligation.id} type="button" className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start" onClick={() => abrirObligacion(obligation.id)} title="Abrir esta obligación">{obligation.sale_number || 'Obligación'} — {money(obligation.balance)}</button>) : <span className="text-muted">—</span>}</td><td><div className="d-flex justify-content-end gap-2 flex-wrap"><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setSelectedSale(sale)}>👁️ Ver</button><button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => printSale(sale)}>🖨️ Imprimir</button><button type="button" className="btn btn-sm btn-outline-primary" onClick={() => void emailSale(sale)} disabled={sendingId === sale.id}>{sendingId === sale.id ? 'Enviando...' : '✉️ Enviar'}</button></div></td></tr> })}</tbody></table></div>{!loading && visibleSales.length > 0 && <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3"><small className="text-muted">Página {currentPage} de {totalPages}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === 1} onClick={() => setPage((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={currentPage === totalPages} onClick={() => setPage((p) => p + 1)}>Siguiente</button></div></div>}</div>{selectedSale && <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,.45)' }}><div className="modal-dialog modal-lg modal-dialog-scrollable" role="document"><div className="modal-content"><div className="modal-header"><h5 className="modal-title">🧾 Venta {selectedSale.sale_number}</h5><button type="button" className="btn-close" onClick={() => setSelectedSale(null)} aria-label="Cerrar" /></div><div className="modal-body"><div className="row g-3 mb-4"><div className="col-md-6"><strong>Fecha:</strong> {formatDate(selectedSale.created_at)}</div><div className="col-md-6"><strong>Estado:</strong> {selectedSale.status}</div></div><div className="table-responsive"><table className="table table-sm"><thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead><tbody>{selectedSale.items?.map((item) => <tr key={item.id}><td>{item.product_name}</td><td>{item.quantity}</td><td>{money(item.unit_price)}</td><td>{money(item.line_total)}</td></tr>)}</tbody></table></div><div className="row g-4 mt-2"><div className="col-md-6"><h6>Cliente(s)</h6><ul>{selectedSale.customers?.map((customer) => <li key={customer.id}>{customer.customer_name} — {customer.allocation_percentage}% — {money(customer.allocation_amount)}</li>)}</ul></div><div className="col-md-6"><h6>Medios de pago</h6>{(selectedSale.payments || []).length ? <ul>{(selectedSale.payments || []).map((payment) => <li key={payment.id}>{payment.payment_method} — {money(payment.amount)}</li>)}</ul> : <div className="text-muted">Sin medios de pago registrados.</div>}</div><div className="col-12"><h6>Obligaciones</h6>{(obligacionesPorVenta[String(selectedSale.id)] || []).length ? <ul>{(obligacionesPorVenta[String(selectedSale.id)] || []).map((obligation) => <li key={obligation.id}><button type="button" className="btn btn-link btn-sm p-0 text-decoration-none" onClick={() => abrirObligacion(obligation.id)}>{obligation.sale_number || 'Obligación'} — saldo {money(obligation.balance)}</button></li>)}</ul> : <div className="text-muted">Sin obligaciones asociadas.</div>}</div></div><div className="text-end mt-3"><div>Subtotal: {money(selectedSale.subtotal)}</div><div>Descuento: {money(selectedSale.discount_amount)}</div><div className="fs-5 fw-bold">Total: {money(selectedSale.total)}</div></div></div><div className="modal-footer"><button type="button" className="btn btn-outline-secondary" onClick={() => printSale(selectedSale)}>🖨️ Imprimir factura</button><button type="button" className="btn btn-primary" onClick={() => void emailSale(selectedSale)} disabled={sendingId === selectedSale.id}>{sendingId === selectedSale.id ? 'Enviando...' : '✉️ Enviar factura'}</button><button type="button" className="btn btn-secondary" onClick={() => setSelectedSale(null)}>Cerrar</button></div></div></div></div>}</div>
 }
 
 export default SalesHistoryPage

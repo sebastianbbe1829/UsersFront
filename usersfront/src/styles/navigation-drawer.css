@@ -1,0 +1,39 @@
+.app-navigation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1090;
+  background: rgba(0, 0, 0, .38);
+  backdrop-filter: blur(1px);
+}
+
+.app-navigation-drawer {
+  box-shadow: 0 0 28px rgba(0, 0, 0, .28) !important;
+}
+
+/* El POS reserva espacio para encabezado, mensajes y ventas congeladas,
+   evitando que el documento completo genere scrollbar vertical. */
+@media (min-width: 992px) {
+  .sales-pos {
+    height: calc(100vh - 300px) !important;
+    min-height: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-navigation-drawer {
+    width: min(86vw, 300px) !important;
+  }
+
+  main header {
+    min-height: 58px !important;
+    padding: .45rem .65rem !important;
+  }
+
+  main header h5 {
+    font-size: .9rem;
+  }
+
+  main > section {
+    padding: .65rem !important;
+  }
+}

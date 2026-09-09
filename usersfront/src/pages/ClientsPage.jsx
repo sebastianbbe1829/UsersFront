@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import {
   actualizarCliente,
@@ -14,8 +15,9 @@ import {
 } from '../services/clientsApi'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
-const PAGE_SIZE = 10
+const PAGE_SIZES = [5, 10, 20, 50]
 const formularioInicial = {
   identification_type_id: '', identification_number: '', person_type: 'NATURAL',
   first_name: '', middle_name: '', last_name: '', second_last_name: '', business_name: '',
@@ -32,6 +34,7 @@ const normalizarEntrada = (valor) => valor.toLocaleUpperCase('es-CO')
 
 function ClientsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const [clientes, setClientes] = useState([])
   const [tiposIdentificacion, setTiposIdentificacion] = useState([])
   const [paises, setPaises] = useState([])
@@ -55,6 +58,7 @@ function ClientsPage() {
   const [mensaje, setMensaje] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [pagina, setPagina] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [haySiguiente, setHaySiguiente] = useState(false)
 
   useEffect(() => {
@@ -62,11 +66,11 @@ function ClientsPage() {
     const cargar = async () => {
       try {
         setCargando(true)
-        const lista = await obtenerClientes(token, { page: pagina, pageSize: PAGE_SIZE, search: busqueda })
+        const lista = await obtenerClientes(token, { page: pagina, pageSize, search: busqueda })
         if (!activo) return
         const datos = Array.isArray(lista) ? lista : []
         setClientes(datos)
-        setHaySiguiente(datos.length === PAGE_SIZE)
+        setHaySiguiente(datos.length === pageSize)
         setMensaje(null)
       } catch (error) {
         if (!activo) return
@@ -76,7 +80,7 @@ function ClientsPage() {
     }
     if (token) cargar()
     return () => { activo = false }
-  }, [token, pagina, busqueda, manejarSesionExpirada])
+  }, [token, pagina, pageSize, busqueda, manejarSesionExpirada])
 
   useEffect(() => {
     if (!modalAbierto || !token) return undefined
@@ -136,6 +140,7 @@ function ClientsPage() {
   const tiposDisponibles = useMemo(() => tiposIdentificacion.filter((tipo) => tipo.person_type === formulario.person_type), [tiposIdentificacion, formulario.person_type])
 
   const cambiarBusqueda = (event) => { setBusqueda(event.target.value); setPagina(1) }
+  const cambiarPageSize = (event) => { setPageSize(Number(event.target.value)); setPagina(1) }
   const cambiar = (campo, valor) => setFormulario((actual) => ({ ...actual, [campo]: valor }))
   const cambiarTexto = (campo, valor) => cambiar(campo, normalizarEntrada(valor))
   const cambiarTipoPersona = (valor) => setFormulario((actual) => ({ ...actual, person_type: valor, identification_type_id: '' }))
@@ -153,10 +158,10 @@ function ClientsPage() {
   }
 
   const recargarPaginaActual = async () => {
-    const lista = await obtenerClientes(token, { page: pagina, pageSize: PAGE_SIZE, search: busqueda })
+    const lista = await obtenerClientes(token, { page: pagina, pageSize, search: busqueda })
     const datos = Array.isArray(lista) ? lista : []
     setClientes(datos)
-    setHaySiguiente(datos.length === PAGE_SIZE)
+    setHaySiguiente(datos.length === pageSize)
   }
 
   const cerrarModal = () => {
@@ -325,14 +330,19 @@ function ClientsPage() {
     } finally { setRevisandoListas(false) }
   }
 
+  const volverWelcome = () => {
+    const tenant = obtenerTenantDesdeUrl()
+    navigate(tenant ? `/${encodeURIComponent(tenant)}/welcome` : '/welcome')
+  }
+
   return <>
     <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
-    <div className="mb-4"><h2 className="fw-bold mb-1">Gestión de Clientes</h2><p className="text-muted mb-0">Clientes del tenant actual.</p></div>
+    <div className="mb-4"><div className="d-flex align-items-center gap-2"><button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={volverWelcome}>← Volver</button><h2 className="fw-bold mb-1">Gestión de Clientes</h2></div><p className="text-muted mb-0">Clientes del tenant actual.</p></div>
     {mensaje && <div className={`alert alert-${mensaje.tipo}`} role="alert">{mensaje.texto}</div>}
     <div className="card shadow-sm border-0"><div className="card-body">
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h5 className="fw-bold mb-0">Clientes registrados</h5><small className="text-muted">Página {pagina}</small></div><Can permission="CLIENT_CREATE"><button type="button" className="btn btn-primary" onClick={abrirCrear}>+ Nuevo cliente</button></Can></div>
       <div className="mb-3"><input type="search" className="form-control" placeholder="Buscar por identificación, nombre, correo, estado o lista..." value={busqueda} onChange={cambiarBusqueda} /></div>
-      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientes.length === 0 ? <div className="text-muted text-center py-5">{busqueda.trim() ? 'No se encontraron clientes con la búsqueda.' : 'No hay clientes registrados.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientes.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : cliente.status === 'BLOCKED' ? 'text-bg-danger' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : cliente.status === 'BLOCKED' ? 'Bloqueado' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : cliente.compliance_status === 'ERROR' ? <span className="badge text-bg-warning">ERROR</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-info me-2" onClick={() => solicitarRevisionListas(cliente)}>Revisar listas</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger me-2" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can>{cliente.status === 'BLOCKED' && <Can permission="CLIENT_COMPLIANCE_OVERRIDE" allowSuper={false}><button type="button" className="btn btn-sm btn-outline-warning" onClick={() => solicitarLevantarRestriccion(cliente)}>Levantar restricción</button></Can>}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><small className="text-muted">Página {pagina}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={pagina === 1 || cargando} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={!haySiguiente || cargando} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></>}
+      {cargando ? <div className="text-center py-5"><div className="spinner-border" role="status" /><div className="text-muted mt-2">Cargando...</div></div> : clientes.length === 0 ? <div className="text-muted text-center py-5">{busqueda.trim() ? 'No se encontraron clientes con la búsqueda.' : 'No hay clientes registrados.'}</div> : <><div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Identificación</th><th>Cliente</th><th>Tipo</th><th>Correo</th><th>Estado</th><th>Compliance</th><th className="text-end">Acciones</th></tr></thead><tbody>{clientes.map((cliente) => <tr key={cliente.id}><td>{cliente.identification_number}</td><td>{cliente.full_name}</td><td>{cliente.person_type === 'NATURAL' ? 'Natural' : 'Jurídica'}</td><td>{cliente.email || '-'}</td><td><span className={`badge ${cliente.status === 'ACTIVE' ? 'text-bg-success' : cliente.status === 'BLOCKED' ? 'text-bg-danger' : 'text-bg-secondary'}`}>{cliente.status === 'ACTIVE' ? 'Activo' : cliente.status === 'BLOCKED' ? 'Bloqueado' : 'Inactivo'}</span></td><td>{cliente.is_listed ? <span className="badge text-bg-danger">{cliente.list_type || 'LISTADO'}</span> : cliente.compliance_status === 'ERROR' ? <span className="badge text-bg-warning">ERROR</span> : <span className="badge text-bg-success">OK</span>}</td><td className="text-end text-nowrap"><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-primary me-2" onClick={() => editar(cliente)}>Editar</button></Can><Can permission="CLIENT_UPDATE"><button type="button" className="btn btn-sm btn-outline-info me-2" onClick={() => solicitarRevisionListas(cliente)}>Revisar listas</button></Can><Can permission="CLIENT_DELETE"><button type="button" className="btn btn-sm btn-outline-danger me-2" onClick={() => solicitarEliminar(cliente)}>Eliminar</button></Can>{cliente.status === 'BLOCKED' && <Can permission="CLIENT_COMPLIANCE_OVERRIDE" allowSuper={false}><button type="button" className="btn btn-sm btn-outline-warning" onClick={() => solicitarLevantarRestriccion(cliente)}>Levantar restricción</button></Can>}</td></tr>)}</tbody></table></div><div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3"><div className="d-flex align-items-center gap-2"><small className="text-muted">Mostrar</small><select className="form-select form-select-sm w-auto" value={pageSize} onChange={cambiarPageSize} disabled={cargando}><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option></select><small className="text-muted">registros</small></div><div className="d-flex align-items-center gap-2"><small className="text-muted">Página {pagina}</small><div className="btn-group"><button type="button" className="btn btn-outline-secondary btn-sm" disabled={pagina === 1 || cargando} onClick={() => setPagina((p) => p - 1)}>Anterior</button><button type="button" className="btn btn-outline-secondary btn-sm" disabled={!haySiguiente || cargando} onClick={() => setPagina((p) => p + 1)}>Siguiente</button></div></div></div></>}
     </div></div>
 
     {modalAbierto && <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2000, overflowY: 'auto' }} role="dialog" aria-modal="true"><div className="modal-dialog modal-xl modal-dialog-centered"><div className="modal-content shadow-lg border-0"><div className="modal-header"><h5 className="modal-title fw-bold">{clienteEditando ? 'Editar cliente' : 'Nuevo cliente'}</h5><button type="button" className="btn-close" onClick={cerrarModal} disabled={guardando} aria-label="Cerrar" /></div><div className="modal-body" style={{ position: 'relative' }}><form onSubmit={guardar}><div className="row g-3">

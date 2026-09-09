@@ -1,0 +1,30 @@
+.sales-pos {
+  height: calc(100vh - 260px);
+  min-height: 0;
+}
+
+.sales-product .sales-img,
+.sales-product .sales-placeholder {
+  height: 150px;
+  min-height: 150px;
+}
+
+.sales-product .sales-img {
+  width: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 991.98px) {
+  .sales-pos {
+    height: auto;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .sales-product .sales-img,
+  .sales-product .sales-placeholder {
+    height: 120px;
+    min-height: 120px;
+  }
+}

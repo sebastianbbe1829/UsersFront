@@ -23,7 +23,9 @@ export const abrirFactura = (sale) => {
     <tr><td>${escapeHtml(item.product_code)}</td><td>${escapeHtml(item.product_name)}</td>
     <td>${escapeHtml(item.quantity)}</td><td>${money(item.unit_price)}</td><td>${money(item.line_total)}</td></tr>`).join('')
   const customers = (sale.customers || []).map((customer) => `<li>${escapeHtml(customer.customer_name)} — ${customer.allocation_percentage}% — ${money(customer.allocation_amount)}</li>`).join('')
-  const payments = (sale.payments || []).map((payment) => `<li>${escapeHtml(payment.payment_method)} — ${money(payment.amount)}</li>`).join('')
+  const payments = (sale.payments || [])
+    .map((payment) => `<li>${escapeHtml(payment.payment_method)} — ${money(payment.amount)}</li>`)
+    .join('')
 
   invoiceWindow.document.open()
   invoiceWindow.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Factura ${escapeHtml(sale.sale_number)}</title>
@@ -33,7 +35,7 @@ export const abrirFactura = (sale) => {
     <div class="muted">Fecha: ${escapeHtml(sale.created_at ? new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(sale.created_at)) : '—')}</div>
     <table><thead><tr><th>Código</th><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Total</th></tr></thead><tbody>${items}</tbody></table>
     <div class="summary"><div><span>Subtotal</span><span>${money(sale.subtotal)}</span></div><div><span>Descuento (${sale.discount_percentage}%)</span><span>${money(sale.discount_amount)}</span></div><div class="total"><span>Total</span><span>${money(sale.total)}</span></div></div>
-    <div class="columns"><div><h3>Cliente(s)</h3><ul>${customers || '<li>Consumidor final</li>'}</ul></div><div><h3>Pagos</h3><ul>${payments}</ul></div></div>
+    <div class="columns"><div><h3>Cliente(s)</h3><ul>${customers || '<li>Consumidor final</li>'}</ul></div><div><h3>Medios de pago</h3><ul>${payments || '<li>Sin medios de pago registrados.</li>'}</ul></div></div>
     </body></html>`)
   invoiceWindow.document.close()
   invoiceWindow.focus()

@@ -1,0 +1,57 @@
+@media (max-width: 768px) {
+  aside[style*="width: 72px"] {
+    width: 56px !important;
+  }
+
+  main[style*="margin-left: 72px"] {
+    margin-left: 56px !important;
+    width: calc(100% - 56px) !important;
+  }
+
+  aside[style*="width: 72px"] .sidebar-nav > button span:not(:first-child),
+  aside[style*="width: 72px"] .sidebar-nav > a span:not(:first-child),
+  aside[style*="width: 72px"] .sidebar-nav > div span:not(:first-child) {
+    display: none;
+  }
+
+  aside[style*="width: 72px"] .sidebar-nav > div {
+    padding-left: 0 !important;
+  }
+
+  aside[style*="width: 72px"] .sidebar-nav > a,
+  aside[style*="width: 72px"] .sidebar-nav > button {
+    justify-content: center !important;
+    padding-left: .25rem !important;
+    padding-right: .25rem !important;
+  }
+
+  aside[style*="width: 72px"] .flex-shrink-0 > button {
+    text-align: center !important;
+    padding-left: .25rem !important;
+    padding-right: .25rem !important;
+  }
+
+  main header {
+    height: auto !important;
+    min-height: 58px;
+    padding: .45rem .65rem !important;
+  }
+
+  main header .d-flex:last-child {
+    gap: .35rem !important;
+  }
+
+  main > section {
+    padding: .65rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  main header h5 {
+    font-size: .9rem;
+  }
+
+  main header .d-flex:first-child span {
+    font-size: 17px !important;
+  }
+}

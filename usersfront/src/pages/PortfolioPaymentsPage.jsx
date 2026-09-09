@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
 const money = (value) => new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -28,14 +29,17 @@ const nombreCliente = (cliente) => cliente?.full_name || [
 
 const formatDate = (value) => {
   if (!value) return '—'
-  const fecha = new Date(`${value}T00:00:00`)
-  return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO').format(fecha)
+  const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
+  return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
 }
 
 const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
+const PAYMENT_METHODS = ['TRANSFERENCIA', 'EFECTIVO', 'TARJETA', 'PSE', 'OTRO', 'CARTERA']
+const PAGE_SIZES = [5, 10, 20, 50]
 
 export default function PortfolioPaymentsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const cargaInicialRef = useRef(false)
   const [clientes, setClientes] = useState([])
@@ -55,6 +59,8 @@ export default function PortfolioPaymentsPage() {
   const [filtroDesde, setFiltroDesde] = useState('')
   const [filtroHasta, setFiltroHasta] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [pagina, setPagina] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const cargarPagos = useCallback(async () => {
     const resultado = await obtenerPagosCartera(token)
@@ -254,6 +260,7 @@ export default function PortfolioPaymentsPage() {
     setFiltroDesde('')
     setFiltroHasta('')
     setFiltroEstado('')
+    setPagina(1)
     if (searchParams.has('payment')) setSearchParams({}, { replace: true })
   }
 
@@ -277,11 +284,30 @@ export default function PortfolioPaymentsPage() {
     })
   }, [pagos, pagoSeleccionado, filtroCliente, filtroDesde, filtroHasta, filtroEstado])
 
+  useEffect(() => {
+    setPagina(1)
+  }, [pagoSeleccionado, filtroCliente, filtroDesde, filtroHasta, filtroEstado, pageSize])
+
+  const pagosPaginados = useMemo(() => {
+    const inicio = (pagina - 1) * pageSize
+    return pagosFiltrados.slice(inicio, inicio + pageSize)
+  }, [pagosFiltrados, pagina, pageSize])
+
+  const haySiguiente = pagina * pageSize < pagosFiltrados.length
+
+  const volverWelcome = () => {
+    const tenant = obtenerTenantDesdeUrl()
+    navigate(tenant ? `/${encodeURIComponent(tenant)}/welcome` : '/welcome')
+  }
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Pagos</h2>
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={volverWelcome}>← Volver</button>
+            <h2 className="fw-bold mb-1">Pagos</h2>
+          </div>
           <p className="text-muted mb-0">Consulta los pagos registrados y registra nuevos abonos.</p>
         </div>
         {!mostrarFormulario && (
@@ -442,10 +468,7 @@ export default function PortfolioPaymentsPage() {
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Medio de pago</label>
                           <select className="form-select" value={formulario.payment_method} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_method: event.target.value }))} disabled={guardando}>
-                            <option>TRANSFERENCIA</option>
-                            <option>EFECTIVO</option>
-                            <option>TARJETA</option>
-                            <option>OTRO</option>
+                            {PAYMENT_METHODS.map((method) => <option key={method} value={method}>{method}</option>)}
                           </select>
                         </div>
                         <div className="col-md-4">
@@ -478,22 +501,22 @@ export default function PortfolioPaymentsPage() {
             <div className="row g-3 align-items-end">
               <div className="col-lg-4">
                 <label className="form-label fw-semibold" htmlFor="pagos-filtro-cliente">Cliente</label>
-                <select id="pagos-filtro-cliente" className="form-select" value={filtroCliente} onChange={(event) => setFiltroCliente(event.target.value)} disabled={cargando}>
+                <select id="pagos-filtro-cliente" className="form-select" value={filtroCliente} onChange={(event) => { setFiltroCliente(event.target.value); setPagina(1) }} disabled={cargando}>
                   <option value="">Todos los clientes</option>
                   {clientes.map((cliente) => <option key={cliente.id} value={cliente.id}>{nombreCliente(cliente)} — {cliente.identification_number || 'Sin identificación'}</option>)}
                 </select>
               </div>
               <div className="col-sm-6 col-lg-2">
                 <label className="form-label fw-semibold" htmlFor="pagos-filtro-desde">Desde</label>
-                <input id="pagos-filtro-desde" type="date" className="form-control" value={filtroDesde} onChange={(event) => setFiltroDesde(event.target.value)} disabled={cargando} />
+                <input id="pagos-filtro-desde" type="date" className="form-control" value={filtroDesde} onChange={(event) => { setFiltroDesde(event.target.value); setPagina(1) }} disabled={cargando} />
               </div>
               <div className="col-sm-6 col-lg-2">
                 <label className="form-label fw-semibold" htmlFor="pagos-filtro-hasta">Hasta</label>
-                <input id="pagos-filtro-hasta" type="date" className="form-control" value={filtroHasta} onChange={(event) => setFiltroHasta(event.target.value)} disabled={cargando} />
+                <input id="pagos-filtro-hasta" type="date" className="form-control" value={filtroHasta} onChange={(event) => { setFiltroHasta(event.target.value); setPagina(1) }} disabled={cargando} />
               </div>
               <div className="col-lg-2">
                 <label className="form-label fw-semibold" htmlFor="pagos-filtro-estado">Estado</label>
-                <select id="pagos-filtro-estado" className="form-select" value={filtroEstado} onChange={(event) => setFiltroEstado(event.target.value)} disabled={cargando}>
+                <select id="pagos-filtro-estado" className="form-select" value={filtroEstado} onChange={(event) => { setFiltroEstado(event.target.value); setPagina(1) }} disabled={cargando}>
                   <option value="">Todos</option>
                   {estadosPago.map((estado) => <option key={estado} value={estado}>{estadoPagoLabel(estado)}</option>)}
                 </select>
@@ -502,7 +525,7 @@ export default function PortfolioPaymentsPage() {
                 <button type="button" className="btn btn-outline-secondary" onClick={limpiarFiltros} disabled={cargando || (!filtroCliente && !filtroDesde && !filtroHasta && !filtroEstado && !pagoSeleccionado)}>Limpiar</button>
               </div>
             </div>
-            {pagoSeleccionado && <div className="small text-primary mt-3">Mostrando el pago seleccionado desde la obligación. <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => setSearchParams({}, { replace: true })}>Mostrar todos</button></div>}
+            {pagoSeleccionado && <div className="small text-primary mt-3">Mostrando el pago seleccionado desde la obligación. <button type="button" className="btn btn-link btn-sm p-0 align-baseline" onClick={() => { setPagina(1); setSearchParams({}, { replace: true }) }}>Mostrar todos</button></div>}
           </div>
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
@@ -521,32 +544,27 @@ export default function PortfolioPaymentsPage() {
               <tbody>
                 {cargando && <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border" /><div className="text-muted mt-2">Consultando pagos...</div></td></tr>}
                 {!cargando && !pagosFiltrados.length && <tr><td colSpan="8" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
-                {!cargando && pagosFiltrados.map((pago) => (
+                {!cargando && pagosPaginados.map((pago) => (
                   <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
-                    <td>{formatDate(pago.payment_date)}</td>
+                    <td>{formatDate(pago.created_at || pago.payment_date)}</td>
                     <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
                     <td>{pago.reference || '—'}</td>
                     <td>
                       {pago.allocations?.length
-                        ? pago.allocations.map((allocation) => {
-                          const obligation = obligaciones.find((item) => item.id === allocation.obligation_id)
-                          return (
-                            <button
-                              key={allocation.id || allocation.obligation_id}
-                              type="button"
-                              className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
-                              onClick={() => {
-                                const tenant = window.location.pathname.split('/')[1]
-                                if (tenant && allocation.obligation_id) {
-                                  window.location.href = `/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`
-                                }
-                              }}
-                              title="Abrir esta obligación"
-                            >
-                              {obligation?.sale_number || allocation.obligation_id}
-                            </button>
-                          )
-                        })
+                        ? pago.allocations.map((allocation) => (
+                          <button
+                            key={allocation.id || allocation.obligation_id}
+                            type="button"
+                            className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
+                            onClick={() => {
+                              const tenant = obtenerTenantDesdeUrl()
+                              if (tenant && allocation.obligation_id) navigate(`/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`)
+                            }}
+                            title="Abrir esta obligación"
+                          >
+                            {allocation.obligation_id}
+                          </button>
+                        ))
                         : '—'}
                     </td>
                     <td className="text-end fw-bold">{money(pago.amount)}</td>
@@ -577,6 +595,24 @@ export default function PortfolioPaymentsPage() {
               </tbody>
             </table>
           </div>
+          {!cargando && pagosFiltrados.length > 0 && (
+            <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 border-top">
+              <div className="d-flex align-items-center gap-2">
+                <small className="text-muted">Mostrar</small>
+                <select className="form-select form-select-sm w-auto" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPagina(1) }}>
+                  {PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+                <small className="text-muted">registros</small>
+              </div>
+              <div className="d-flex align-items-center gap-2">
+                <small className="text-muted">Página {pagina}</small>
+                <div className="btn-group">
+                  <button type="button" className="btn btn-outline-secondary btn-sm" disabled={pagina === 1} onClick={() => setPagina((actual) => actual - 1)}>Anterior</button>
+                  <button type="button" className="btn btn-outline-secondary btn-sm" disabled={!haySiguiente} onClick={() => setPagina((actual) => actual + 1)}>Siguiente</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

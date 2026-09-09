@@ -20,6 +20,11 @@ export const crearVenta = async (datos, token) => procesarRespuesta(await fetch(
   { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
 ))
 
+export const crearVentaAutoconsumo = async (datos, token) => procesarRespuesta(await fetch(
+  `${API_URL}/sales/autoconsumption`,
+  { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
+))
+
 export const obtenerVentas = async (token, { limit = 100, offset = 0 } = {}) => procesarRespuesta(await fetch(
   `${API_URL}/sales?limit=${limit}&offset=${offset}`,
   { headers: { Authorization: `Bearer ${token}` } },
@@ -34,3 +39,27 @@ export const enviarFacturaPorCorreo = async (saleId, token) => procesarRespuesta
   `${API_URL}/sales/${saleId}/invoice/email`,
   { method: 'POST', headers: headers(token) },
 ))
+
+export const congelarVenta = async (datos, token) => procesarRespuesta(await fetch(
+  `${API_URL}/sales/drafts`,
+  { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
+))
+
+export const congelarVentaAutoconsumo = async (datos, token) => procesarRespuesta(await fetch(
+  `${API_URL}/sales/drafts/autoconsumption`,
+  { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
+))
+
+export const obtenerVentasCongeladas = async (token) => procesarRespuesta(await fetch(
+  `${API_URL}/sales/drafts`,
+  { headers: { Authorization: `Bearer ${token}` } },
+))
+
+export const eliminarVentaCongelada = async (draftId, token) => {
+  const response = await fetch(`${API_URL}/sales/drafts/${draftId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) return procesarRespuesta(response)
+  return null
+}

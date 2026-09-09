@@ -22,7 +22,7 @@ import InventoryStockPage from '../pages/InventoryStockPage'
 import InventoryTypesPage from '../pages/InventoryTypesPage'
 import InventoryProductsPage from '../pages/InventoryProductsPage'
 import InventoryMovementsPage from '../pages/InventoryMovementsPage'
-import SalesCheckoutPage from '../pages/SalesCheckoutPage'
+import SalesPOSPage from '../pages/SalesPOSPage'
 import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
 import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
@@ -36,6 +36,7 @@ import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
 import PermissionRoute from '../components/PermissionRoute'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
+import { obtenerPayloadToken } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 const MainLayout = lazy(() => import('../layouts/MainLayoutFixed'))
@@ -49,7 +50,23 @@ function RutasProtegidas() {
 function RutaConPermiso({ permission, children }) { return <PermissionRoute permission={permission}>{children}</PermissionRoute> }
 
 function AppRoutes() {
-  const location = useLocation(); const tenant = obtenerTenantDesdeUrl(); const rutaActual = location.pathname
+  const location = useLocation()
+  const { usuarioLogueado, token } = useAuth()
+  const rutaActual = location.pathname
+
+  // /welcome fue una ruta antigua sin tenant. Nunca debe tratarse como si
+  // "welcome" fuera el slug de una empresa: recuperamos el tenant real del JWT.
+  const payload = obtenerPayloadToken(token)
+  const tenantDelToken = payload?.tenant_slug || usuarioLogueado?.tenant_slug || null
+  const tenantDesdeUrl = obtenerTenantDesdeUrl()
+  const esRutaLegacyWelcome = rutaActual === '/welcome'
+  const tenant = esRutaLegacyWelcome ? tenantDelToken : (tenantDesdeUrl || tenantDelToken)
+
+  if (esRutaLegacyWelcome) {
+    if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />
+    return <TenantRequired />
+  }
+
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
@@ -81,7 +98,7 @@ function AppRoutes() {
       <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
       <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
       <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
-      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><SalesCheckoutPage /></RutaConPermiso>} />
+      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><SalesPOSPage /></RutaConPermiso>} />
       <Route path="ventas/consulta" element={<RutaConPermiso permission="SALES_READ"><SalesHistoryPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
