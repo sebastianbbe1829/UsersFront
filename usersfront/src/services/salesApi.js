@@ -15,26 +15,14 @@ const headers = (token) => ({
   Authorization: `Bearer ${token}`,
 })
 
-const normalizarPayloadVenta = (datos) => ({
-  ...datos,
-  payments: Array.isArray(datos?.payments)
-    ? datos.payments.map((payment) => ({
-        ...payment,
-        payment_method: payment.payment_method === 'CREDITO'
-          ? 'CARTERA'
-          : payment.payment_method,
-      }))
-    : datos?.payments,
-})
-
 export const crearVenta = async (datos, token) => procesarRespuesta(await fetch(
   `${API_URL}/sales`,
-  { method: 'POST', headers: headers(token), body: JSON.stringify(normalizarPayloadVenta(datos)) },
+  { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
 ))
 
 export const crearVentaAutoconsumo = async (datos, token) => procesarRespuesta(await fetch(
   `${API_URL}/sales/autoconsumption`,
-  { method: 'POST', headers: headers(token), body: JSON.stringify(normalizarPayloadVenta(datos)) },
+  { method: 'POST', headers: headers(token), body: JSON.stringify(datos) },
 ))
 
 export const obtenerVentas = async (token, { limit = 100, offset = 0 } = {}) => procesarRespuesta(await fetch(
