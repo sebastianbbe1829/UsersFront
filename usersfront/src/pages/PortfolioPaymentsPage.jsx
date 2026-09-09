@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
 const money = (value) => new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -28,14 +29,15 @@ const nombreCliente = (cliente) => cliente?.full_name || [
 
 const formatDate = (value) => {
   if (!value) return '—'
-  const fecha = new Date(`${value}T00:00:00`)
-  return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO').format(fecha)
+  const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
+  return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
 }
 
 const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
 
 export default function PortfolioPaymentsPage() {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const cargaInicialRef = useRef(false)
   const [clientes, setClientes] = useState([])
@@ -281,7 +283,10 @@ export default function PortfolioPaymentsPage() {
     <div>
       <div className="d-flex justify-content-between align-items-start mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Pagos</h2>
+          <div className="d-flex align-items-center gap-2">
+            <button type="button" className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button>
+            <h2 className="fw-bold mb-1">Pagos</h2>
+          </div>
           <p className="text-muted mb-0">Consulta los pagos registrados y registra nuevos abonos.</p>
         </div>
         {!mostrarFormulario && (
@@ -523,30 +528,25 @@ export default function PortfolioPaymentsPage() {
                 {!cargando && !pagosFiltrados.length && <tr><td colSpan="8" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
                 {!cargando && pagosFiltrados.map((pago) => (
                   <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
-                    <td>{formatDate(pago.payment_date)}</td>
+                    <td>{formatDate(pago.created_at || pago.payment_date)}</td>
                     <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
                     <td>{pago.reference || '—'}</td>
                     <td>
                       {pago.allocations?.length
-                        ? pago.allocations.map((allocation) => {
-                          const obligation = obligaciones.find((item) => item.id === allocation.obligation_id)
-                          return (
-                            <button
-                              key={allocation.id || allocation.obligation_id}
-                              type="button"
-                              className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
-                              onClick={() => {
-                                const tenant = window.location.pathname.split('/')[1]
-                                if (tenant && allocation.obligation_id) {
-                                  window.location.href = `/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`
-                                }
-                              }}
-                              title="Abrir esta obligación"
-                            >
-                              {obligation?.sale_number || allocation.obligation_id}
-                            </button>
-                          )
-                        })
+                        ? pago.allocations.map((allocation) => (
+                          <button
+                            key={allocation.id || allocation.obligation_id}
+                            type="button"
+                            className="btn btn-link btn-sm p-0 d-block text-decoration-none text-start"
+                            onClick={() => {
+                              const tenant = obtenerTenantDesdeUrl()
+                              if (tenant && allocation.obligation_id) navigate(`/${encodeURIComponent(tenant)}/cartera/obligaciones?obligation=${encodeURIComponent(allocation.obligation_id)}`)
+                            }}
+                            title="Abrir esta obligación"
+                          >
+                            {allocation.obligation_id}
+                          </button>
+                        ))
                         : '—'}
                     </td>
                     <td className="text-end fw-bold">{money(pago.amount)}</td>
