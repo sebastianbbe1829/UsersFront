@@ -16,8 +16,8 @@ import {
 } from '../services/salesApi'
 
 const money = (v) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(Number(v || 0))
-const toCents = (value) => Math.round((Number(value) || 0) * 100)
-const fromCents = (cents) => cents / 100
+const toCents = (value) => Math.round(Number(value) || 0)
+const fromCents = (cents) => cents
 const METHODS = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'PSE', 'OTRO', 'CREDITO']
 
 const userMessage = (error, fallback) => {
@@ -221,6 +221,17 @@ export default function SalesPOSPage() {
     setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setGenericAlias(restoredClients.length ? '' : String(payload.alias || '')); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number}${payload.alias ? ` · ${payload.alias}` : ''} recuperada.` })
   }
 
+  const deleteFrozen = async (draft) => {
+    try {
+      await eliminarVentaCongelada(draft.id, token)
+      if (activeDraftId === draft.id) setActiveDraftId(null)
+      await loadFrozen()
+    } catch (e) {
+      if (e.status === 401) return manejarSesionExpirada()
+      setMessage({ type: 'danger', text: userMessage(e, 'No fue posible eliminar la venta congelada.') })
+    }
+  }
+
   const submit = async () => {
     if (!cart.length) return openValidation('Venta sin productos', 'Agrega al menos un producto antes de registrar la venta.')
     if (mode === 'client' && participants.length !== 1) return openValidation('Cliente requerido', 'Selecciona un cliente registrado para registrar la venta.')
@@ -274,7 +285,11 @@ export default function SalesPOSPage() {
       </>}
       {participants.map((p) => <div className="sales-customer-selected border rounded p-2 mb-2" key={p.id}>
         <div className="d-flex justify-content-between align-items-start">
-          <div><strong className="small">{p.full_name}</strong><div className="small text-muted">Cupo disponible: <strong>{money(availableCredit(p))}</strong></div></div>
+          <div>
+            <strong className="small">{p.full_name}</strong>
+            <div className="small text-muted">Participación en la venta: <strong>{Number(p.percentage || 0).toFixed(2)}%</strong></div>
+            <div className="small text-muted">Cupo disponible: <strong>{money(availableCredit(p))}</strong></div>
+          </div>
           <button className="btn btn-sm btn-link text-danger p-0" onClick={() => removeClient(p.id)}>×</button>
         </div>
         {mode === 'split' && <div className="input-group input-group-sm mt-2"><input className="form-control" type="number" value={p.percentage} min="0.01" max="100" step="0.01" onChange={(e) => setClientPct(p.id, e.target.value)} /><span className="input-group-text">%</span></div>}
