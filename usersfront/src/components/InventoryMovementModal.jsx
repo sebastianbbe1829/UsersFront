@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Can from './Can'
+import { useAuth } from '../contexts/AuthContext'
 import { obtenerMovimientosInventario } from '../services/inventoryApi'
 
 const formatFecha = (value) => {
