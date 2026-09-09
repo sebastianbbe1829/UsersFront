@@ -49,7 +49,13 @@ function RutasProtegidas() {
 function RutaConPermiso({ permission, children }) { return <PermissionRoute permission={permission}>{children}</PermissionRoute> }
 
 function AppRoutes() {
-  const location = useLocation(); const tenant = obtenerTenantDesdeUrl(); const rutaActual = location.pathname
+  const location = useLocation()
+  const { usuarioLogueado } = useAuth()
+  const rutaActual = location.pathname
+  const tenantDesdeUrl = obtenerTenantDesdeUrl()
+  // Algunas pantallas antiguas todavía navegan a /welcome. Si eso ocurre,
+  // recuperamos el tenant de la sesión actual para que el fallback siga siendo multitenant.
+  const tenant = tenantDesdeUrl || (rutaActual === '/welcome' ? usuarioLogueado?.tenant_slug : null)
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
