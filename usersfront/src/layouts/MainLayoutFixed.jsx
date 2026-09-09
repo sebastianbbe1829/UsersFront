@@ -8,7 +8,7 @@ import SessionManager from '../components/SessionManager'
 import ClientMenu from '../components/ClientMenu'
 
 function MainLayoutFixed() {
-  const { usuarioLogueado, manejarSesionExpirada, tenant, token, estadoActividad } = useAuth()
+  const { usuarioLogueado, cerrarSesion, manejarSesionExpirada, tenant, token, estadoActividad } = useAuth()
   const { config } = useTenantConfig()
   const payload = obtenerPayloadToken(token)
   const esSuper = payload?.user_type === 'SUPER'
@@ -30,9 +30,25 @@ function MainLayoutFixed() {
   const rutaTenant = tenant ? `/${tenant}` : ''
 
   useEffect(() => { setSeccionAbierta(seccionPorRuta) }, [seccionPorRuta])
-  const alternarSeccion = (seccion) => { setSeccionAbierta((actual) => (actual === seccion ? null : seccion)) }
-  const cambiarModoOscuro = () => { setModoOscuro((valor) => { const nuevoValor = !valor; localStorage.setItem('modo_oscuro', nuevoValor); window.dispatchEvent(new Event('modo-oscuro-cambiado')); return nuevoValor }) }
-  const manejarCerrarSesion = () => { const rutaLogin = tenant ? `/${tenant}/login` : '/login'; localStorage.removeItem('tenant_sessions'); localStorage.removeItem('super_sessions'); navigate(rutaLogin, { replace: true }) }
+
+  const alternarSeccion = (seccion) => {
+    setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
+  }
+
+  const cambiarModoOscuro = () => {
+    setModoOscuro((valor) => {
+      const nuevoValor = !valor
+      localStorage.setItem('modo_oscuro', nuevoValor)
+      window.dispatchEvent(new Event('modo-oscuro-cambiado'))
+      return nuevoValor
+    })
+  }
+
+  const manejarCerrarSesion = () => {
+    cerrarSesion()
+    navigate(tenant ? `/${tenant}/login` : '/login', { replace: true })
+  }
+
   const obtenerTituloPagina = () => {
     const ruta = location.pathname
     if (ruta.includes('/usuarios-super')) return { icono: '👑', titulo: 'Usuarios SUPER' }
@@ -62,6 +78,7 @@ function MainLayoutFixed() {
     if (ruta.includes('/administracion-tenant')) return { icono: '🏢', titulo: 'Administración del tenant' }
     return { icono: '🏠', titulo: 'Panel de administración' }
   }
+
   const pagina = obtenerTituloPagina()
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
   const obtenerClaseCompacta = (activo = false) => `d-flex align-items-center justify-content-center text-decoration-none py-2 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
@@ -70,33 +87,86 @@ function MainLayoutFixed() {
   return (
     <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
       <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
+
       <aside className={modoOscuro ? 'bg-black text-light shadow' : 'bg-dark text-white shadow'} style={{ width: menuColapsado ? '72px' : '250px', minHeight: '100vh', transition: 'width .25s ease', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1000, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         <div className="d-flex align-items-center justify-content-between px-3 py-3 border-bottom border-secondary flex-shrink-0" style={{ height: '70px' }}>
           {!menuColapsado && <div className="d-flex align-items-center gap-2 fw-bold text-nowrap">{config?.logo_url ? <img src={config.logo_url} alt="Logo" style={{ maxHeight: '36px', maxWidth: '48px', objectFit: 'contain' }} onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <span>👥</span>}<span>{appTitle}</span></div>}
           <button type="button" className="btn btn-outline-light border-0 ms-auto" onClick={() => setMenuColapsado((valor) => !valor)} title={menuColapsado ? 'Mostrar menú' : 'Ocultar menú'}>{menuColapsado ? '☰' : '✕'}</button>
         </div>
+
         <nav className="sidebar-nav d-flex flex-column flex-grow-1" style={{ minHeight: 0, overflowY: 'auto', overflowX: 'hidden', scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,.22) transparent' }}>
           <NavLink to={tenant ? `/${tenant}` : '/'} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inicio" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏠</span>{!menuColapsado && <span className="ms-3">Inicio</span>}</NavLink>
-          <Can permission="EXTINGUISHER_READ"><button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => alternarSeccion('extintores')} title="Extintores" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{seccionAbierta === 'extintores' ? '▾' : '▸'}</span></>}</button></Can>
+
+          <Can permission="EXTINGUISHER_READ">
+            <button type="button" className={obtenerClaseMenu(extintoresPorRuta)} onClick={() => alternarSeccion('extintores')} title="Extintores" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Extintores</span><span>{seccionAbierta === 'extintores' ? '▾' : '▸'}</span></>}</button>
+            {seccionAbierta === 'extintores' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🧯</span>{!menuColapsado && <span className="ms-3">Inventario</span>}</NavLink></Can>
+              <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores/tipos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Tipos de extintores"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span>{!menuColapsado && <span className="ms-3">Tipos de extintores</span>}</NavLink></Can>
+              <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores/revisiones`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Revisiones"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Revisiones</span>}</NavLink></Can>
+              <Can permission="EXTINGUISHER_READ"><NavLink to={`${rutaTenant}/extintores/items-revision`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Ítems de revisión"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>☑️</span>{!menuColapsado && <span className="ms-3">Ítems de revisión</span>}</NavLink></Can>
+            </div>}
+          </Can>
+
           <ClientMenu rutaTenant={rutaTenant} menuColapsado={menuColapsado} obtenerClaseMenu={obtenerClaseMenu} abierto={seccionAbierta === 'clientes'} onToggleSection={() => alternarSeccion('clientes')} />
-          <Can permissions={['PORTFOLIO_READ', 'PORTFOLIO_PAYMENT_CREATE']}><button type="button" className={obtenerClaseMenu(carteraPorRuta)} onClick={() => alternarSeccion('cartera')} title="Cartera" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>💰</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Cartera</span><span>{seccionAbierta === 'cartera' ? '▾' : '▸'}</span>}</button></Can>
-          <Can permission="INVENTORY_READ"><button type="button" className={obtenerClaseMenu(inventariosPorRuta)} onClick={() => alternarSeccion('inventarios')} title="Inventarios" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>📦</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Inventarios</span><span>{seccionAbierta === 'inventarios' ? '▾' : '▸'}</span>}</button></Can>
-          <Can permissions={['SALES_READ', 'SALES_CREATE']}><button type="button" className={obtenerClaseMenu(ventasPorRuta)} onClick={() => alternarSeccion('ventas')} title="Ventas" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Ventas</span><span>{seccionAbierta === 'ventas' ? '▾' : '▸'}</span>}</button></Can>
-          <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}><button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => alternarSeccion('administracion')} title="Administración" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{seccionAbierta === 'administracion' ? '▾' : '▸'}</span>}</button></Can>
+
+          <Can permissions={['PORTFOLIO_READ', 'PORTFOLIO_PAYMENT_CREATE']}>
+            <button type="button" className={obtenerClaseMenu(carteraPorRuta)} onClick={() => alternarSeccion('cartera')} title="Cartera" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>💰</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Cartera</span><span>{seccionAbierta === 'cartera' ? '▾' : '▸'}</span></>}</button>
+            {seccionAbierta === 'cartera' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <Can permission="PORTFOLIO_READ"><NavLink to={`${rutaTenant}/cartera`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Resumen de cartera"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>💰</span>{!menuColapsado && <span className="ms-3">Resumen</span>}</NavLink></Can>
+              <Can permission="PORTFOLIO_READ"><NavLink to={`${rutaTenant}/cartera/obligaciones`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Obligaciones"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Obligaciones</span>}</NavLink></Can>
+              <Can permission="PORTFOLIO_PAYMENT_CREATE"><NavLink to={`${rutaTenant}/cartera/pagos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Pagos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>💳</span>{!menuColapsado && <span className="ms-3">Pagos</span>}</NavLink></Can>
+            </div>}
+          </Can>
+
+          <Can permission="INVENTORY_READ">
+            <button type="button" className={obtenerClaseMenu(inventariosPorRuta)} onClick={() => alternarSeccion('inventarios')} title="Inventarios" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>📦</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Inventarios</span><span>{seccionAbierta === 'inventarios' ? '▾' : '▸'}</span></>}</button>
+            {seccionAbierta === 'inventarios' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <NavLink to={`${rutaTenant}/inventarios`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📦</span>{!menuColapsado && <span className="ms-3">Inventario</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/tipos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Tipos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span>{!menuColapsado && <span className="ms-3">Tipos</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/productos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Productos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Productos</span>}</NavLink>
+              <NavLink to={`${rutaTenant}/inventarios/movimientos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Movimientos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Movimientos</span>}</NavLink>
+            </div>}
+          </Can>
+
+          <Can permissions={['SALES_READ', 'SALES_CREATE']}>
+            <button type="button" className={obtenerClaseMenu(ventasPorRuta)} onClick={() => alternarSeccion('ventas')} title="Ventas" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Ventas</span><span>{seccionAbierta === 'ventas' ? '▾' : '▸'}</span></>}</button>
+            {seccionAbierta === 'ventas' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <Can permission="SALES_CREATE"><NavLink to={`${rutaTenant}/ventas`} end className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Punto de venta"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span>{!menuColapsado && <span className="ms-3">Punto de venta</span>}</NavLink></Can>
+              <Can permission="SALES_READ"><NavLink to={`${rutaTenant}/ventas/consulta`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Consulta de ventas"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span>{!menuColapsado && <span className="ms-3">Consulta de ventas</span>}</NavLink></Can>
+            </div>}
+          </Can>
+
+          <Can permissions={['USER_READ', 'ROLE_READ', 'PERMISSION_READ']}>
+            <button type="button" className={obtenerClaseMenu(administracionPorRuta)} onClick={() => alternarSeccion('administracion')} title="Administración" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>⚙️</span>{!menuColapsado && <><span className="ms-3 flex-grow-1 text-start">Administración</span><span>{seccionAbierta === 'administracion' ? '▾' : '▸'}</span></>}</button>
+            {seccionAbierta === 'administracion' && <div className={menuColapsado ? 'd-flex flex-column align-items-center' : 'ps-3'}>
+              <Can permission="USER_READ"><NavLink to={`${rutaTenant}/usuarios`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Usuarios"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>👥</span>{!menuColapsado && <span className="ms-3">Usuarios</span>}</NavLink></Can>
+              <Can permission="ROLE_READ"><NavLink to={`${rutaTenant}/roles`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Roles"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛡️</span>{!menuColapsado && <span className="ms-3">Roles</span>}</NavLink></Can>
+              <Can permission="PERMISSION_READ"><NavLink to={`${rutaTenant}/permisos`} className={({ isActive }) => menuColapsado ? obtenerClaseCompacta(isActive) : obtenerClaseMenu(isActive)} title="Permisos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🔐</span>{!menuColapsado && <span className="ms-3">Permisos</span>}</NavLink></Can>
+            </div>}
+          </Can>
+
           {esSuper && <NavLink to={`${rutaTenant}/configuracion-ui`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Configuración de la interfaz"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🎨</span>{!menuColapsado && <span className="ms-3">Configuración UI</span>}</NavLink>}
           {esSuper && <NavLink to={`${rutaTenant}/administracion-tenant`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración del tenant"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span>{!menuColapsado && <span className="ms-3">Administración del tenant</span>}</NavLink>}
           {esSuper && <NavLink to={`${rutaTenant}/usuarios-super`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios SUPER"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👑</span>{!menuColapsado && <span className="ms-3">Usuarios SUPER</span>}</NavLink>}
         </nav>
       </aside>
+
       <main style={{ marginLeft: menuColapsado ? '72px' : '250px', width: `calc(100% - ${menuColapsado ? '72px' : '250px'})`, minHeight: '100vh', transition: 'margin-left .25s ease, width .25s ease' }}>
         <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
-        <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 30px', borderBottom: `3px solid ${primaryColor}` }}>
-          <div className="d-flex align-items-center gap-2"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div>
-          <div className="d-flex align-items-center gap-3">{tenant && <div className="d-none d-md-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}{tenant && usuarioLogueado && <span className="text-muted d-none d-md-inline">|</span>}{usuarioLogueado && <div className="d-flex align-items-center gap-2"><span>👤</span><div className="d-none d-md-flex flex-column align-items-end"><small className="fw-semibold">{usuarioLogueado.name}</small><small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small><small className={actividadEsActiva ? 'text-success' : 'text-warning'}>{actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}</small></div></div>}</div>
+        <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ minHeight: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', padding: '10px 30px', borderBottom: `3px solid ${primaryColor}` }}>
+          <div className="d-flex align-items-center gap-2 flex-shrink-0"><span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5></div>
+          <div className="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+            {tenant && <div className="d-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}
+            {tenant && usuarioLogueado && <span className="text-muted">|</span>}
+            {usuarioLogueado && <div className="d-flex align-items-center gap-2"><span>👤</span><div className="d-flex flex-column align-items-end"><small className="fw-semibold">{usuarioLogueado.name}</small><small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small><small className={actividadEsActiva ? 'text-success' : 'text-warning'}>{actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}</small></div></div>}
+            <button type="button" className="btn btn-sm" onClick={cambiarModoOscuro} title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} style={{ border: `1px solid ${secondaryColor}`, color: modoOscuro ? '#fff' : secondaryColor, whiteSpace: 'nowrap' }}>{modoOscuro ? '☀️ Modo claro' : '🌙 Modo oscuro'}</button>
+            <button type="button" className="btn btn-sm text-white" onClick={manejarCerrarSesion} title="Cerrar sesión" style={{ backgroundColor: primaryColor, whiteSpace: 'nowrap' }}>🚪 Cerrar sesión</button>
+          </div>
         </header>
         <section className="p-4"><Outlet /></section>
       </main>
     </div>
   )
 }
+
 export default MainLayoutFixed
