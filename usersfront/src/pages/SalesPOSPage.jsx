@@ -69,9 +69,9 @@ export default function SalesPOSPage() {
   const closeSaleSuccess = () => { setSaleSuccessModal(null); setSaleEmailMessage(null) }
 
   useEffect(() => {
-    document.body.style.overflow = (validationModal || saleSuccessModal || saving) ? 'hidden' : ''
+    document.body.style.overflow = (validationModal || saleSuccessModal || saving || freezing) ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [validationModal, saleSuccessModal, saving])
+  }, [validationModal, saleSuccessModal, saving, freezing])
 
   const loadCatalog = async () => {
     const [p, i] = await Promise.all([obtenerProductosInventario(token, true), obtenerInventario(token)])
@@ -227,7 +227,6 @@ export default function SalesPOSPage() {
       const payload = draftPayload()
       const draft = autoconsumption ? await congelarVentaAutoconsumo(payload, token) : await congelarVenta(payload, token)
       setActiveDraftId(draft.id)
-      setMessage({ type: 'success', text: `Venta ${draft.draft_number} congelada correctamente.` })
       reset()
       await loadFrozen()
     } catch (e) {
@@ -335,6 +334,6 @@ export default function SalesPOSPage() {
     </div>
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-validation-title"><div className="sales-modal-header"><strong id="sales-validation-title">⚠️ {validationModal.title}</strong><button className="btn-close" aria-label="Cerrar" onClick={closeValidation}></button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary" onClick={closeValidation}>Entendido</button></div></div></div>}
     {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-success-title"><div className="sales-modal-header"><strong id="sales-success-title">✓ Venta realizada correctamente</strong><button className="btn-close" aria-label="Cerrar" onClick={closeSaleSuccess}></button></div><div className="sales-modal-body"><div className="fs-5 fw-semibold mb-1">{saleSuccessModal.sale_number}</div><div className="text-muted">Total de la venta</div><div className="fs-3 fw-bold mb-3">{money(saleSuccessModal.total)}</div><div className="alert alert-success py-2 mb-0">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2 mt-2 mb-0`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer"><div className="d-flex gap-2"><button className="btn btn-outline-success" onClick={print}>🖨️ Factura</button>{saleCanEmail && <Can permission="SALES_EMAIL"><button className="btn btn-success" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : '✉️ Enviar'}</button></Can>}<button className="btn btn-primary" onClick={closeSaleSuccess}>Entendido</button></div></div></div></div>}
-    {saving && <div className="sales-processing" role="presentation"><div className="sales-processing-card" role="status" aria-live="polite" aria-label="Registrando venta"><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold fs-5">Registrando venta...</div><div className="small text-muted mt-1">Por favor espera mientras procesamos la venta.</div></div></div>}
+    {(saving || freezing) && <div className="sales-processing" role="presentation"><div className="sales-processing-card" role="status" aria-live="polite" aria-label={freezing ? 'Congelando venta' : 'Registrando venta'}><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold fs-5">{freezing ? 'Congelando venta...' : 'Registrando venta...'}</div><div className="small text-muted mt-1">{freezing ? 'Por favor espera mientras guardamos la venta congelada.' : 'Por favor espera mientras procesamos la venta.'}</div></div></div>}
   </>
 }
