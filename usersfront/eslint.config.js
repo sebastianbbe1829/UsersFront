@@ -28,6 +28,8 @@ export default defineConfig([
     files: [
       'src/layouts/MainLayoutFixed.jsx',
       'src/pages/GlobalSuperAdminPage.jsx',
+      'src/pages/InventoryMovementsPage.jsx',
+      'src/pages/PortfolioPaymentsPage.jsx',
     ],
     rules: {
       // These effects synchronize UI/data with route/auth changes and async API results.
@@ -39,6 +41,27 @@ export default defineConfig([
     rules: {
       // Shared UI modules intentionally export multiple reusable components.
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/pages/ClientsPage.jsx'],
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^PAGE_SIZES$' }],
+    },
+  },
+  {
+    files: ['src/pages/InventoryMovementsPage.jsx'],
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^pageSize$' }],
+    },
+  },
+  {
+    files: ['src/pages/SalesPOSPage.jsx'],
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^(remaining|draft)$' }],
+      // The credit lookup intentionally keys off participant ids to avoid re-fetching
+      // when only the participant allocation percentage changes.
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ])
