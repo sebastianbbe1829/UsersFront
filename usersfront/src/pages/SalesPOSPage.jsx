@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import Can from '../components/Can'
 import { obtenerClientes } from '../services/clientsApi'
 import { obtenerCupoCliente } from '../services/portfolioApi'
-import { obtenerInventario, obtenerProductosInventario } from '../services/inventoryApi'
+import { obtenerInventario, obtenerProductosInventario, obtenerProductosTopVenta } from '../services/inventoryApi'
 import { abrirFactura } from '../utils/salesInvoice'
 import {
   crearVenta,
@@ -45,6 +45,7 @@ export default function SalesPOSPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
+  const [topProducts, setTopProducts] = useState([])
   const [inventory, setInventory] = useState([])
   const [clients, setClients] = useState([])
   const [clientCredits, setClientCredits] = useState({})
@@ -81,8 +82,13 @@ export default function SalesPOSPage() {
   }, [validationModal, saleSuccessModal, saving, freezing])
 
   const loadCatalog = async () => {
-    const [p, i] = await Promise.all([obtenerProductosInventario(token, true), obtenerInventario(token)])
+    const [p, top, i] = await Promise.all([
+      obtenerProductosInventario(token, true),
+      obtenerProductosTopVenta(token, 6),
+      obtenerInventario(token),
+    ])
     setProducts(Array.isArray(p) ? p : [])
+    setTopProducts(Array.isArray(top) ? top : [])
     setInventory(Array.isArray(i) ? i : [])
   }
 
@@ -96,14 +102,16 @@ export default function SalesPOSPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const [p, i, c, d] = await Promise.all([
+        const [p, top, i, c, d] = await Promise.all([
           obtenerProductosInventario(token, true),
+          obtenerProductosTopVenta(token, 6),
           obtenerInventario(token),
           obtenerClientes(token, { page: 1, pageSize: 100 }),
           obtenerVentasCongeladas(token),
         ])
         if (cancelled) return
         setProducts(Array.isArray(p) ? p : [])
+        setTopProducts(Array.isArray(top) ? top : [])
         setInventory(Array.isArray(i) ? i : [])
         setClients(Array.isArray(c?.items) ? c.items : Array.isArray(c) ? c : [])
         setFrozen(Array.isArray(d) ? d : [])
@@ -144,9 +152,9 @@ export default function SalesPOSPage() {
   const stock = useMemo(() => new Map(inventory.map((i) => [i.product_id, i])), [inventory])
   const shownProducts = useMemo(() => {
     const term = search.trim().toLowerCase()
-    const filtered = term ? products.filter((p) => `${p.name || ''}`.toLowerCase().includes(term)) : products
-    return filtered.slice(0, 6)
-  }, [products, search])
+    if (!term) return topProducts
+    return products.filter((p) => `${p.code || ''} ${p.name || ''}`.toLowerCase().includes(term)).slice(0, 6)
+  }, [products, search, topProducts])
   const subtotal = useMemo(() => cart.reduce((s, x) => s + Number(x.price) * Number(x.quantity), 0), [cart])
   const discountValue = autoconsumption ? 0 : Math.min(100, Math.max(0, Number(discount) || 0))
   const discountAmount = subtotal * discountValue / 100
@@ -341,7 +349,7 @@ export default function SalesPOSPage() {
       <div className="sales-tabs"><button className={`btn btn-sm flex-fill ${tab === 'products' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('products')}>Productos</button><button className={`btn btn-sm flex-fill ${tab === 'sale' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('sale')}>Venta</button><button className={`btn btn-sm flex-fill ${tab === 'payment' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('payment')}>Pago</button></div>
       <div className="row g-2 sales-pos">
         <div className={`col-lg-4 sales-pos-col sales-product-col sales-panel ${tab === 'products' ? 'active' : ''}`}>
-          <div className="card border-0 shadow-sm h-100"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>Productos</strong><span className="small text-muted">Máximo 6 destacados</span></div><div className="card-body"><input className="form-control mb-2" placeholder="Buscar producto por nombre" value={search} onChange={(e) => setSearch(e.target.value)} /><div className="sales-grid">{shownProducts.map((p) => { const inv = stock.get(p.id); const available = Number(inv?.quantity || 0); return <button key={p.id} className="sales-product" disabled={!available} onClick={() => addProduct(p)}>{p.image_url ? <img className="sales-img" src={p.image_url} alt={p.name} /> : <div className="sales-placeholder">🛒</div>}<div className="p-2"><strong className="small d-block text-truncate">{p.name}</strong><span className="small fw-semibold">{money(autoconsumption ? inv?.purchase_price : inv?.sale_price)}</span><span className={`small d-block ${available ? 'text-success' : 'text-danger'}`}>{available ? `Stock: ${available}` : 'Sin stock'}</span></div></button> })}</div></div></div>
+          <div className="card border-0 shadow-sm h-100"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>{search.trim() ? 'Resultados' : '⭐ Más vendidos'}</strong><span className="small text-muted">Máximo 6 {search.trim() ? 'resultados' : 'destacados'}</span></div><div className="card-body"><input className="form-control mb-2" placeholder="Buscar producto por nombre o código" value={search} onChange={(e) => setSearch(e.target.value)} />{!search.trim() && !shownProducts.length ? <div className="text-muted small py-3 text-center">Aún no hay productos vendidos.</div> : <div className="sales-grid">{shownProducts.map((p) => { const inv = stock.get(p.id); const available = Number(inv?.quantity || 0); return <button key={p.id} className="sales-product" disabled={!available} onClick={() => addProduct(p)}>{p.image_url ? <img className="sales-img" src={p.image_url} alt={p.name} /> : <div className="sales-placeholder">🛒</div>}<div className="p-2"><strong className="small d-block text-truncate">{p.name}</strong><span className="small fw-semibold">{money(autoconsumption ? inv?.purchase_price : inv?.sale_price)}</span><span className={`small d-block ${available ? 'text-success' : 'text-danger'}`}>{available ? `Stock: ${available}` : 'Sin stock'}</span></div></button> })}</div>}</div></div>
         </div>
         <div className={`col-lg-5 sales-pos-col sales-panel ${tab === 'sale' ? 'active' : ''}`}>
           {customerBlock}
@@ -349,16 +357,11 @@ export default function SalesPOSPage() {
           <div className="card border-0 shadow-sm mt-2"><div className="card-header bg-body"><strong>Descuento y opciones</strong></div><div className="card-body"><div className="row g-2 align-items-end"><div className="col-6"><label className="form-label small mb-1">Descuento %</label><input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm" value={discount} disabled={autoconsumption} onChange={(e) => setDiscount(e.target.value)} /></div><div className="col-6 form-check form-switch pt-4"><input className="form-check-input" type="checkbox" id="autoconsumo" checked={autoconsumption} onChange={(e) => toggleAutoconsumption(e.target.checked)} /><label className="form-check-label small" htmlFor="autoconsumo">Autoconsumo</label></div></div></div></div>
         </div>
         <div className={`col-lg-3 sales-pos-col sales-panel ${tab === 'payment' || tab === 'sale' ? 'active' : ''}`}>
-          <div className="card border-0 shadow-sm h-100 d-flex flex-column"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>Resumen y pago</strong><div className="sales-payment-actions"><button type="button" className="btn btn-primary sales-payment-action" title="Registrar venta" aria-label="Registrar venta" disabled={saving || !cart.length || !paidOk || freezing} onClick={() => void submit()}>{saving ? '⏳' : '✓'}</button><button type="button" className="btn btn-outline-warning sales-payment-action" title="Congelar venta" aria-label="Congelar venta" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? '⏳' : '⏸'}</button></div></div><div className="card-body d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr /><div className="d-flex justify-content-between"><span>Total</span><strong className="fs-4">{money(totalPesos)}</strong></div><div className="mt-3"><div className="d-flex justify-content-between align-items-center mb-2"><strong className="small">Pagos</strong><button className="btn btn-sm btn-outline-primary" onClick={addPayment}>+ Método</button></div>{effectivePayments.map((p, i) => <div className="row g-1 mb-2" key={i}><div className="col-7"><select className="form-select form-select-sm" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((m) => <option key={m} value={m}>{m}</option>)}</select></div><div className="col-5"><input type="number" min="0" step="1" className="form-control form-control-sm" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} /></div>{payments.length > 1 && <div className="col-12 text-end"><button className="btn btn-sm btn-link text-danger p-0" onClick={() => removePayment(i)}>Eliminar</button></div>}</div>)}</div><div className={`small mt-2 ${paidOk ? 'text-success' : difference > 0 ? 'text-warning' : 'text-danger'}`}>{paidOk ? '✓ Pago completo' : difference > 0 ? `Faltan ${money(difference)}` : `Sobran ${money(Math.abs(difference))}`}</div></div></div>
+          <div className="card border-0 shadow-sm h-100 d-flex flex-column"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>Resumen y pago</strong><div className="sales-payment-actions"><button type="button" className="btn btn-primary sales-payment-action" title="Registrar venta" aria-label="Registrar venta" disabled={saving || !cart.length || !paidOk || freezing} onClick={() => void submit()}>{saving ? '⏳' : '✓'}</button><button type="button" className="btn btn-outline-warning sales-payment-action" title="Congelar venta" aria-label="Congelar venta" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? '⏳' : '⏸'}</button></div></div><div className="card-body d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr /><div className="d-flex justify-content-between"><span>Total</span><strong className="fs-4">{money(totalPesos)}</strong></div><div className="mt-2">{payments.map((p, i) => <div key={i} className="d-flex gap-1 mb-1"><select className="form-select form-select-sm" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((method) => <option key={method} value={method}>{method}</option>)}</select><input className="form-control form-control-sm" type="number" min="0" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} disabled={p.method === 'CREDITO' && mode === 'client'} />{payments.length > 1 && <button className="btn btn-sm btn-outline-danger" onClick={() => removePayment(i)}>×</button>}</div>)}</div><div className="mt-1 d-flex justify-content-between small"><span>{differenceCents === 0 ? 'Pago completo' : differenceCents > 0 ? 'Falta' : 'Exceso'}</span><strong className={differenceCents === 0 ? 'text-success' : 'text-danger'}>{money(Math.abs(difference))}</strong></div><button className="btn btn-sm btn-outline-secondary mt-2" onClick={addPayment}>+ Forma de pago</button><div className="mt-auto pt-2"><div className="d-flex justify-content-between small"><span>Venta congelada</span><strong>{frozen.length}</strong></div>{frozen.length ? <div className="mt-1 d-grid gap-1">{frozen.slice(0, 3).map((draft) => <button key={draft.id} className="btn btn-sm btn-outline-warning text-start" onClick={() => resume(draft)}>Retomar {draft.alias || draft.id}</button>)}</div> : null}</div></div></div>
         </div>
       </div>
-      <div className="card border-0 shadow-sm mt-2">
-        <div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>⏸️ Ventas congeladas</strong><span className="badge text-bg-secondary">{frozen.length}</span></div>
-        <div className="card-body p-2">{!frozen.length ? <div className="small text-muted">No hay ventas congeladas. Puedes congelar una para atender a otro cliente y recuperarla después.</div> : <div className="row g-2">{frozen.map((d) => { const productCount = (Array.isArray(d.payload?.items) ? d.payload.items : []).reduce((sum, item) => sum + Number(item.quantity || 0), 0); return <div className="col-md-6 col-xl-4" key={d.id}><div className="border rounded p-2 d-flex justify-content-between align-items-center"><div><strong>{d.alias || d.payload?.alias ? `${d.alias || d.payload?.alias} · ` : ''}{d.draft_number}</strong><div className="small text-muted">{productCount} producto(s){d.payload?.is_autoconsumption ? ' · Autoconsumo' : ''}</div></div><button className="btn btn-sm btn-outline-primary" onClick={() => resume(d)}>Recuperar</button></div></div> })}</div>}</div>
-      </div>
     </div>
-    {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-validation-title"><div className="sales-modal-header"><strong id="sales-validation-title">⚠️ {validationModal.title}</strong><button className="btn-close" aria-label="Cerrar" onClick={closeValidation}></button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary" onClick={closeValidation}>Entendido</button></div></div></div>}
-    {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true" aria-labelledby="sales-success-title"><div className="sales-modal-header"><strong id="sales-success-title">✓ Venta realizada correctamente</strong><button className="btn-close" aria-label="Cerrar" onClick={closeSaleSuccess}></button></div><div className="sales-modal-body"><div className="fs-5 fw-semibold mb-1">{saleSuccessModal.sale_number}</div><div className="text-muted">Total de la venta</div><div className="fs-3 fw-bold mb-3">{money(saleSuccessModal.total)}</div><div className="alert alert-success py-2 mb-0">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2 mt-2 mb-0`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer"><div className="d-flex gap-2"><button className="btn btn-outline-success" onClick={print}>🖨️ Factura</button>{saleCanEmail && <Can permission="SALES_EMAIL"><button className="btn btn-success" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : '✉️ Enviar'}</button></Can>}<button className="btn btn-primary" onClick={closeSaleSuccess}>Entendido</button></div></div></div></div>}
-    {(saving || freezing) && <div className="sales-processing" role="presentation"><div className="sales-processing-card" role="status" aria-live="polite" aria-label={freezing ? 'Congelando venta' : 'Registrando venta'}><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold fs-5">{freezing ? 'Congelando venta...' : 'Registrando venta...'}</div><div className="small text-muted mt-1">{freezing ? 'Por favor espera mientras guardamos la venta congelada.' : 'Por favor espera mientras procesamos la venta.'}</div></div></div>}
+    {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>{validationModal.title}</strong><button className="btn btn-sm btn-link" onClick={closeValidation}>×</button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary btn-sm" onClick={closeValidation}>Aceptar</button></div></div></div>}
+    {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>Venta registrada</strong><button className="btn btn-sm btn-link" onClick={closeSaleSuccess}>×</button></div><div className="sales-modal-body"><div className="mb-2">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer d-flex gap-2"><button className="btn btn-outline-secondary btn-sm" onClick={print}>Imprimir factura</button>{saleCanEmail && <button className="btn btn-primary btn-sm" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : 'Enviar por correo'}</button>}<button className="btn btn-secondary btn-sm" onClick={closeSaleSuccess}>Cerrar</button></div></div></div>}
   </>
 }
