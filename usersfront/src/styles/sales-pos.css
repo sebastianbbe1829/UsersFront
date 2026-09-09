@@ -16,6 +16,43 @@
   padding: .25rem;
 }
 
+/* En pantallas con poca altura, compactamos Cliente y Resumen/Pago
+   antes de permitir que aparezca scrollbar. Productos no se modifica aquí. */
+@media (max-height: 900px) and (min-width: 992px) {
+  .sales-pos {
+    height: calc(100vh - 210px) !important;
+    min-height: 0 !important;
+  }
+
+  .sales-pos-col {
+    overflow-y: hidden;
+  }
+
+  .sales-pos-col > .mb-3 {
+    margin-bottom: .5rem !important;
+  }
+
+  .sales-pos-col > .mb-2 {
+    margin-bottom: .35rem !important;
+  }
+
+  .sales-pos-col .p-3 {
+    padding: .65rem !important;
+  }
+
+  .sales-pos-col .p-2 {
+    padding: .4rem !important;
+  }
+
+  .sales-customer {
+    padding: .45rem;
+  }
+
+  .sales-customer-title {
+    font-size: .78rem;
+  }
+}
+
 @media (max-height: 800px) and (min-width: 992px) {
   .sales-product:nth-child(n + 4) {
     display: none;
