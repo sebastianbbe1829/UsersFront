@@ -1,6 +1,7 @@
 import { useAuth } from '../contexts/AuthContext'
 import { useTenantConfig } from '../contexts/TenantConfigContext'
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import '../styles/welcome-smart-menu.css'
 
 function ajustarColorParaFondo(hex, fondoOscuro) {
@@ -15,7 +16,21 @@ function WelcomePage() {
   const { tenant, token } = useAuth()
   const { config } = useTenantConfig()
   const navigate = useNavigate()
-  const modoOscuro = localStorage.getItem('modo_oscuro') === 'true'
+  const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
+
+  useEffect(() => {
+    const sincronizarModo = () => {
+      setModoOscuro(localStorage.getItem('modo_oscuro') === 'true')
+    }
+
+    window.addEventListener('modo-oscuro-cambiado', sincronizarModo)
+    window.addEventListener('storage', sincronizarModo)
+
+    return () => {
+      window.removeEventListener('modo-oscuro-cambiado', sincronizarModo)
+      window.removeEventListener('storage', sincronizarModo)
+    }
+  }, [])
 
   const primaryColor = config?.primary_color || '#0d6efd'
   const secondaryColor = config?.secondary_color || '#6f42c1'
