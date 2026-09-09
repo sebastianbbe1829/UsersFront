@@ -19,7 +19,7 @@ function WelcomePage() {
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
 
   useEffect(() => {
-    const sincronizarModo = () => setModoOscuro(localStorage.getItem('modo_oscuro') === 'true')
+    const sincronizarModo = (event) => setModoOscuro(typeof event?.detail === 'boolean' ? event.detail : localStorage.getItem('modo_oscuro') === 'true')
     window.addEventListener('modo-oscuro-cambiado', sincronizarModo)
     window.addEventListener('storage', sincronizarModo)
     return () => {
