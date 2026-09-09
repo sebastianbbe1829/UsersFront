@@ -6,6 +6,7 @@ import { obtenerPayloadToken } from '../services/api'
 import Can from '../components/Can'
 import SessionManager from '../components/SessionManager'
 import ClientMenu from '../components/ClientMenu'
+import '../styles/navigation-drawer.css'
 
 function MainLayoutFixed() {
   const { usuarioLogueado, cerrarSesion, manejarSesionExpirada, tenant, token, estadoActividad } = useAuth()
@@ -42,6 +43,14 @@ function MainLayoutFixed() {
       window.removeEventListener('modo-oscuro-cambiado', sincronizarModo)
       window.removeEventListener('storage', sincronizarModo)
     }
+  }, [])
+
+  useEffect(() => {
+    const manejarEscape = (event) => {
+      if (event.key === 'Escape') setMenuAbierto(false)
+    }
+    window.addEventListener('keydown', manejarEscape)
+    return () => window.removeEventListener('keydown', manejarEscape)
   }, [])
 
   const alternarSeccion = (seccion) => setSeccionAbierta((actual) => (actual === seccion ? null : seccion))
@@ -92,13 +101,11 @@ function MainLayoutFixed() {
 
   const pagina = obtenerTituloPagina()
   const obtenerClaseMenu = (activo = false) => `d-flex align-items-center text-decoration-none py-3 px-3 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
-  const obtenerClaseCompacta = (activo = false) => `d-flex align-items-center justify-content-center text-decoration-none py-2 border-0 rounded-0 w-100 ${activo ? 'text-white' : 'bg-dark text-white'}`
   const actividadEsActiva = estadoActividad !== 'INACTIVA'
 
   return (
     <div className={modoOscuro ? 'bg-dark text-light min-vh-100' : 'bg-light min-vh-100'} style={{ display: 'flex' }}>
       <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
-
       {menuAbierto && <div className="app-navigation-overlay" role="presentation" onClick={() => setMenuAbierto(false)} />}
 
       <aside className={modoOscuro ? 'bg-black text-light shadow app-navigation-drawer' : 'bg-dark text-white shadow app-navigation-drawer'} style={{ width: '250px', minHeight: '100vh', transition: 'transform .25s ease', transform: menuAbierto ? 'translateX(0)' : 'translateX(-100%)', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 1100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
