@@ -34,6 +34,13 @@ const STYLE = `
 .sales-pos{height:calc(100vh - 120px);min-height:560px;overflow:hidden}.sales-pos-col{height:100%;overflow:auto;min-width:0}.sales-product-col{height:100%;overflow:hidden;min-width:0}.sales-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.65rem}.sales-product{border:1px solid var(--bs-border-color);background:var(--bs-body-bg);border-radius:.65rem;overflow:hidden;cursor:pointer;text-align:left}.sales-product:hover:not(:disabled){box-shadow:0 .35rem .9rem rgba(0,0,0,.12);transform:translateY(-1px)}.sales-img{height:68px;width:100%;object-fit:cover}.sales-placeholder{height:68px;display:flex;align-items:center;justify-content:center;background:var(--bs-tertiary-bg);font-size:28px}.sales-product .p-2{padding:.35rem!important}.sales-tabs{display:none}.sales-customer{border:1px solid var(--bs-border-color);border-radius:.65rem;padding:.65rem;background:var(--bs-tertiary-bg)}.sales-customer-title{font-size:.82rem;font-weight:700}.sales-customer-selected{background:var(--bs-body-bg)}.sales-modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;display:flex;align-items:center;justify-content:center;padding:1rem}.sales-modal{width:min(460px,100%);background:var(--bs-body-bg);color:var(--bs-body-color);border-radius:.75rem;box-shadow:0 1rem 3rem rgba(0,0,0,.25);overflow:hidden}.sales-modal-header{padding:.9rem 1rem;border-bottom:1px solid var(--bs-border-color);display:flex;align-items:center;justify-content:space-between}.sales-modal-body{padding:1rem}.sales-modal-footer{padding:.75rem 1rem;border-top:1px solid var(--bs-border-color);display:flex;justify-content:flex-end}.sales-processing{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2100;display:flex;align-items:center;justify-content:center;padding:1rem}.sales-processing-card{width:min(360px,100%);background:var(--bs-body-bg);color:var(--bs-body-color);border-radius:.75rem;box-shadow:0 1rem 3rem rgba(0,0,0,.25);padding:1.5rem;text-align:center}@media(max-width:991.98px){.sales-pos{height:auto;min-height:0;overflow:visible}.sales-pos-col,.sales-product-col{height:auto;overflow:visible}.sales-tabs{display:flex;position:sticky;top:0;z-index:20;background:var(--bs-body-bg);padding:.45rem 0}.sales-panel{display:none}.sales-panel.active{display:block}.sales-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:575.98px){.sales-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-img,.sales-placeholder{height:62px}}
 `
 
+const splitPercentages = (count) => {
+  if (!count) return []
+  const base = Math.floor((100 / count) * 100) / 100
+  const remainder = Math.round((100 - base * (count - 1)) * 100) / 100
+  return Array.from({ length: count }, (_, index) => index === count - 1 ? remainder : base)
+}
+
 export default function SalesPOSPage() {
   const { token, manejarSesionExpirada } = useAuth()
   const navigate = useNavigate()
@@ -200,14 +207,19 @@ export default function SalesPOSPage() {
     if (mode === 'client' && participants.length) return
     if (mode === 'split') {
       const next = [...participants, { ...client, percentage: 0 }]
-      const pct = 100 / next.length
-      setParticipants(next.map((p) => ({ ...p, percentage: pct })))
+      const percentages = splitPercentages(next.length)
+      setParticipants(next.map((p, index) => ({ ...p, percentage: percentages[index] })))
     } else {
       setParticipants([{ ...client, percentage: 100 }])
     }
     setClientSearch('')
   }
-  const removeClient = (id) => setParticipants((p) => p.filter((x) => x.id !== id))
+  const removeClient = (id) => setParticipants((current) => {
+    const next = current.filter((x) => x.id !== id)
+    if (mode !== 'split' || !next.length) return next
+    const percentages = splitPercentages(next.length)
+    return next.map((p, index) => ({ ...p, percentage: percentages[index] }))
+  })
   const setClientPct = (id, value) => setParticipants((p) => p.map((x) => x.id === id ? { ...x, percentage: value } : x))
   const changePayment = (i, field, value) => setPayments((p) => p.map((x, n) => n === i ? { ...x, [field]: value } : x))
   const changePaymentMethod = (i, method) => setPayments((current) => current.map((p, n) => n === i ? { ...p, method, amount: String(Math.max(0, totalPesos - current.reduce((s, x, k) => k === i ? s : s + toCents(x.amount), 0))) } : p))
@@ -217,46 +229,49 @@ export default function SalesPOSPage() {
   const draftPayload = () => ({ items: cart.map((x) => ({ product_id: x.product.id, quantity: x.quantity })), customers: customersPayload(), discount_percentage: discountValue, alias: mode === 'generic' ? (genericAlias.trim() || null) : null })
   const reset = ({ keepLastSale = false } = {}) => {
     setCart([]); setSearch(''); setMode('generic'); setParticipants([]); setClientSearch(''); setGenericAlias(''); setDiscount('0'); setPayments([{ method: 'EFECTIVO', amount: '' }]); setAutoconsumption(false); setActiveDraftId(null)
-    if (!keepLastSale) { setLastSale(null); setSaleCanEmail(false); setSaleEmailMessage(null) }
+    if (!keepLastSale) { setLastSale(null); setSaleSuccessModal(null); setSaleEmailMessage(null) }
   }
-
+  const resume = (draft) => {
+    const payload = draft.payload || {}
+    const items = Array.isArray(payload.items) ? payload.items : []
+    const restored = items.map((item) => {
+      const product = products.find((p) => p.id === item.product_id)
+      const inv = stock.get(item.product_id)
+      if (!product || !inv) return null
+      return { product, quantity: Number(item.quantity || 0), price: Number(payload.is_autoconsumption ? inv.purchase_price : inv.sale_price) || 0 }
+    }).filter(Boolean)
+    setCart(restored)
+    setAutoconsumption(Boolean(payload.is_autoconsumption))
+    setDiscount(String(payload.discount_percentage ?? '0'))
+    if (payload.customers?.length) {
+      const restoredClients = payload.customers.filter((c) => c.client_id).map((c) => ({ ...clients.find((x) => x.id === c.client_id), id: c.client_id, percentage: Number(c.allocation_percentage) }))
+      setParticipants(restoredClients)
+      setMode(restoredClients.length > 1 ? 'split' : 'client')
+    } else {
+      setParticipants([]); setMode('generic')
+    }
+    setActiveDraftId(draft.id)
+    setTab('sale')
+  }
   const freeze = async () => {
     if (!cart.length) return openValidation('Venta vacía', 'Agrega al menos un producto antes de congelar la venta.')
+    if (mode === 'client' && participants.length !== 1) return openValidation('Cliente requerido', 'Selecciona un cliente registrado para congelar esta venta.')
+    if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     setFreezing(true); setMessage(null)
     try {
-      const payload = draftPayload()
-      const draft = autoconsumption ? await congelarVentaAutoconsumo(payload, token) : await congelarVenta(payload, token)
+      const data = draftPayload()
+      if (activeDraftId) await eliminarVentaCongelada(activeDraftId, token)
+      const draft = autoconsumption ? await congelarVentaAutoconsumo(data, token) : await congelarVenta(data, token)
       setActiveDraftId(draft.id)
-      reset()
       await loadFrozen()
     } catch (e) {
       if (e.status === 401) return manejarSesionExpirada()
       setMessage({ type: 'danger', text: userMessage(e, 'No fue posible congelar la venta.') })
     } finally { setFreezing(false) }
   }
-
-  const resume = (draft) => {
-    const payload = draft.payload || {}
-    const restored = (payload.items || []).map((item) => {
-      const product = products.find((p) => p.id === item.product_id)
-      const inv = stock.get(item.product_id)
-      return product && inv ? { product, quantity: Number(item.quantity), price: Number(payload.is_autoconsumption ? inv.purchase_price : inv.sale_price) || 0 } : null
-    }).filter(Boolean)
-    const restoredClients = (payload.customers || []).map((c) => {
-      const client = clients.find((x) => x.id === c.client_id)
-      return client ? { ...client, percentage: Number(c.allocation_percentage) } : null
-    }).filter(Boolean)
-    setCart(restored); setParticipants(restoredClients); setMode(restoredClients.length > 1 ? 'split' : restoredClients.length ? 'client' : 'generic'); setGenericAlias(restoredClients.length ? '' : String(payload.alias || '')); setDiscount(String(payload.discount_percentage || 0)); setAutoconsumption(Boolean(payload.is_autoconsumption)); setPayments([{ method: 'EFECTIVO', amount: '' }]); setActiveDraftId(draft.id); setLastSale(null); setSaleCanEmail(false); setSaleEmailMessage(null); setTab('sale'); setMessage({ type: 'success', text: `Venta ${draft.draft_number}${payload.alias ? ` · ${payload.alias}` : ''} recuperada.` })
-  }
-
-  const deleteFrozen = async (draft) => {
-    try { await eliminarVentaCongelada(draft.id, token); setFrozen((current) => current.filter((x) => x.id !== draft.id)) }
-    catch (e) { if (e.status === 401) return manejarSesionExpirada(); setMessage({ type: 'danger', text: userMessage(e, 'No fue posible eliminar la venta congelada.') }) }
-  }
-
   const submit = async () => {
     if (!cart.length) return openValidation('Venta vacía', 'Agrega al menos un producto antes de registrar la venta.')
-    if (mode === 'client' && participants.length !== 1) return openValidation('Cliente requerido', 'Selecciona un cliente para registrar la venta.')
+    if (mode === 'client' && participants.length !== 1) return openValidation('Cliente requerido', 'Selecciona un cliente registrado para registrar la venta.')
     if (mode === 'split' && (participants.length < 2 || Math.abs(allocated - 100) > .01)) return openValidation('Distribución incompleta', 'La distribución de la venta debe sumar exactamente 100 %.')
     if (creditSelected && mode !== 'client') return openValidation('Cliente requerido para crédito', 'Una venta a crédito requiere un único cliente registrado. Selecciona Cliente y asigna la venta antes de registrarla.')
     if (!paidOk) return openValidation('Pago incompleto', differenceCents > 0 ? `Aún falta completar ${money(difference)}.` : `El pago supera el total en ${money(Math.abs(difference))}.`)
