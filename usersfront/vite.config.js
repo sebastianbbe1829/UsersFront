@@ -29,6 +29,7 @@ export default defineConfig({
       '/inventory': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/sales': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/portfolio': { target: 'http://127.0.0.1:8000', changeOrigin: true },
+      '/cash': { target: 'http://127.0.0.1:8000', changeOrigin: true },
       '/diagnostics': { target: 'http://127.0.0.1:8000', changeOrigin: true },
     },
   },
