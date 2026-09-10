@@ -153,6 +153,11 @@ export default function CashPage() {
     'Día operativo cerrado correctamente.',
   )
 
+  const closeFeedback = () => {
+    setError('')
+    setMessage('')
+  }
+
   if (loading) {
     return (
       <section className="container-fluid py-4 cash-page">
@@ -163,6 +168,12 @@ export default function CashPage() {
       </section>
     )
   }
+
+  const feedback = error
+    ? { type: 'danger', title: 'No fue posible completar la operación', text: error }
+    : message
+      ? { type: 'success', title: 'Operación completada', text: message }
+      : null
 
   return (
     <section className="container-fluid py-3 cash-page">
@@ -177,9 +188,6 @@ export default function CashPage() {
           </span>
         )}
       </div>
-
-      {error && <div className="alert alert-danger">{error}</div>}
-      {message && <div className="alert alert-success">{message}</div>}
 
       {(!day || dayIsClosed) && (
         <div className="card shadow-sm border-0 mb-4">
@@ -339,6 +347,54 @@ export default function CashPage() {
             <div className="alert alert-secondary">El día operativo ya está cerrado y no admite nuevas operaciones. Para continuar, inicia un nuevo día con otra fecha de operación.</div>
           )}
         </>
+      )}
+
+      {feedback && (
+        <div
+          role="presentation"
+          onClick={closeFeedback}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1080,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+          }}
+        >
+          <div
+            className={`modal-content border-${feedback.type}`}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="cash-feedback-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              borderTopWidth: '4px',
+              borderTopStyle: 'solid',
+              borderRadius: '0.5rem',
+              boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.25)',
+            }}
+          >
+            <div className="modal-header">
+              <h5 id="cash-feedback-title" className="modal-title">
+                {feedback.title}
+              </h5>
+              <button type="button" className="btn-close" aria-label="Cerrar" onClick={closeFeedback} />
+            </div>
+            <div className="modal-body">
+              <p className="mb-0">{feedback.text}</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className={`btn btn-${feedback.type}`} onClick={closeFeedback}>
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   )
