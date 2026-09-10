@@ -230,8 +230,6 @@ export default function CashManagementPage() {
         <button type="button" className="btn btn-outline-secondary" onClick={() => navigate(cajaPath)}>← Operación de Caja</button>
       </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-
       <div className="btn-group mb-4" role="tablist">
         <button type="button" className={`btn ${tab === 'branches' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/sucursales`)}>Sucursales</button>
         <button type="button" className={`btn ${tab === 'boxes' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/cajas`)}>Cajas físicas</button>
@@ -333,6 +331,33 @@ export default function CashManagementPage() {
               </div>
               <div className="modal-footer justify-content-center">
                 <button type="button" className="btn btn-primary px-4" onClick={() => setMessage('')}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div
+          className="modal fade show d-block"
+          tabIndex="-1"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cash-operation-error-title"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title" id="cash-operation-error-title">No fue posible realizar la operación</h5>
+                <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setError('')} />
+              </div>
+              <div className="modal-body text-center py-4">
+                <div className="text-danger mb-3" style={{ fontSize: '3rem', lineHeight: 1 }}>!</div>
+                <div className="fs-5">{error}</div>
+              </div>
+              <div className="modal-footer justify-content-center">
+                <button type="button" className="btn btn-danger px-4" onClick={() => setError('')}>Aceptar</button>
               </div>
             </div>
           </div>
