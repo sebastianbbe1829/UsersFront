@@ -132,11 +132,11 @@ export default function CashPage() {
   }
 
   if (loading) {
-    return <section className="container-fluid py-4"><div className="text-center py-5"><div className="spinner-border text-primary" /><div className="mt-3 text-muted">Cargando Caja...</div></div></section>
+    return <section className="container-fluid py-4 cash-page"><div className="text-center py-5"><div className="spinner-border text-primary" /><div className="mt-3 text-muted">Cargando Caja...</div></div></section>
   }
 
   return (
-    <section className="container-fluid py-3">
+    <section className="container-fluid py-3 cash-page">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
           <h2 className="mb-1">Caja</h2>
