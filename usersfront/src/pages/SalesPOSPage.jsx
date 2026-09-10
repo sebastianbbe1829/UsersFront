@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { obtenerClientes } from '../services/clientsApi'
 import { obtenerCupoCliente } from '../services/portfolioApi'
 import { obtenerInventario, obtenerProductosInventario, obtenerProductosTopVenta } from '../services/inventoryApi'
+import { obtenerContextoCaja } from '../services/cashApi'
 import { abrirFactura } from '../utils/salesInvoice'
 import {
   crearVenta,
@@ -70,6 +71,7 @@ export default function SalesPOSPage() {
   const [lastSale, setLastSale] = useState(null)
   const [validationModal, setValidationModal] = useState(null)
   const [saleSuccessModal, setSaleSuccessModal] = useState(null)
+  const [cashContext, setCashContext] = useState(null)
 
   const openValidation = (title, text) => setValidationModal({ title, text })
   const closeValidation = () => setValidationModal(null)
@@ -101,12 +103,13 @@ export default function SalesPOSPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const [p, top, i, c, d] = await Promise.all([
+        const [p, top, i, c, d, context] = await Promise.all([
           obtenerProductosInventario(token, true),
           obtenerProductosTopVenta(token, 6),
           obtenerInventario(token),
           obtenerClientes(token, { page: 1, pageSize: 100 }),
           obtenerVentasCongeladas(token),
+          obtenerContextoCaja(token),
         ])
         if (cancelled) return
         setProducts(Array.isArray(p) ? p : [])
@@ -114,6 +117,7 @@ export default function SalesPOSPage() {
         setInventory(Array.isArray(i) ? i : [])
         setClients(Array.isArray(c?.items) ? c.items : Array.isArray(c) ? c : [])
         setFrozen(Array.isArray(d) ? d : [])
+        setCashContext(context)
       } catch (e) {
         if (!cancelled) {
           if (e.status === 401) return manejarSesionExpirada()
@@ -183,6 +187,15 @@ export default function SalesPOSPage() {
     return null
   }
   const amountForParticipant = (participant) => Math.max(0, Math.round(totalPesos * (Number(participant?.percentage) || 0) / 100))
+
+  useEffect(() => {
+    if (!cart.length || payments.length !== 1) return
+    const current = payments[0]
+    if (current.method === 'CREDITO' && mode === 'client') return
+    const amount = String(totalPesos)
+    if (current.amount === amount) return
+    setPayments([{ ...current, amount }])
+  }, [cart.length, mode, payments, totalPesos])
 
   const addProduct = (product) => {
     const inv = stock.get(product.id)
@@ -340,10 +353,13 @@ export default function SalesPOSPage() {
 
   if (loading) return <div className="d-flex justify-content-center py-5"><div className="spinner-border" role="status"></div></div>
 
+  const businessDateLabel = cashContext?.business_date ? new Date(`${cashContext.business_date}T00:00:00`).toLocaleDateString('es-CO') : 'No disponible'
+  const cashBoxLabel = cashContext?.cash_box_name || 'No asignada'
+
   return <>
     <style>{STYLE}</style>
     <div className="container-fluid pt-0 pb-2">
-      <div className="d-flex justify-content-between align-items-center mb-1"><div><div className="d-flex align-items-center gap-2"><button className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button><h4 className="mb-0">Punto de venta</h4></div><div className="small text-muted">Registra ventas, pagos y facturación.</div></div><div className="d-flex gap-2"><button className="btn btn-sm btn-outline-danger" onClick={() => reset()}>Limpiar</button></div></div>
+      <div className="d-flex justify-content-between align-items-start mb-1"><div><div className="d-flex align-items-center gap-2"><button className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button><h4 className="mb-0">Punto de venta</h4></div><div className="small text-muted">Registra ventas, pagos y facturación.</div><div className="small text-primary mt-1"><strong>Fecha operativa:</strong> {businessDateLabel} <span className="mx-1">·</span> <strong>Caja actual:</strong> {cashBoxLabel}</div></div><div className="d-flex gap-2"><button className="btn btn-sm btn-outline-danger" onClick={() => reset()}>Limpiar</button></div></div>
       {message && <div className={`alert alert-${message.type} py-2`}>{message.text}</div>}
       <div className="sales-tabs"><button className={`btn btn-sm flex-fill ${tab === 'products' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('products')}>Productos</button><button className={`btn btn-sm flex-fill ${tab === 'sale' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('sale')}>Venta</button><button className={`btn btn-sm flex-fill ${tab === 'payment' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('payment')}>Pago</button></div>
       <div className="row g-2 sales-pos">
@@ -360,6 +376,7 @@ export default function SalesPOSPage() {
         </div>
       </div>
     </div>
+    {(saving || freezing) && <div className="sales-processing" role="status" aria-live="polite"><div className="sales-processing-card"><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold">{saving ? 'Registrando venta...' : 'Congelando venta...'}</div><div className="small text-muted mt-1">Por favor espera.</div></div></div>}
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>{validationModal.title}</strong><button className="btn btn-sm btn-link" onClick={closeValidation}>×</button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary btn-sm" onClick={closeValidation}>Aceptar</button></div></div></div>}
     {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>Venta registrada</strong><button className="btn btn-sm btn-link" onClick={closeSaleSuccess}>×</button></div><div className="sales-modal-body"><div className="mb-2">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer d-flex gap-2"><button className="btn btn-outline-secondary btn-sm" onClick={print}>Imprimir factura</button>{saleCanEmail && <button className="btn btn-primary btn-sm" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : 'Enviar por correo'}</button>}<button className="btn btn-secondary btn-sm" onClick={closeSaleSuccess}>Cerrar</button></div></div></div>}
   </>
