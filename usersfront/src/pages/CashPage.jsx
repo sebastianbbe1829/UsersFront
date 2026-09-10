@@ -66,7 +66,13 @@ export default function CashPage() {
     }
   }, [token])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      load()
+    }, 0)
+
+    return () => clearTimeout(timeoutId)
+  }, [load])
 
   const run = async (operation, successMessage) => {
     setSaving(true)
