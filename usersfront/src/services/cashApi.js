@@ -22,6 +22,45 @@ export const obtenerContextoCaja = async (token) => procesarRespuesta(
   await fetch(`${API_URL}/cash/my-context`, { headers: headers(token) }),
 )
 
+export const obtenerDiaActual = async (token) => procesarRespuesta(
+  await fetch(`${API_URL}/cash/days/current`, { headers: headers(token) }),
+)
+
+export const iniciarDia = async (token) => procesarRespuesta(await fetch(
+  `${API_URL}/cash/days/start`,
+  {
+    method: 'POST',
+    headers: headers(token, true),
+    body: JSON.stringify({}),
+  },
+))
+
+export const cerrarCajaDelDia = async (registerId, datos, token) => procesarRespuesta(await fetch(
+  `${API_URL}/cash/days/registers/${encodeURIComponent(registerId)}/close`,
+  {
+    method: 'POST',
+    headers: headers(token, true),
+    body: JSON.stringify(datos),
+  },
+))
+
+export const cerrarSucursalDelDia = async (branchId, token) => procesarRespuesta(await fetch(
+  `${API_URL}/cash/days/branches/${encodeURIComponent(branchId)}/close`,
+  {
+    method: 'POST',
+    headers: headers(token),
+  },
+))
+
+export const cerrarDia = async (closingNotes, token) => procesarRespuesta(await fetch(
+  `${API_URL}/cash/days/close`,
+  {
+    method: 'POST',
+    headers: headers(token, true),
+    body: JSON.stringify({ closing_notes: closingNotes || null }),
+  },
+))
+
 export const obtenerCajaActual = async (token) => {
   const response = await fetch(`${API_URL}/cash/registers/current`, { headers: headers(token) })
   if (response.status === 404) return null
