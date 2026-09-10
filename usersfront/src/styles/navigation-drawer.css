@@ -19,6 +19,48 @@
   }
 }
 
+/* Caja usa el viewport disponible debajo del encabezado global.
+   El scroll queda únicamente dentro del contenido de Caja, evitando
+   el doble scroll que se producía al combinarlo con el scroll del body. */
+main:has(.cash-page),
+main:has(.btn-group[role="tablist"]) {
+  height: 100vh;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+main:has(.cash-page) > header,
+main:has(.btn-group[role="tablist"]) > header {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 20;
+}
+
+main:has(.cash-page) > section,
+main:has(.btn-group[role="tablist"]) > section {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cash-page {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: .75rem !important;
+  padding-bottom: 1rem !important;
+}
+
+main:has(.btn-group[role="tablist"]) > section {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-top: .75rem !important;
+  padding-bottom: 1rem !important;
+}
+
 @media (max-width: 768px) {
   .app-navigation-drawer {
     width: min(86vw, 300px) !important;
@@ -104,5 +146,19 @@
 
   main > section {
     padding: .65rem !important;
+  }
+
+  /* En móvil Caja conserva un único scroll dentro del contenido. */
+  main:has(.cash-page) > section,
+  main:has(.btn-group[role="tablist"]) > section {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .cash-page,
+  main:has(.btn-group[role="tablist"]) > section {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
