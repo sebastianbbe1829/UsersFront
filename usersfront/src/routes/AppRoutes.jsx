@@ -27,6 +27,7 @@ import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
 import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
 import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
+import CashPage from '../pages/CashPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -53,9 +54,6 @@ function AppRoutes() {
   const location = useLocation()
   const { usuarioLogueado, token } = useAuth()
   const rutaActual = location.pathname
-
-  // /welcome fue una ruta antigua sin tenant. Nunca debe tratarse como si
-  // "welcome" fuera el slug de una empresa: recuperamos el tenant real del JWT.
   const payload = obtenerPayloadToken(token)
   const tenantDelToken = payload?.tenant_slug || usuarioLogueado?.tenant_slug || null
   const tenantDesdeUrl = obtenerTenantDesdeUrl()
@@ -88,6 +86,7 @@ function AppRoutes() {
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
       <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
+      <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
