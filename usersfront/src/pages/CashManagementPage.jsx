@@ -94,8 +94,8 @@ export default function CashManagementPage() {
     }
   }, [location.pathname])
 
-  const load = useCallback(async () => {
-    setLoading(true)
+  const load = useCallback(async ({ showLoading = false } = {}) => {
+    if (showLoading) setLoading(true)
     setError('')
     try {
       const [branchData, boxData, assignmentData, userData] = await Promise.all([
@@ -111,12 +111,12 @@ export default function CashManagementPage() {
     } catch (err) {
       setError(err.message || 'No fue posible cargar la administración de Caja.')
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }, [token])
 
   useEffect(() => {
-    load()
+    load({ showLoading: true })
   }, [load])
 
   const filteredBoxes = useMemo(
