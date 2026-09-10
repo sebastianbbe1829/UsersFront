@@ -27,7 +27,7 @@ import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
 import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
 import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
-import CashPage from '../pages/CashPage'
+import CashPageGuard from '../pages/CashPageGuard'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -41,13 +41,7 @@ import { obtenerPayloadToken } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 const MainLayout = lazy(() => import('../layouts/MainLayoutFixed'))
-
-function RutasProtegidas() {
-  const { logueado, cargando } = useAuth()
-  if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary" role="status" /><div className="text-muted">Validando sesión...</div></div></div>
-  if (!logueado) return <Navigate to="login" replace />
-  return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense>
-}
+function RutasProtegidas() { const { logueado, cargando } = useAuth(); if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary" role="status" /><div className="text-muted">Validando sesión...</div></div></div>; if (!logueado) return <Navigate to="login" replace />; return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense> }
 function RutaConPermiso({ permission, children }) { return <PermissionRoute permission={permission}>{children}</PermissionRoute> }
 
 function AppRoutes() {
@@ -59,12 +53,7 @@ function AppRoutes() {
   const tenantDesdeUrl = obtenerTenantDesdeUrl()
   const esRutaLegacyWelcome = rutaActual === '/welcome'
   const tenant = esRutaLegacyWelcome ? tenantDelToken : (tenantDesdeUrl || tenantDelToken)
-
-  if (esRutaLegacyWelcome) {
-    if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />
-    return <TenantRequired />
-  }
-
+  if (esRutaLegacyWelcome) { if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />; return <TenantRequired /> }
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
@@ -86,7 +75,7 @@ function AppRoutes() {
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
       <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
-      <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPage /></RutaConPermiso>} />
+      <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPageGuard /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
