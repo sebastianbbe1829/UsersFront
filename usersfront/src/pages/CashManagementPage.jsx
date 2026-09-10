@@ -36,6 +36,12 @@ export default function CashManagementPage() {
   const [boxForm, setBoxForm] = useState(emptyBox)
   const [assignmentForm, setAssignmentForm] = useState(emptyAssignment)
 
+  const managementBase = useMemo(
+    () => `${location.pathname.split('/caja/administracion')[0]}/caja/administracion`,
+    [location.pathname],
+  )
+  const cajaPath = useMemo(() => managementBase.replace(/\/administracion$/, ''), [managementBase])
+
   const tab = useMemo(() => {
     if (location.pathname.endsWith('/sucursales')) return 'branches'
     if (location.pathname.endsWith('/cajas')) return 'boxes'
@@ -181,16 +187,16 @@ export default function CashManagementPage() {
           <h2 className="mb-1">Administración de Caja</h2>
           <div className="text-muted">Configura sucursales, cajas físicas y la asignación operativa de usuarios.</div>
         </div>
-        <button type="button" className="btn btn-outline-secondary" onClick={() => navigate(`../caja`)}>← Operación de Caja</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={() => navigate(cajaPath)}>← Operación de Caja</button>
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {message && <div className="alert alert-success">{message}</div>}
 
       <div className="btn-group mb-4" role="tablist">
-        <button type="button" className={`btn ${tab === 'branches' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate('../caja/sucursales')}>Sucursales</button>
-        <button type="button" className={`btn ${tab === 'boxes' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate('../caja/cajas')}>Cajas físicas</button>
-        <button type="button" className={`btn ${tab === 'assignments' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate('../caja/asignaciones')}>Asignaciones</button>
+        <button type="button" className={`btn ${tab === 'branches' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/sucursales`)}>Sucursales</button>
+        <button type="button" className={`btn ${tab === 'boxes' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/cajas`)}>Cajas físicas</button>
+        <button type="button" className={`btn ${tab === 'assignments' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/asignaciones`)}>Asignaciones</button>
       </div>
 
       {tab === 'branches' && (
