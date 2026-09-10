@@ -26,12 +26,12 @@ export const obtenerDiaActual = async (token) => procesarRespuesta(
   await fetch(`${API_URL}/cash/days/current`, { headers: headers(token) }),
 )
 
-export const iniciarDia = async (token) => procesarRespuesta(await fetch(
+export const iniciarDia = async (token, businessDate) => procesarRespuesta(await fetch(
   `${API_URL}/cash/days/start`,
   {
     method: 'POST',
     headers: headers(token, true),
-    body: JSON.stringify({}),
+    body: JSON.stringify({ business_date: businessDate }),
   },
 ))
 
