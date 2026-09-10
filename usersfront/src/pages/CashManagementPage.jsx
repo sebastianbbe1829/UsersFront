@@ -120,9 +120,19 @@ export default function CashManagementPage() {
         obtenerAsignacionesCaja(token),
         obtenerUsuarios(token),
       ])
-      setBranches(Array.isArray(branchData) ? branchData : [])
-      setBoxes(Array.isArray(boxData) ? boxData : [])
-      setAssignments(Array.isArray(assignmentData) ? assignmentData : [])
+      const branchList = Array.isArray(branchData) ? branchData : []
+      const boxList = Array.isArray(boxData) ? boxData : []
+      const assignmentList = Array.isArray(assignmentData) ? assignmentData : []
+      const activeBoxIds = new Set(
+        boxList.filter((box) => active(box.status)).map((box) => String(box.id)),
+      )
+      const visibleAssignments = assignmentList.filter(
+        (assignment) => active(assignment.status) && activeBoxIds.has(String(assignment.cash_box_id)),
+      )
+
+      setBranches(branchList)
+      setBoxes(boxList)
+      setAssignments(visibleAssignments)
       setUsers((Array.isArray(userData) ? userData : []).filter((user) => active(user.status)))
     } catch (err) {
       setError(err.message || 'No fue posible cargar la administración de Caja.')
