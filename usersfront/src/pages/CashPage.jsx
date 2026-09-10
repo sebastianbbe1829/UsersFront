@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
+import { obtenerPayloadToken } from '../services/api'
 import {
-  abrirCaja,
-  cerrarCaja,
-  obtenerCajaActual,
-  obtenerCajas,
-  obtenerResumenCaja,
-  registrarMovimientoCaja,
+  cerrarCajaDelDia,
+  cerrarDia,
+  cerrarSucursalDelDia,
+  iniciarDia,
+  obtenerDiaActual,
 } from '../services/cashApi'
 
 const money = (value) => Number(value || 0).toLocaleString('es-CO', {
@@ -15,64 +15,58 @@ const money = (value) => Number(value || 0).toLocaleString('es-CO', {
   maximumFractionDigits: 0,
 })
 
-const emptySummary = {
-  sales_cash: 0,
-  sales_transfer: 0,
-  sales_card: 0,
-  sales_credit: 0,
-  portfolio_cash: 0,
-  manual_income: 0,
-  manual_expense: 0,
-  expected_cash: 0,
-  counted_cash: null,
-  difference: null,
+const hasPermission = (token, permission) => {
+  const payload = obtenerPayloadToken(token)
+  return payload?.user_type === 'SUPER' || payload?.permissions?.includes(permission)
 }
+
+const errorMessage = (error) => error?.message || 'No fue posible completar la operación de Caja.'
 
 export default function CashPage() {
   const { token } = useAuth()
-  const [current, setCurrent] = useState(null)
-  const [history, setHistory] = useState([])
-  const [summary, setSummary] = useState(emptySummary)
+  const [day, setDay] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [openingAmount, setOpeningAmount] = useState('0')
-  const [movementType, setMovementType] = useState('INCOME')
-  const [movementAmount, setMovementAmount] = useState('')
-  const [movementDescription, setMovementDescription] = useState('')
+  const [selectedRegister, setSelectedRegister] = useState(null)
   const [countedCash, setCountedCash] = useState('')
   const [closingNotes, setClosingNotes] = useState('')
+  const [dayClosingNotes, setDayClosingNotes] = useState('')
+
+  const canStart = hasPermission(token, 'CASH_DAY_START')
+  const canCloseBox = hasPermission(token, 'CASH_CLOSE')
+  const canCloseBranch = hasPermission(token, 'CASH_BRANCH_CLOSE')
+  const canCloseDay = hasPermission(token, 'CASH_DAY_CLOSE')
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const [register, registers] = await Promise.all([
-        obtenerCajaActual(token),
-        obtenerCajas(token),
-      ])
-      setCurrent(register)
-      setHistory(Array.isArray(registers) ? registers : registers?.items || [])
-      if (register) {
-        setSummary(await obtenerResumenCaja(register.id, token))
-      } else {
-        setSummary(emptySummary)
-      }
+      setDay(await obtenerDiaActual(token))
     } catch (err) {
-      setError(err.message || 'No fue posible cargar Caja.')
+      setError(errorMessage(err))
     } finally {
       setLoading(false)
     }
   }, [token])
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      load()
-    }, 0)
-
+    const timeoutId = setTimeout(load, 0)
     return () => clearTimeout(timeoutId)
   }, [load])
+
+  const registersByBranch = useMemo(() => {
+    const result = new Map()
+    for (const register of day?.registers || []) {
+      const branchId = String(register.branch_id)
+      result.set(branchId, (result.get(branchId) || []).concat(register))
+    }
+    return result
+  }, [day])
+
+  const allBranchesClosed = Boolean(day?.branches?.length) && day.branches.every((branch) => branch.status === 'CLOSED')
+  const allRegistersClosed = Boolean(day?.registers?.length) && day.registers.every((register) => register.status === 'CLOSED')
 
   const run = async (operation, successMessage) => {
     setSaving(true)
@@ -81,157 +75,299 @@ export default function CashPage() {
     try {
       await operation()
       setMessage(successMessage)
+      setSelectedRegister(null)
+      setCountedCash('')
+      setClosingNotes('')
       await load()
     } catch (err) {
-      setError(err.message || 'No fue posible completar la operación.')
+      setError(errorMessage(err))
     } finally {
       setSaving(false)
     }
   }
 
-  const open = () => run(
-    () => abrirCaja(Number(openingAmount || 0), token),
-    'Caja abierta correctamente.',
+  const start = () => run(
+    () => iniciarDia(token),
+    'Día operativo iniciado. Todas las sucursales y cajas activas quedaron abiertas.',
   )
 
-  const movement = () => {
-    if (!current) return
-    if (!movementAmount || Number(movementAmount) <= 0) {
-      setError('El valor del movimiento debe ser mayor que cero.')
-      return
-    }
-    return run(
-      () => registrarMovimientoCaja(current.id, {
-        movement_type: movementType,
-        amount: Number(movementAmount),
-        description: movementDescription.trim() || null,
-      }, token),
-      movementType === 'INCOME' ? 'Ingreso registrado.' : 'Egreso registrado.',
-    ).then(() => {
-      setMovementAmount('')
-      setMovementDescription('')
-    })
+  const selectRegister = (register) => {
+    if (register.status !== 'OPEN') return
+    setSelectedRegister(register)
+    setCountedCash('')
+    setClosingNotes('')
+    setError('')
+    setMessage('')
   }
 
-  const close = () => {
-    if (!current) return
+  const closeRegister = () => {
+    if (!selectedRegister) return
     if (countedCash === '' || Number(countedCash) < 0) {
-      setError('Indica el efectivo contado para cerrar la caja.')
+      setError('Indica el efectivo contado para realizar el arqueo.')
       return
     }
-    return run(
-      () => cerrarCaja(current.id, {
+    run(
+      () => cerrarCajaDelDia(selectedRegister.id, {
         counted_cash: Number(countedCash),
         closing_notes: closingNotes.trim() || null,
       }, token),
-      'Caja cerrada correctamente.',
-    ).then(() => {
-      setCountedCash('')
-      setClosingNotes('')
-    })
+      `Caja ${selectedRegister.cash_box_name || `#${selectedRegister.id}`} cerrada correctamente.`,
+    )
   }
 
+  const closeBranch = (branch) => run(
+    () => cerrarSucursalDelDia(branch.branch_id, token),
+    `Sucursal ${branch.branch_name} cerrada correctamente.`,
+  )
+
+  const closeOperatingDay = () => run(
+    () => cerrarDia(dayClosingNotes.trim() || null, token),
+    'Día operativo cerrado correctamente.',
+  )
+
   if (loading) {
-    return <section className="container-fluid py-4 cash-page"><div className="text-center py-5"><div className="spinner-border text-primary" /><div className="mt-3 text-muted">Cargando Caja...</div></div></section>
+    return (
+      <section className="container-fluid py-4 cash-page">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status" />
+          <div className="mt-3 text-muted">Cargando día operativo...</div>
+        </div>
+      </section>
+    )
   }
 
   return (
     <section className="container-fluid py-3 cash-page">
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
-          <h2 className="mb-1">Caja</h2>
-          <div className="text-muted">Apertura, movimientos, consulta y cierre de caja.</div>
+          <h2 className="mb-1">Día operativo de Caja</h2>
+          <div className="text-muted">
+            Inicio, arqueo y cierre jerárquico de cajas, sucursales y día.
+          </div>
         </div>
-        {current && <span className="badge text-bg-success px-3 py-2">Caja abierta #{current.id}</span>}
+        {day && (
+          <span className={`badge ${day.status === 'OPEN' ? 'text-bg-success' : 'text-bg-secondary'} px-3 py-2`}>
+            {day.business_date} · {day.status === 'OPEN' ? 'ABIERTO' : 'CERRADO'}
+          </span>
+        )}
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
       {message && <div className="alert alert-success">{message}</div>}
 
-      {!current ? (
-        <div className="card shadow-sm border-0 mb-4">
+      {!day ? (
+        <div className="card shadow-sm border-0">
           <div className="card-body p-4">
-            <h5 className="mb-1">Abrir caja</h5>
-            <p className="text-muted">Define el efectivo inicial disponible.</p>
-            <div className="row g-3 align-items-end">
-              <div className="col-12 col-md-4">
-                <label className="form-label">Efectivo inicial</label>
-                <input className="form-control" type="number" min="0" step="1" value={openingAmount} onChange={(e) => setOpeningAmount(e.target.value)} />
+            <h5 className="mb-2">El día de hoy no ha sido iniciado</h5>
+            <p className="text-muted mb-4">
+              Al iniciar el día se abrirán automáticamente todas las sucursales y todas las cajas físicas activas.
+            </p>
+            {canStart ? (
+              <button className="btn btn-primary" disabled={saving} onClick={start}>
+                {saving ? 'Iniciando día...' : 'Iniciar día'}
+              </button>
+            ) : (
+              <div className="alert alert-warning mb-0">
+                No tienes permiso para iniciar el día operativo.
               </div>
-              <div className="col-12 col-md-auto">
-                <button className="btn btn-primary" disabled={saving} onClick={open}>{saving ? 'Abriendo...' : 'Abrir caja'}</button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       ) : (
         <>
           <div className="row g-3 mb-4">
-            <div className="col-12 col-sm-6 col-xl-3"><div className="card shadow-sm border-0 h-100"><div className="card-body"><div className="text-muted small">Saldo inicial</div><div className="fs-4 fw-semibold">{money(current.opening_amount)}</div></div></div></div>
-            <div className="col-12 col-sm-6 col-xl-3"><div className="card shadow-sm border-0 h-100"><div className="card-body"><div className="text-muted small">Ventas efectivo</div><div className="fs-4 fw-semibold">{money(summary.sales_cash)}</div></div></div></div>
-            <div className="col-12 col-sm-6 col-xl-3"><div className="card shadow-sm border-0 h-100"><div className="card-body"><div className="text-muted small">Cartera efectivo</div><div className="fs-4 fw-semibold">{money(summary.portfolio_cash)}</div></div></div></div>
-            <div className="col-12 col-sm-6 col-xl-3"><div className="card shadow-sm border-0 h-100"><div className="card-body"><div className="text-muted small">Efectivo esperado</div><div className="fs-4 fw-bold">{money(summary.expected_cash)}</div></div></div></div>
-          </div>
-
-          <div className="row g-4 mb-4">
-            <div className="col-12 col-lg-6">
-              <div className="card shadow-sm border-0 h-100">
-                <div className="card-body">
-                  <h5>Resumen de medios de pago</h5>
-                  <div className="table-responsive"><table className="table align-middle mb-0"><tbody>
-                    <tr><td>Efectivo</td><td className="text-end">{money(summary.sales_cash)}</td></tr>
-                    <tr><td>Tarjeta</td><td className="text-end">{money(summary.sales_card)}</td></tr>
-                    <tr><td>Transferencia</td><td className="text-end">{money(summary.sales_transfer)}</td></tr>
-                    <tr><td>Crédito</td><td className="text-end">{money(summary.sales_credit)}</td></tr>
-                  </tbody></table></div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="text-muted small">Sucursales</div>
+                <div className="fs-4 fw-semibold">{day.branches.length}</div>
+                <div className="small text-muted">
+                  {day.branches.filter((item) => item.status === 'CLOSED').length} cerradas
                 </div>
               </div>
             </div>
-            <div className="col-12 col-lg-6">
-              <div className="card shadow-sm border-0 h-100">
-                <div className="card-body">
-                  <h5>Ingresos y egresos manuales</h5>
-                  <div className="d-flex justify-content-between py-2"><span>Ingresos</span><strong>{money(summary.manual_income)}</strong></div>
-                  <div className="d-flex justify-content-between py-2"><span>Egresos</span><strong>{money(summary.manual_expense)}</strong></div>
-                  <div className="d-flex justify-content-between py-2 border-top mt-2"><span>Efectivo esperado</span><strong>{money(summary.expected_cash)}</strong></div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="text-muted small">Cajas</div>
+                <div className="fs-4 fw-semibold">{day.registers.length}</div>
+                <div className="small text-muted">
+                  {day.registers.filter((item) => item.status === 'CLOSED').length} cerradas
+                </div>
+              </div>
+            </div>
+            <div className="col-12 col-md-4">
+              <div className="border rounded p-3 h-100">
+                <div className="text-muted small">Estado de cierre</div>
+                <div className="fs-5 fw-semibold">
+                  {allBranchesClosed ? 'Listo para cerrar día' : 'Pendiente de cierres'}
+                </div>
+                <div className="small text-muted">
+                  {allRegistersClosed ? 'Todas las cajas cerradas' : 'Hay cajas abiertas'}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="row g-4 mb-4">
-            <div className="col-12 col-lg-6">
-              <div className="card shadow-sm border-0 h-100"><div className="card-body">
-                <h5>Registrar movimiento manual</h5>
-                <div className="row g-3">
-                  <div className="col-12 col-sm-4"><label className="form-label">Tipo</label><select className="form-select" value={movementType} onChange={(e) => setMovementType(e.target.value)}><option value="INCOME">Ingreso</option><option value="EXPENSE">Egreso</option></select></div>
-                  <div className="col-12 col-sm-8"><label className="form-label">Valor</label><input className="form-control" type="number" min="0.01" step="1" value={movementAmount} onChange={(e) => setMovementAmount(e.target.value)} /></div>
-                  <div className="col-12"><label className="form-label">Descripción</label><input className="form-control" maxLength="500" value={movementDescription} onChange={(e) => setMovementDescription(e.target.value)} /></div>
-                  <div className="col-12"><button className="btn btn-outline-primary" disabled={saving} onClick={movement}>{saving ? 'Registrando...' : 'Registrar movimiento'}</button></div>
+          <div className="border rounded mb-4">
+            <div className="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div>
+                <h5 className="mb-1">Cajas del día</h5>
+                <div className="text-muted small">Cada caja debe realizar su arqueo antes de cerrar la sucursal.</div>
+              </div>
+            </div>
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Sucursal</th>
+                    <th>Caja</th>
+                    <th>Estado</th>
+                    <th className="text-end">Esperado</th>
+                    <th className="text-end">Contado</th>
+                    <th className="text-end">Diferencia</th>
+                    <th className="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {day.registers.length === 0 ? (
+                    <tr><td colSpan="7" className="text-center text-muted py-4">No hay cajas activas para este día.</td></tr>
+                  ) : day.registers.map((register) => (
+                    <tr key={register.id}>
+                      <td>{register.branch_name || '—'}</td>
+                      <td>{register.cash_box_name || `Caja #${register.id}`}</td>
+                      <td>
+                        <span className={`badge ${register.status === 'OPEN' ? 'text-bg-success' : 'text-bg-secondary'}`}>
+                          {register.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
+                        </span>
+                      </td>
+                      <td className="text-end">{money(register.expected_cash)}</td>
+                      <td className="text-end">{register.counted_cash == null ? '—' : money(register.counted_cash)}</td>
+                      <td className="text-end">{register.difference == null ? '—' : money(register.difference)}</td>
+                      <td className="text-end">
+                        {register.status === 'OPEN' && canCloseBox ? (
+                          <button className="btn btn-sm btn-outline-danger" disabled={saving} onClick={() => selectRegister(register)}>
+                            Arqueo y cierre
+                          </button>
+                        ) : register.status === 'OPEN' ? (
+                          <span className="text-muted small">Sin permiso de cierre</span>
+                        ) : (
+                          <span className="text-muted small">Cerrada</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {selectedRegister && (
+            <div className="border rounded p-3 mb-4">
+              <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                <div>
+                  <h5 className="mb-1">Arqueo: {selectedRegister.cash_box_name || `Caja #${selectedRegister.id}`}</h5>
+                  <div className="text-muted small">{selectedRegister.branch_name || 'Sucursal'} · efectivo esperado {money(selectedRegister.expected_cash)}</div>
                 </div>
-              </div></div>
+                <button className="btn btn-sm btn-outline-secondary" onClick={() => setSelectedRegister(null)}>Cancelar</button>
+              </div>
+              <div className="row g-3 align-items-end">
+                <div className="col-12 col-md-4">
+                  <label className="form-label">Efectivo contado</label>
+                  <input className="form-control" type="number" min="0" step="1" value={countedCash} onChange={(event) => setCountedCash(event.target.value)} />
+                </div>
+                <div className="col-12 col-md-5">
+                  <label className="form-label">Notas de cierre</label>
+                  <input className="form-control" maxLength="500" value={closingNotes} onChange={(event) => setClosingNotes(event.target.value)} />
+                </div>
+                <div className="col-12 col-md-3">
+                  <button className="btn btn-danger w-100" disabled={saving} onClick={closeRegister}>
+                    {saving ? 'Cerrando...' : 'Confirmar cierre'}
+                  </button>
+                </div>
+              </div>
+              <div className="small text-muted mt-2">
+                Diferencia estimada: {countedCash === '' ? '—' : money(Number(countedCash) - Number(selectedRegister.expected_cash || 0))}
+              </div>
             </div>
-            <div className="col-12 col-lg-6">
-              <div className="card shadow-sm border-0 h-100"><div className="card-body">
-                <h5>Cierre y arqueo</h5>
-                <div className="mb-3"><label className="form-label">Efectivo contado</label><input className="form-control" type="number" min="0" step="1" value={countedCash} onChange={(e) => setCountedCash(e.target.value)} /></div>
-                <div className="mb-3"><label className="form-label">Notas de cierre</label><textarea className="form-control" rows="2" maxLength="500" value={closingNotes} onChange={(e) => setClosingNotes(e.target.value)} /></div>
-                <div className="d-flex justify-content-between mb-3"><span>Diferencia estimada</span><strong>{countedCash === '' ? '—' : money(Number(countedCash) - Number(summary.expected_cash || 0))}</strong></div>
-                <button className="btn btn-danger" disabled={saving} onClick={close}>{saving ? 'Cerrando...' : 'Cerrar caja'}</button>
-              </div></div>
+          )}
+
+          <div className="border rounded mb-4">
+            <div className="p-3 border-bottom">
+              <h5 className="mb-1">Sucursales del día</h5>
+              <div className="text-muted small">Una sucursal solo puede cerrarse cuando todas sus cajas estén cerradas.</div>
             </div>
+            <div className="table-responsive">
+              <table className="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Sucursal</th>
+                    <th>Estado</th>
+                    <th>Cajas</th>
+                    <th className="text-end">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {day.branches.map((branch) => {
+                    const branchRegisters = registersByBranch.get(String(branch.branch_id)) || []
+                    const openBoxes = branchRegisters.filter((register) => register.status === 'OPEN').length
+                    const canCloseThisBranch = branch.status === 'OPEN' && openBoxes === 0 && canCloseBranch
+                    return (
+                      <tr key={branch.id}>
+                        <td>{branch.branch_name}</td>
+                        <td>
+                          <span className={`badge ${branch.status === 'OPEN' ? 'text-bg-success' : 'text-bg-secondary'}`}>
+                            {branch.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
+                          </span>
+                        </td>
+                        <td>
+                          {branchRegisters.length} total · {openBoxes} abiertas
+                        </td>
+                        <td className="text-end">
+                          {branch.status === 'CLOSED' ? (
+                            <span className="text-muted small">Cerrada</span>
+                          ) : !canCloseBranch ? (
+                            <span className="text-muted small">Sin permiso de cierre</span>
+                          ) : openBoxes > 0 ? (
+                            <span className="text-muted small">Cierra primero las cajas</span>
+                          ) : (
+                            <button className="btn btn-sm btn-outline-danger" disabled={saving || !canCloseThisBranch} onClick={() => closeBranch(branch)}>
+                              Cerrar sucursal
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border rounded">
+            <div className="p-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+              <div>
+                <h5 className="mb-1">Cierre del día</h5>
+                <div className="text-muted small">El día solo puede cerrarse cuando todas las sucursales estén cerradas.</div>
+              </div>
+              {day.status === 'OPEN' && canCloseDay && allBranchesClosed && (
+                <button className="btn btn-danger" disabled={saving} onClick={closeOperatingDay}>
+                  {saving ? 'Cerrando día...' : 'Cerrar día'}
+                </button>
+              )}
+            </div>
+            {day.status === 'OPEN' && (
+              <div className="p-3">
+                <label className="form-label">Notas de cierre del día</label>
+                <textarea className="form-control" rows="2" maxLength="500" value={dayClosingNotes} onChange={(event) => setDayClosingNotes(event.target.value)} />
+                {!canCloseDay && <div className="small text-muted mt-2">No tienes permiso para cerrar el día.</div>}
+                {canCloseDay && !allBranchesClosed && <div className="small text-muted mt-2">Todavía hay sucursales abiertas.</div>}
+              </div>
+            )}
+            {day.status === 'CLOSED' && (
+              <div className="p-3 text-muted">El día operativo ya está cerrado y no admite nuevas operaciones.</div>
+            )}
           </div>
         </>
       )}
-
-      <div className="card shadow-sm border-0">
-        <div className="card-body">
-          <h5>Historial de cajas</h5>
-          <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>ID</th><th>Estado</th><th>Apertura</th><th>Cierre</th><th className="text-end">Esperado</th><th className="text-end">Contado</th><th className="text-end">Diferencia</th></tr></thead><tbody>
-            {history.length === 0 ? <tr><td colSpan="7" className="text-center text-muted py-4">No hay cajas registradas.</td></tr> : history.map((register) => <tr key={register.id}><td>#{register.id}</td><td><span className={`badge ${register.status === 'OPEN' ? 'text-bg-success' : 'text-bg-secondary'}`}>{register.status}</span></td><td>{register.opened_at ? new Date(register.opened_at).toLocaleString('es-CO') : '—'}</td><td>{register.closed_at ? new Date(register.closed_at).toLocaleString('es-CO') : '—'}</td><td className="text-end">{money(register.expected_cash)}</td><td className="text-end">{money(register.counted_cash)}</td><td className="text-end">{register.difference == null ? '—' : money(register.difference)}</td></tr>)}
-          </tbody></table></div>
-        </div>
-      </div>
     </section>
   )
 }
