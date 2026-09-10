@@ -32,6 +32,7 @@ export default function CashManagementPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [pendingAssignment, setPendingAssignment] = useState(null)
   const [branchForm, setBranchForm] = useState(emptyBranch)
   const [boxForm, setBoxForm] = useState(emptyBox)
   const [assignmentForm, setAssignmentForm] = useState(emptyAssignment)
@@ -199,7 +200,14 @@ export default function CashManagementPage() {
   )
 
   const removeAssignment = (assignment) => {
-    if (!window.confirm(`¿Desasignar la caja ${assignment.cash_box_code} del usuario ${assignment.user_name}?`)) return
+    setPendingAssignment(assignment)
+  }
+
+  const confirmRemoveAssignment = () => {
+    if (!pendingAssignment) return
+
+    const assignment = pendingAssignment
+    setPendingAssignment(null)
     return showResult(
       () => desasignarCajaUsuario(assignment.id, token),
       'Asignación retirada correctamente.',
@@ -308,6 +316,58 @@ export default function CashManagementPage() {
             </div>
           </div>
         </>
+      )}
+
+      {pendingAssignment && (
+        <div
+          className="modal fade show d-block"
+          tabIndex="-1"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cash-assignment-confirm-title"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title" id="cash-assignment-confirm-title">Confirmar desasignación</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  aria-label="Cerrar"
+                  onClick={() => setPendingAssignment(null)}
+                  disabled={saving}
+                />
+              </div>
+              <div className="modal-body">
+                <p className="mb-2">¿Está seguro de que desea retirar esta asignación?</p>
+                <div className="fw-semibold">{pendingAssignment.user_name}</div>
+                <div className="text-muted">
+                  Caja {pendingAssignment.cash_box_code} — {pendingAssignment.cash_box_name}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setPendingAssignment(null)}
+                  disabled={saving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={confirmRemoveAssignment}
+                  disabled={saving}
+                >
+                  {saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}
+                  {saving ? 'Desasignando...' : 'Desasignar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {message && (
