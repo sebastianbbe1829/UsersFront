@@ -73,18 +73,6 @@ export default function CashManagementPage() {
     load()
   }, [load])
 
-  useEffect(() => {
-    if (!boxForm.branch_id && branches.length) {
-      setBoxForm((current) => ({ ...current, branch_id: String(branches[0].id) }))
-    }
-  }, [branches, boxForm.branch_id])
-
-  useEffect(() => {
-    if (!assignmentForm.branch_id && branches.length) {
-      setAssignmentForm((current) => ({ ...current, branch_id: String(branches[0].id) }))
-    }
-  }, [branches, assignmentForm.branch_id])
-
   const filteredBoxes = useMemo(
     () => boxes.filter((box) => String(box.branch_id) === String(assignmentForm.branch_id)),
     [boxes, assignmentForm.branch_id],
