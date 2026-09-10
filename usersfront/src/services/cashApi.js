@@ -3,8 +3,11 @@ const API_URL = import.meta.env.VITE_API_URL
 const procesarRespuesta = async (response) => {
   const resultado = await response.json().catch(() => null)
   if (!response.ok) {
-    const error = new Error(resultado?.detail || 'Ocurrió un error en caja.')
+    const detail = resultado?.detail
+    const message = typeof detail === 'object' ? detail.message : detail
+    const error = new Error(message || 'Ocurrió un error en caja.')
     error.status = response.status
+    error.code = typeof detail === 'object' ? detail.code : undefined
     throw error
   }
   return resultado
@@ -14,6 +17,10 @@ const headers = (token, json = false) => ({
   ...(json ? { 'Content-Type': 'application/json' } : {}),
   Authorization: `Bearer ${token}`,
 })
+
+export const obtenerContextoCaja = async (token) => procesarRespuesta(
+  await fetch(`${API_URL}/cash/my-context`, { headers: headers(token) }),
+)
 
 export const obtenerCajaActual = async (token) => {
   const response = await fetch(`${API_URL}/cash/registers/current`, { headers: headers(token) })
