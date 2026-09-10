@@ -130,8 +130,8 @@ export default function CashManagementPage() {
     setMessage('')
     try {
       await operation()
-      setMessage(successMessage)
       await load()
+      setMessage(successMessage)
     } catch (err) {
       setError(err.message || 'No fue posible completar la operación.')
     } finally {
@@ -210,6 +210,12 @@ export default function CashManagementPage() {
     setAssignmentForm((current) => ({ ...current, branch_id: value, cash_box_id: '' }))
   }
 
+  const savingLabel = tab === 'branches'
+    ? 'Guardando sucursal...'
+    : tab === 'boxes'
+      ? 'Guardando caja...'
+      : 'Asignando caja...'
+
   if (loading) {
     return <section className="container-fluid py-4"><div className="text-center py-5"><div className="spinner-border text-primary" role="status" /><div className="mt-3 text-muted">Cargando administración de Caja...</div></div></section>
   }
@@ -225,7 +231,6 @@ export default function CashManagementPage() {
       </div>
 
       {error && <div className="alert alert-danger">{error}</div>}
-      {message && <div className="alert alert-success">{message}</div>}
 
       <div className="btn-group mb-4" role="tablist">
         <button type="button" className={`btn ${tab === 'branches' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => navigate(`${managementBase}/sucursales`)}>Sucursales</button>
@@ -239,11 +244,11 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Nueva sucursal</h5>
               <form className="row g-3 align-items-end" onSubmit={submitBranch}>
-                <div className="col-12 col-md-2"><label className="form-label">Código</label><input className="form-control" maxLength="30" value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })} /></div>
-                <div className="col-12 col-md-3"><label className="form-label">Nombre</label><input className="form-control" maxLength="150" value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} /></div>
-                <div className="col-12 col-md-3"><label className="form-label">Dirección</label><input className="form-control" maxLength="250" value={branchForm.address} onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })} /></div>
-                <div className="col-12 col-md-2"><label className="form-label">Teléfono</label><input className="form-control" maxLength="30" value={branchForm.phone} onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })} /></div>
-                <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving ? 'Guardando...' : 'Crear sucursal'}</button></div>
+                <div className="col-12 col-md-2"><label className="form-label">Código</label><input className="form-control" maxLength="30" value={branchForm.code} onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-3"><label className="form-label">Nombre</label><input className="form-control" maxLength="150" value={branchForm.name} onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-3"><label className="form-label">Dirección</label><input className="form-control" maxLength="250" value={branchForm.address} onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-2"><label className="form-label">Teléfono</label><input className="form-control" maxLength="30" value={branchForm.phone} onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Crear sucursal'}</button></div>
               </form>
             </div>
           </div>
@@ -251,7 +256,7 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Sucursales registradas</h5>
               <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Código</th><th>Nombre</th><th>Dirección</th><th>Cajas</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {branches.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay sucursales registradas.</td></tr> : branches.map((branch) => <tr key={branch.id}><td className="fw-semibold">{branch.code}</td><td>{branch.name}</td><td>{branch.address || '—'}</td><td>{branch.cash_boxes_count}</td><td><span className={`badge ${active(branch.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(branch.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><button type="button" className={`btn btn-sm ${active(branch.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBranch(branch)}>{active(branch.status) ? 'Desactivar' : 'Activar'}</button></td></tr>)}
+                {branches.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay sucursales registradas.</td></tr> : branches.map((branch) => <tr key={branch.id}><td className="fw-semibold">{branch.code}</td><td>{branch.name}</td><td>{branch.address || '—'}</td><td>{branch.cash_boxes_count}</td><td><span className={`badge ${active(branch.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(branch.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><button type="button" className={`btn btn-sm ${active(branch.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBranch(branch)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(branch.status) ? 'Desactivar' : 'Activar'}</button></td></tr>)}
               </tbody></table></div>
             </div>
           </div>
@@ -264,10 +269,10 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Nueva caja física</h5>
               <form className="row g-3 align-items-end" onSubmit={submitBox}>
-                <div className="col-12 col-md-4"><label className="form-label">Sucursal</label><select className="form-select" value={boxForm.branch_id} onChange={(e) => setBoxForm({ ...boxForm, branch_id: e.target.value })}><option value="">Seleccione...</option>{branches.filter((branch) => active(branch.status)).map((branch) => <option key={branch.id} value={branch.id}>{branch.code} — {branch.name}</option>)}</select></div>
-                <div className="col-12 col-md-2"><label className="form-label">Código</label><input className="form-control" maxLength="30" value={boxForm.code} onChange={(e) => setBoxForm({ ...boxForm, code: e.target.value })} /></div>
-                <div className="col-12 col-md-4"><label className="form-label">Nombre</label><input className="form-control" maxLength="100" value={boxForm.name} onChange={(e) => setBoxForm({ ...boxForm, name: e.target.value })} /></div>
-                <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving ? 'Guardando...' : 'Crear caja'}</button></div>
+                <div className="col-12 col-md-4"><label className="form-label">Sucursal</label><select className="form-select" value={boxForm.branch_id} onChange={(e) => setBoxForm({ ...boxForm, branch_id: e.target.value })} disabled={saving}><option value="">Seleccione...</option>{branches.filter((branch) => active(branch.status)).map((branch) => <option key={branch.id} value={branch.id}>{branch.code} — {branch.name}</option>)}</select></div>
+                <div className="col-12 col-md-2"><label className="form-label">Código</label><input className="form-control" maxLength="30" value={boxForm.code} onChange={(e) => setBoxForm({ ...boxForm, code: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-4"><label className="form-label">Nombre</label><input className="form-control" maxLength="100" value={boxForm.name} onChange={(e) => setBoxForm({ ...boxForm, name: e.target.value })} disabled={saving} /></div>
+                <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Crear caja'}</button></div>
               </form>
             </div>
           </div>
@@ -275,7 +280,7 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Cajas físicas registradas</h5>
               <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Sucursal</th><th>Código</th><th>Nombre</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {boxes.length === 0 ? <tr><td colSpan="5" className="text-center text-muted py-4">No hay cajas físicas registradas.</td></tr> : boxes.map((box) => <tr key={box.id}><td>{box.branch_name}</td><td className="fw-semibold">{box.code}</td><td>{box.name}</td><td><span className={`badge ${active(box.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(box.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><button type="button" className={`btn btn-sm ${active(box.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBox(box)}>{active(box.status) ? 'Desactivar' : 'Activar'}</button></td></tr>)}
+                {boxes.length === 0 ? <tr><td colSpan="5" className="text-center text-muted py-4">No hay cajas físicas registradas.</td></tr> : boxes.map((box) => <tr key={box.id}><td>{box.branch_name}</td><td className="fw-semibold">{box.code}</td><td>{box.name}</td><td><span className={`badge ${active(box.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(box.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><button type="button" className={`btn btn-sm ${active(box.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBox(box)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(box.status) ? 'Desactivar' : 'Activar'}</button></td></tr>)}
               </tbody></table></div>
             </div>
           </div>
@@ -289,10 +294,10 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Asignar caja a usuario</h5>
               <form className="row g-3 align-items-end" onSubmit={submitAssignment}>
-                <div className="col-12 col-lg-4"><label className="form-label">Usuario</label><select className="form-select" value={assignmentForm.user_tenant_id} onChange={(e) => setAssignmentForm({ ...assignmentForm, user_tenant_id: e.target.value })}><option value="">Seleccione...</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name} — {user.dni}</option>)}</select></div>
-                <div className="col-12 col-md-6 col-lg-3"><label className="form-label">Sucursal</label><select className="form-select" value={assignmentForm.branch_id} onChange={(e) => setAssignmentBranch(e.target.value)}><option value="">Seleccione...</option>{branches.filter((branch) => active(branch.status)).map((branch) => <option key={branch.id} value={branch.id}>{branch.code} — {branch.name}</option>)}</select></div>
-                <div className="col-12 col-md-6 col-lg-3"><label className="form-label">Caja física</label><select className="form-select" value={assignmentForm.cash_box_id} onChange={(e) => setAssignmentForm({ ...assignmentForm, cash_box_id: e.target.value })}><option value="">Seleccione...</option>{filteredBoxes.filter((box) => active(box.status)).map((box) => <option key={box.id} value={box.id}>{box.code} — {box.name}</option>)}</select></div>
-                <div className="col-12 col-lg-2"><button className="btn btn-primary w-100" disabled={saving}>{saving ? 'Asignando...' : 'Asignar caja'}</button></div>
+                <div className="col-12 col-lg-4"><label className="form-label">Usuario</label><select className="form-select" value={assignmentForm.user_tenant_id} onChange={(e) => setAssignmentForm({ ...assignmentForm, user_tenant_id: e.target.value })} disabled={saving}><option value="">Seleccione...</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name} — {user.dni}</option>)}</select></div>
+                <div className="col-12 col-md-6 col-lg-3"><label className="form-label">Sucursal</label><select className="form-select" value={assignmentForm.branch_id} onChange={(e) => setAssignmentBranch(e.target.value)} disabled={saving}><option value="">Seleccione...</option>{branches.filter((branch) => active(branch.status)).map((branch) => <option key={branch.id} value={branch.id}>{branch.code} — {branch.name}</option>)}</select></div>
+                <div className="col-12 col-md-6 col-lg-3"><label className="form-label">Caja física</label><select className="form-select" value={assignmentForm.cash_box_id} onChange={(e) => setAssignmentForm({ ...assignmentForm, cash_box_id: e.target.value })} disabled={saving}><option value="">Seleccione...</option>{filteredBoxes.filter((box) => active(box.status)).map((box) => <option key={box.id} value={box.id}>{box.code} — {box.name}</option>)}</select></div>
+                <div className="col-12 col-lg-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Asignar caja'}</button></div>
               </form>
             </div>
           </div>
@@ -300,11 +305,38 @@ export default function CashManagementPage() {
             <div className="card-body">
               <h5 className="mb-3">Asignaciones</h5>
               <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Usuario</th><th>Identificación</th><th>Sucursal</th><th>Caja</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {assignments.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay asignaciones registradas.</td></tr> : assignments.map((assignment) => <tr key={assignment.id}><td><div className="fw-semibold">{assignment.user_name}</div><div className="small text-muted">{assignment.user_email}</div></td><td>{assignment.user_dni}</td><td>{assignment.branch_name}</td><td><span className="fw-semibold">{assignment.cash_box_code}</span> — {assignment.cash_box_name}</td><td><span className={`badge ${active(assignment.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(assignment.status) ? 'Activa' : 'Retirada'}</span></td><td className="text-end">{active(assignment.status) && <button type="button" className="btn btn-sm btn-outline-danger" disabled={saving} onClick={() => removeAssignment(assignment)}>Desasignar</button>}</td></tr>)}
+                {assignments.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay asignaciones registradas.</td></tr> : assignments.map((assignment) => <tr key={assignment.id}><td><div className="fw-semibold">{assignment.user_name}</div><div className="small text-muted">{assignment.user_email}</div></td><td>{assignment.user_dni}</td><td>{assignment.branch_name}</td><td><span className="fw-semibold">{assignment.cash_box_code}</span> — {assignment.cash_box_name}</td><td><span className={`badge ${active(assignment.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(assignment.status) ? 'Activa' : 'Retirada'}</span></td><td className="text-end">{active(assignment.status) && <button type="button" className="btn btn-sm btn-outline-danger" disabled={saving} onClick={() => removeAssignment(assignment)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}Desasignar</button>}</td></tr>)}
               </tbody></table></div>
             </div>
           </div>
         </>
+      )}
+
+      {message && (
+        <div
+          className="modal fade show d-block"
+          tabIndex="-1"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cash-operation-success-title"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        >
+          <div className="modal-dialog modal-dialog-centered" role="document">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header">
+                <h5 className="modal-title" id="cash-operation-success-title">Operación realizada</h5>
+                <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => setMessage('')} />
+              </div>
+              <div className="modal-body text-center py-4">
+                <div className="text-success mb-3" style={{ fontSize: '3rem', lineHeight: 1 }}>✓</div>
+                <div className="fs-5">{message}</div>
+              </div>
+              <div className="modal-footer justify-content-center">
+                <button type="button" className="btn btn-primary px-4" onClick={() => setMessage('')}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   )
