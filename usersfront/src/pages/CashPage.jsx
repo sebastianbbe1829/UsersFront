@@ -350,48 +350,19 @@ export default function CashPage() {
       )}
 
       {feedback && (
-        <div
-          role="presentation"
-          onClick={closeFeedback}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1080,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-            backgroundColor: 'rgba(0, 0, 0, 0.45)',
-          }}
-        >
-          <div
-            className={`modal-content border-${feedback.type}`}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="cash-feedback-title"
-            onClick={(event) => event.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: '520px',
-              borderTopWidth: '4px',
-              borderTopStyle: 'solid',
-              borderRadius: '0.5rem',
-              boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.25)',
-            }}
-          >
-            <div className="modal-header">
-              <h5 id="cash-feedback-title" className="modal-title">
-                {feedback.title}
-              </h5>
-              <button type="button" className="btn-close" aria-label="Cerrar" onClick={closeFeedback} />
-            </div>
-            <div className="modal-body">
-              <p className="mb-0">{feedback.text}</p>
-            </div>
-            <div className="modal-footer">
-              <button type="button" className={`btn btn-${feedback.type}`} onClick={closeFeedback}>
-                Aceptar
-              </button>
+        <div className="modal d-block" style={{ backgroundColor: 'rgba(0,0,0,.5)', position: 'fixed', inset: 0, zIndex: 2100 }} role="dialog" aria-modal="true">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content shadow-lg border-0">
+              <div className="modal-header">
+                <h5 className="modal-title fw-bold">{feedback.title}</h5>
+                <button type="button" className="btn-close" onClick={closeFeedback} aria-label="Cerrar" />
+              </div>
+              <div className="modal-body">
+                <p className="mb-0">{feedback.text}</p>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className={`btn btn-${feedback.type}`} onClick={closeFeedback}>Aceptar</button>
+              </div>
             </div>
           </div>
         </div>
