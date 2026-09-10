@@ -86,14 +86,29 @@ export default function CashManagementPage() {
     Object.assign(content.style, {
       flex: '1 1 auto',
       minHeight: '0',
-      overflow: 'auto',
+      overflow: 'hidden',
     })
 
+    const updateContentOverflow = () => {
+      content.style.overflow = 'hidden'
+      if (content.scrollHeight > content.clientHeight + 1) {
+        content.style.overflow = 'auto'
+      }
+    }
+
+    const frame = requestAnimationFrame(updateContentOverflow)
+    const observer = new ResizeObserver(updateContentOverflow)
+    observer.observe(content)
+    window.addEventListener('resize', updateContentOverflow)
+
     return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      window.removeEventListener('resize', updateContentOverflow)
       Object.assign(main.style, previousMainStyle)
       Object.assign(content.style, previousContentStyle)
     }
-  }, [location.pathname])
+  }, [location.pathname, loading, branches.length, boxes.length, assignments.length])
 
   const load = useCallback(async ({ showLoading = false } = {}) => {
     if (showLoading) setLoading(true)
