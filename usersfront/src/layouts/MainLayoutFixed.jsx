@@ -86,6 +86,7 @@ function MainLayoutFixed() {
     if (ruta.includes('/cartera/pagos')) return { icono: '💳', titulo: 'Pagos de cartera' }
     if (ruta.includes('/cartera/obligaciones')) return { icono: '📋', titulo: 'Cartera' }
     if (ruta.includes('/cartera')) return { icono: '💰', titulo: 'Resumen de cartera' }
+    if (ruta.includes('/caja')) return { icono: '🧾', titulo: 'Caja' }
     if (ruta.includes('/inventarios/movimientos')) return { icono: '📋', titulo: 'Movimientos de inventario' }
     if (ruta.includes('/inventarios/productos')) return { icono: '🛒', titulo: 'Productos de inventario' }
     if (ruta.includes('/inventarios/tipos')) return { icono: '🏷️', titulo: 'Tipos de inventario' }
@@ -134,6 +135,10 @@ function MainLayoutFixed() {
               <Can permission="PORTFOLIO_READ"><NavLink to={`${rutaTenant}/cartera/obligaciones`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Cartera"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Cartera</span></NavLink></Can>
               <Can permission="PORTFOLIO_PAYMENT_CREATE"><NavLink to={`${rutaTenant}/cartera/pagos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Pagos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>💳</span><span className="ms-3">Pagos</span></NavLink></Can>
             </div>}
+          </Can>
+
+          <Can permission="CASH_READ">
+            <NavLink to={`${rutaTenant}/caja`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Caja" style={({ isActive }) => (isActive ? { backgroundColor: primaryColor } : undefined)}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧾</span><span className="ms-3">Caja</span></NavLink>
           </Can>
 
           <Can permission="INVENTORY_READ">
