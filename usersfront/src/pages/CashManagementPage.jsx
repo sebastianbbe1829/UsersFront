@@ -45,7 +45,53 @@ export default function CashManagementPage() {
   const tab = useMemo(() => {
     if (location.pathname.endsWith('/sucursales')) return 'branches'
     if (location.pathname.endsWith('/cajas')) return 'boxes'
-    return 'assignments'
+    if (location.pathname.endsWith('/asignaciones')) return 'assignments'
+    return 'branches'
+  }, [location.pathname])
+
+  useEffect(() => {
+    if (location.pathname.endsWith('/caja/administracion')) {
+      navigate(`${managementBase}/sucursales`, { replace: true })
+    }
+  }, [location.pathname, managementBase, navigate])
+
+  useEffect(() => {
+    if (!location.pathname.includes('/caja/administracion')) return undefined
+
+    const main = document.querySelector('main')
+    const content = main?.querySelector(':scope > section')
+    if (!main || !content) return undefined
+
+    const previousMainStyle = {
+      height: main.style.height,
+      minHeight: main.style.minHeight,
+      display: main.style.display,
+      flexDirection: main.style.flexDirection,
+      overflow: main.style.overflow,
+    }
+    const previousContentStyle = {
+      flex: content.style.flex,
+      minHeight: content.style.minHeight,
+      overflow: content.style.overflow,
+    }
+
+    Object.assign(main.style, {
+      height: '100vh',
+      minHeight: '0',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+    })
+    Object.assign(content.style, {
+      flex: '1 1 auto',
+      minHeight: '0',
+      overflow: 'auto',
+    })
+
+    return () => {
+      Object.assign(main.style, previousMainStyle)
+      Object.assign(content.style, previousContentStyle)
+    }
   }, [location.pathname])
 
   const load = useCallback(async () => {
