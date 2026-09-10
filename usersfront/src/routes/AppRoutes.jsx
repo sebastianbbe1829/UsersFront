@@ -27,7 +27,9 @@ import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
 import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
 import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
+import CashPage from '../pages/CashPage'
 import CashPageGuard from '../pages/CashPageGuard'
+import CashManagementPage from '../pages/CashManagementPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -76,6 +78,10 @@ function AppRoutes() {
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
       <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
       <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPageGuard /></RutaConPermiso>} />
+      <Route path="caja/administracion" element={<RutaConPermiso permission="CASH_READ"><CashManagementPage /></RutaConPermiso>} />
+      <Route path="caja/administracion/sucursales" element={<RutaConPermiso permission="CASH_READ"><CashManagementPage /></RutaConPermiso>} />
+      <Route path="caja/administracion/cajas" element={<RutaConPermiso permission="CASH_READ"><CashManagementPage /></RutaConPermiso>} />
+      <Route path="caja/administracion/asignaciones" element={<RutaConPermiso permission="CASH_READ"><CashManagementPage /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
