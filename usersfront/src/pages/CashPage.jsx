@@ -7,6 +7,7 @@ import {
   cerrarSucursalDelDia,
   iniciarDia,
   obtenerDiaActual,
+  obtenerResumenCaja,
 } from '../services/cashApi'
 
 const money = (value) => Number(value || 0).toLocaleString('es-CO', {
@@ -91,13 +92,21 @@ export default function CashPage() {
     'Día operativo iniciado. Todas las sucursales y cajas activas quedaron abiertas.',
   )
 
-  const selectRegister = (register) => {
+  const selectRegister = async (register) => {
     if (register.status !== 'OPEN') return
-    setSelectedRegister(register)
-    setCountedCash('')
-    setClosingNotes('')
+    setSaving(true)
     setError('')
     setMessage('')
+    try {
+      const summary = await obtenerResumenCaja(register.id, token)
+      setSelectedRegister({ ...register, expected_cash: summary.expected_cash })
+      setCountedCash('')
+      setClosingNotes('')
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setSaving(false)
+    }
   }
 
   const closeRegister = () => {
@@ -239,7 +248,7 @@ export default function CashPage() {
                           {register.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
                         </span>
                       </td>
-                      <td className="text-end">{money(register.expected_cash)}</td>
+                      <td className="text-end">{register.expected_cash == null ? '—' : money(register.expected_cash)}</td>
                       <td className="text-end">{register.counted_cash == null ? '—' : money(register.counted_cash)}</td>
                       <td className="text-end">{register.difference == null ? '—' : money(register.difference)}</td>
                       <td className="text-end">
@@ -318,9 +327,7 @@ export default function CashPage() {
                             {branch.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
                           </span>
                         </td>
-                        <td>
-                          {branchRegisters.length} total · {openBoxes} abiertas
-                        </td>
+                        <td>{branchRegisters.length} total · {openBoxes} abiertas</td>
                         <td className="text-end">
                           {branch.status === 'CLOSED' ? (
                             <span className="text-muted small">Cerrada</span>
