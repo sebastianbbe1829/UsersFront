@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerPayloadToken } from '../services/api'
 import {
@@ -67,6 +67,8 @@ export default function CashPage() {
 
   // El access token cambia durante un refresh, pero la sesión lógica no cambia.
   // Cargar nuevamente toda la página por cada renovación provocaba el efecto visual de un F5.
+  const tokenRef = useRef(token)
+  tokenRef.current = token
   const tokenPayload = obtenerPayloadToken(token)
   const sessionKey = tokenPayload?.session_id
     || tokenPayload?.user_tenant_id
@@ -89,11 +91,11 @@ export default function CashPage() {
   }, [])
 
   useEffect(() => {
-    if (!token || !sessionKey) return undefined
+    if (!sessionKey) return undefined
 
-    const timeoutId = setTimeout(() => load(token), 0)
+    const timeoutId = setTimeout(() => load(tokenRef.current), 0)
     return () => clearTimeout(timeoutId)
-  }, [sessionKey, load, token])
+  }, [sessionKey, load])
 
   const registersByBranch = useMemo(() => {
     const result = new Map()
@@ -117,7 +119,7 @@ export default function CashPage() {
       setSelectedRegister(null)
       setCountedCash('')
       setClosingNotes('')
-      await load(token)
+      await load(tokenRef.current)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
