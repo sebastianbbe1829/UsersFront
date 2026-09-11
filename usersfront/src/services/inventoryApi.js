@@ -42,6 +42,9 @@ export const exportarInventarioExcel = (token, { search = '', inventoryTypeId = 
   return requestArchivo(`${API_URL}/inventory/export${query ? `?${query}` : ''}`, token)
 }
 
+export const obtenerProductosParaMovimientos = (token) => request(`${API_URL}/inventory/movements/products`, token)
+export const obtenerProductosParaCrearMovimiento = (token) => request(`${API_URL}/inventory/movements/products-for-create`, token)
+
 export const crearMovimientoInventario = (datos, token) => request(`${API_URL}/inventory/movements`, token, { method: 'POST', body: JSON.stringify(datos) })
 
 export const obtenerMovimientosInventario = (productId, token, { limit = 100, offset = 0, fromDate = '', toDate = '' } = {}) => {
