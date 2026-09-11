@@ -89,7 +89,7 @@ function AppRoutes() {
       <Route path="clientes/ejecuciones-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsSyncExecutionsPage /></RutaConPermiso>} />
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
-      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><CashOperationalGuard><PortfolioPaymentsPage /></CashOperationalGuard></RutaConPermiso>} />
+      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
       <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPageGuard /></RutaConPermiso>} />
       <Route path="caja/administracion" element={<RutaConPermiso permission="CASH_READ"><Navigate to="sucursales" replace /></RutaConPermiso>} />
       <Route path="caja/administracion/sucursales" element={<RutaConPermiso permission="CASH_READ"><CashManagementRoute /></RutaConPermiso>} />
