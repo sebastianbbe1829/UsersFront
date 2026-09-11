@@ -43,6 +43,7 @@ function WelcomePage() {
 
   const accesos = [
     { title: 'POS', description: 'Registra y gestiona tus ventas.', icon: '🛒', path: 'ventas', permission: 'SALES_CREATE', accent: primaryColor },
+    { title: 'Caja', description: 'Consulta y gestiona la operación de caja.', icon: '🏦', path: 'caja', permission: 'CASH_READ', accent: '#0d6efd' },
     { title: 'Cartera', description: 'Consulta y administra las obligaciones.', icon: '💰', path: 'cartera/obligaciones', permission: 'PORTFOLIO_READ', accent: '#fd7e14' },
     { title: 'Resumen de cartera', description: 'Consulta saldos, cupos y cartera activa.', icon: '📊', path: 'cartera', permission: 'PORTFOLIO_READ', accent: '#6f42c1' },
     { title: 'Pagos', description: 'Registra y consulta los pagos de cartera.', icon: '💳', path: 'cartera/pagos', permission: 'PORTFOLIO_PAYMENT_CREATE', accent: '#198754' },
