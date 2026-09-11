@@ -178,25 +178,24 @@ function MainLayoutFixed() {
           {esSuper && <NavLink to={`${rutaTenant}/administracion-tenant`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración del tenant"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🏢</span><span className="ms-3">Administración del tenant</span></NavLink>}
           {esSuper && <NavLink to={`${rutaTenant}/usuarios-super`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Usuarios SUPER"><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>👑</span><span className="ms-3">Usuarios SUPER</span></NavLink>}
         </nav>
-
-        <div className="px-3 py-3 border-top border-secondary flex-shrink-0">
-          <div className="d-flex align-items-center gap-2 mb-2 text-truncate" title={usuarioLogueado?.email || usuarioLogueado?.username || 'Usuario'}><span>👤</span><span className="text-truncate">{usuarioLogueado?.email || usuarioLogueado?.username || 'Usuario'}</span></div>
-          <div className="d-flex align-items-center justify-content-between gap-2">
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={cambiarModoOscuro} title="Cambiar modo oscuro">{modoOscuro ? '☀️' : '🌙'}</button>
-            <span className={`badge ${actividadEsActiva ? 'bg-success' : 'bg-secondary'}`}>{actividadEsActiva ? 'Activo' : 'Inactivo'}</span>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={manejarCerrarSesion} title="Cerrar sesión">Salir</button>
-          </div>
-        </div>
       </aside>
 
-      <main className="flex-grow-1" style={{ minWidth: 0 }}>
-        <header className="bg-white shadow-sm d-flex align-items-center justify-content-between px-3" style={{ height: '70px' }}>
-          <div className="d-flex align-items-center gap-2">
-            <button type="button" className="btn btn-dark" onClick={() => setMenuAbierto(true)} title="Abrir menú">☰</button>
-            <div className="fw-bold">{pagina.icono} {pagina.titulo}</div>
+      <main style={{ marginLeft: 0, width: '100%', minHeight: '100vh' }}>
+        <SessionManager token={token} onSesionExpirada={manejarSesionExpirada} />
+        <header className={modoOscuro ? 'bg-black text-light shadow-sm' : 'bg-white text-dark shadow-sm'} style={{ minHeight: '70px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '20px', padding: '10px 30px', borderBottom: `3px solid ${primaryColor}` }}>
+          <div className="d-flex align-items-center gap-2 flex-shrink-0">
+            <button type="button" className="btn btn-sm" onClick={() => setMenuAbierto(true)} title="Abrir menú" aria-label="Abrir menú" style={{ border: `1px solid ${secondaryColor}`, color: modoOscuro ? '#fff' : secondaryColor }}>☰</button>
+            <span style={{ fontSize: '21px', color: secondaryColor }}>{pagina.icono}</span><h5 className="mb-0 fw-bold">{pagina.titulo}</h5>
+          </div>
+          <div className="d-flex align-items-center gap-3 flex-wrap justify-content-end">
+            {tenant && <div className="d-flex align-items-center gap-2"><span>🏢</span><span className="fw-semibold">{tenant}</span></div>}
+            {tenant && usuarioLogueado && <span className="text-muted">|</span>}
+            {usuarioLogueado && <div className="d-flex align-items-center gap-2"><span>👤</span><div className="d-flex flex-column align-items-end"><small className="fw-semibold">{usuarioLogueado.name}</small><small className="text-muted">Número de identificación: {usuarioLogueado.dni}</small><small className={actividadEsActiva ? 'text-success' : 'text-warning'}>{actividadEsActiva ? '🟢 Activa' : '🟡 Inactiva'}</small></div></div>}
+            <button type="button" className="btn btn-sm" onClick={cambiarModoOscuro} title={modoOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} style={{ border: `1px solid ${secondaryColor}`, color: modoOscuro ? '#fff' : secondaryColor, whiteSpace: 'nowrap' }}>{modoOscuro ? '☀️ Modo claro' : '🌙 Modo oscuro'}</button>
+            <button type="button" className="btn btn-sm text-white" onClick={manejarCerrarSesion} title="Cerrar sesión" style={{ backgroundColor: primaryColor, whiteSpace: 'nowrap' }}>🚪 Cerrar sesión</button>
           </div>
         </header>
-        <div className="p-3"><Outlet /></div>
+        <section className="p-4"><Outlet /></section>
       </main>
     </div>
   )
