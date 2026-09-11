@@ -5,6 +5,7 @@ import {
   cerrarCajaDelDia,
   cerrarDia,
   cerrarSucursalDelDia,
+  descargarReporteDiaActual,
   iniciarDia,
   obtenerDiaActual,
   obtenerResumenCaja,
@@ -31,12 +32,24 @@ const hasPermission = (token, permission) => {
 
 const errorMessage = (error) => error?.message || 'No fue posible completar la operación de Caja.'
 
+const downloadBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
 export default function CashPage() {
   const { token } = useAuth()
   const [day, setDay] = useState(null)
   const [businessDate, setBusinessDate] = useState(localDate)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [exporting, setExporting] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [selectedRegister, setSelectedRegister] = useState(null)
@@ -48,6 +61,7 @@ export default function CashPage() {
   const canCloseBox = hasPermission(token, 'CASH_CLOSE')
   const canCloseBranch = hasPermission(token, 'CASH_BRANCH_CLOSE')
   const canCloseDay = hasPermission(token, 'CASH_DAY_CLOSE')
+  const canReadCash = hasPermission(token, 'CASH_READ')
   const dayIsOpen = day?.status === 'OPEN'
   const dayIsClosed = day?.status === 'CLOSED'
 
@@ -97,6 +111,23 @@ export default function CashPage() {
       setError(errorMessage(err))
     } finally {
       setSaving(false)
+    }
+  }
+
+  const exportReport = async (format) => {
+    if (!day?.id || !canReadCash) return
+    setExporting(format)
+    setError('')
+    setMessage('')
+    try {
+      const blob = await descargarReporteDiaActual(format, token)
+      const extension = format === 'pdf' ? 'pdf' : 'xlsx'
+      downloadBlob(blob, `cierre_caja_${day.business_date}.${extension}`)
+      setMessage(`${format === 'pdf' ? 'PDF' : 'Excel'} del día operativo generado correctamente.`)
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setExporting('')
     }
   }
 
@@ -182,11 +213,25 @@ export default function CashPage() {
           <h2 className="mb-1">Día operativo de Caja</h2>
           <div className="text-muted">Inicio, arqueo y cierre jerárquico de cajas, sucursales y día.</div>
         </div>
-        {day && (
-          <span className={`badge ${dayIsOpen ? 'text-bg-success' : 'text-bg-secondary'} px-3 py-2`}>
-            {day.business_date} · {dayIsOpen ? 'ABIERTO' : 'CERRADO'}
-          </span>
-        )}
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          {day && canReadCash && (
+            <>
+              <button type="button" className="btn btn-outline-danger" disabled={Boolean(exporting)} onClick={() => exportReport('pdf')} title="Imprimir resumen del día en PDF">
+                {exporting === 'pdf' ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+                {exporting === 'pdf' ? 'Generando PDF...' : '📄 PDF'}
+              </button>
+              <button type="button" className="btn btn-outline-success" disabled={Boolean(exporting)} onClick={() => exportReport('xlsx')} title="Exportar resumen del día a Excel">
+                {exporting === 'xlsx' ? <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" /> : null}
+                {exporting === 'xlsx' ? 'Generando Excel...' : '📊 Excel'}
+              </button>
+            </>
+          )}
+          {day && (
+            <span className={`badge ${dayIsOpen ? 'text-bg-success' : 'text-bg-secondary'} px-3 py-2`}>
+              {day.business_date} · {dayIsOpen ? 'ABIERTO' : 'CERRADO'}
+            </span>
+          )}
+        </div>
       </div>
 
       {(!day || dayIsClosed) && (
