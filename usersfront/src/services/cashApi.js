@@ -39,6 +39,15 @@ export const obtenerDiaActual = async (token) => procesarRespuesta(
   await fetch(`${API_URL}/cash/days/current`, { headers: headers(token) }),
 )
 
+export const obtenerDiaPorFecha = async (businessDate, token) => {
+  const response = await fetch(
+    `${API_URL}/cash/days/date/${encodeURIComponent(businessDate)}`,
+    { headers: headers(token) },
+  )
+  if (response.status === 404) return null
+  return procesarRespuesta(response)
+}
+
 export const iniciarDia = async (token, businessDate) => procesarRespuesta(await fetch(
   `${API_URL}/cash/days/start`,
   {
