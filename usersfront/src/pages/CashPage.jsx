@@ -5,9 +5,10 @@ import {
   cerrarCajaDelDia,
   cerrarDia,
   cerrarSucursalDelDia,
-  descargarReporteDiaActual,
+  descargarReporteDia,
   iniciarDia,
   obtenerDiaActual,
+  obtenerDiaPorFecha,
   obtenerResumenCaja,
 } from '../services/cashApi'
 
@@ -46,6 +47,7 @@ const downloadBlob = (blob, filename) => {
 export default function CashPage() {
   const { token } = useAuth()
   const [day, setDay] = useState(null)
+  const [openDay, setOpenDay] = useState(null)
   const [businessDate, setBusinessDate] = useState(localDate)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -81,8 +83,9 @@ export default function CashPage() {
     setError('')
     try {
       const currentDay = await obtenerDiaActual(tokenActual)
+      setOpenDay(currentDay?.status === 'OPEN' ? currentDay : null)
       setDay(currentDay)
-      if (currentDay?.status === 'OPEN') setBusinessDate(currentDay.business_date)
+      if (currentDay?.business_date) setBusinessDate(currentDay.business_date)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
@@ -96,6 +99,27 @@ export default function CashPage() {
     const timeoutId = setTimeout(() => load(tokenRef.current), 0)
     return () => clearTimeout(timeoutId)
   }, [sessionKey, load])
+
+  const loadSelectedDate = useCallback(async (dateValue) => {
+    if (!dateValue) return
+    setBusinessDate(dateValue)
+    setLoading(true)
+    setError('')
+    setMessage('')
+    setSelectedRegister(null)
+    setCountedCash('')
+    setClosingNotes('')
+    setDayClosingNotes('')
+    try {
+      const selectedDay = await obtenerDiaPorFecha(dateValue, tokenRef.current)
+      setDay(selectedDay)
+    } catch (err) {
+      setDay(null)
+      setError(errorMessage(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const registersByBranch = useMemo(() => {
     const result = new Map()
@@ -133,7 +157,7 @@ export default function CashPage() {
     setError('')
     setMessage('')
     try {
-      const blob = await descargarReporteDiaActual(format, token)
+      const blob = await descargarReporteDia(day.id, format, token)
       const extension = format === 'pdf' ? 'pdf' : 'xlsx'
       downloadBlob(blob, `cierre_caja_${day.business_date}.${extension}`)
       setMessage(`${format === 'pdf' ? 'PDF' : 'Excel'} del día operativo generado correctamente.`)
@@ -224,7 +248,7 @@ export default function CashPage() {
       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div>
           <h2 className="mb-1">Día operativo de Caja</h2>
-          <div className="text-muted">Inicio, arqueo y cierre jerárquico de cajas, sucursales y día.</div>
+          <div className="text-muted">Consulta, apertura, arqueo y cierre del día operativo seleccionado.</div>
         </div>
         <div className="d-flex flex-wrap align-items-center gap-2">
           {day && canReadCash && (
@@ -247,36 +271,48 @@ export default function CashPage() {
         </div>
       </div>
 
-      {(!day || dayIsClosed) && (
+      <div className="border rounded p-3 mb-4">
+        <div className="row g-3 align-items-end">
+          <div className="col-12 col-md-4">
+            <label className="form-label fw-semibold">Fecha operativa</label>
+            <input
+              className="form-control"
+              type="date"
+              value={businessDate}
+              onChange={(event) => loadSelectedDate(event.target.value)}
+              disabled={saving || Boolean(exporting)}
+            />
+          </div>
+          <div className="col-12 col-md-8">
+            {day ? (
+              <div className="small text-muted">
+                Estás consultando el día <strong>{day.business_date}</strong>. Estado: <strong>{dayIsOpen ? 'ABIERTO' : 'CERRADO'}</strong>.
+              </div>
+            ) : (
+              <div className="small text-muted">
+                No existe un día operativo registrado para <strong>{businessDate}</strong>.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {!day && (
         <div className="card shadow-sm border-0 mb-4">
           <div className="card-body p-4">
-            <h5 className="mb-2">{dayIsClosed ? 'El día operativo está cerrado' : 'No hay un día operativo abierto'}</h5>
-            <p className="text-muted mb-3">
-              {dayIsClosed
-                ? 'El día cerrado no puede reabrirse. Selecciona una fecha para iniciar un nuevo ciclo operativo.'
-                : 'Selecciona la fecha contable del día. Puede ser la fecha de hoy o una fecha futura.'}
-            </p>
-            <div className="row g-3 align-items-end">
-              <div className="col-12 col-md-4">
-                <label className="form-label">Fecha de operación</label>
-                <input
-                  className="form-control"
-                  type="date"
-                  value={businessDate}
-                  onChange={(event) => setBusinessDate(event.target.value)}
-                  disabled={saving || !canStart}
-                />
+            <h5 className="mb-2">No existe un día operativo para esta fecha</h5>
+            <p className="text-muted mb-3">Puedes abrir esta fecha utilizando la misma lógica de apertura del día operativo.</p>
+            {openDay ? (
+              <div className="alert alert-warning mb-0">
+                Ya existe un día operativo abierto: <strong>{openDay.business_date}</strong>. Debes cerrarlo antes de abrir otra fecha.
               </div>
-              <div className="col-12 col-md-auto">
-                {canStart ? (
-                  <button className="btn btn-primary" disabled={saving || !businessDate} onClick={start}>
-                    {saving ? 'Iniciando día...' : 'Iniciar día'}
-                  </button>
-                ) : (
-                  <div className="alert alert-warning mb-0">No tienes permiso para iniciar el día operativo.</div>
-                )}
-              </div>
-            </div>
+            ) : canStart ? (
+              <button className="btn btn-primary" disabled={saving || !businessDate} onClick={start}>
+                {saving ? 'Abriendo día...' : 'Abrir día'}
+              </button>
+            ) : (
+              <div className="alert alert-warning mb-0">No tienes permiso para abrir el día operativo.</div>
+            )}
           </div>
         </div>
       )}
@@ -300,11 +336,11 @@ export default function CashPage() {
             </div>
             <div className="col-12 col-md-4">
               <div className="border rounded p-3 h-100">
-                <div className="text-muted small">Estado de cierre</div>
+                <div className="text-muted small">Estado del día</div>
                 {dayIsClosed ? (
                   <>
                     <div className="fs-5 fw-semibold">Día cerrado</div>
-                    <div className="small text-muted">El día operativo ya está cerrado y no admite nuevas operaciones.</div>
+                    <div className="small text-muted">Los botones de cierre no están disponibles para esta fecha.</div>
                   </>
                 ) : (
                   <>
@@ -325,14 +361,15 @@ export default function CashPage() {
                 </div>
                 <div className="table-responsive">
                   <table className="table table-hover align-middle mb-0">
-                    <thead><tr><th>Sucursal</th><th>Caja</th><th>Estado</th><th className="text-end">Esperado</th><th className="text-end">Contado</th><th className="text-end">Diferencia</th><th className="text-end">Acción</th></tr></thead>
+                    <thead><tr><th>Sucursal</th><th>Caja</th><th>Base</th><th>Estado</th><th className="text-end">Esperado</th><th className="text-end">Contado</th><th className="text-end">Diferencia</th><th className="text-end">Acción</th></tr></thead>
                     <tbody>
                       {day.registers.length === 0 ? (
-                        <tr><td colSpan="7" className="text-center text-muted py-4">No hay cajas activas para este día.</td></tr>
+                        <tr><td colSpan="8" className="text-center text-muted py-4">No hay cajas activas para este día.</td></tr>
                       ) : day.registers.map((register) => (
                         <tr key={register.id}>
                           <td>{register.branch_name || '—'}</td>
                           <td>{register.cash_box_name || `Caja #${register.id}`}</td>
+                          <td>{money(register.base_amount ?? register.opening_amount)}</td>
                           <td><span className={`badge ${register.status === 'OPEN' ? 'text-bg-success' : 'text-bg-secondary'}`}>{register.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}</span></td>
                           <td className="text-end">{register.expected_cash == null ? '—' : money(register.expected_cash)}</td>
                           <td className="text-end">{register.counted_cash == null ? '—' : money(register.counted_cash)}</td>
@@ -352,7 +389,7 @@ export default function CashPage() {
                   <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                     <div>
                       <h5 className="mb-1">Arqueo: {selectedRegister.cash_box_name || `Caja #${selectedRegister.id}`}</h5>
-                      <div className="text-muted small">{selectedRegister.branch_name || 'Sucursal'} · efectivo esperado {money(selectedRegister.expected_cash)}</div>
+                      <div className="text-muted small">{selectedRegister.branch_name || 'Sucursal'} · base {money(selectedRegister.base_amount ?? selectedRegister.opening_amount)} · efectivo esperado {money(selectedRegister.expected_cash)}</div>
                     </div>
                     <button className="btn btn-sm btn-outline-secondary" onClick={() => setSelectedRegister(null)}>Cancelar</button>
                   </div>
@@ -402,7 +439,7 @@ export default function CashPage() {
           )}
 
           {dayIsClosed && (
-            <div className="alert alert-secondary">El día operativo ya está cerrado y no admite nuevas operaciones. Para continuar, inicia un nuevo día con otra fecha de operación.</div>
+            <div className="alert alert-secondary">El día operativo ya está cerrado. Esta fecha se consulta en modo histórico; solo están disponibles los exportes PDF y Excel.</div>
           )}
         </>
       )}
@@ -415,12 +452,8 @@ export default function CashPage() {
                 <h5 className="modal-title fw-bold">{feedback.title}</h5>
                 <button type="button" className="btn-close" onClick={closeFeedback} aria-label="Cerrar" />
               </div>
-              <div className="modal-body">
-                <p className="mb-0">{feedback.text}</p>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className={`btn btn-${feedback.type}`} onClick={closeFeedback}>Aceptar</button>
-              </div>
+              <div className="modal-body"><p className="mb-0">{feedback.text}</p></div>
+              <div className="modal-footer"><button type="button" className={`btn btn-${feedback.type}`} onClick={closeFeedback}>Aceptar</button></div>
             </div>
           </div>
         </div>
