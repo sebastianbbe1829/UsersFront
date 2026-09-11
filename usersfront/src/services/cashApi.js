@@ -18,6 +18,19 @@ const headers = (token, json = false) => ({
   Authorization: `Bearer ${token}`,
 })
 
+const procesarArchivo = async (response) => {
+  if (!response.ok) {
+    const resultado = await response.json().catch(() => null)
+    const detail = resultado?.detail
+    const message = typeof detail === 'object' ? detail.message : detail
+    const error = new Error(message || 'No fue posible generar el reporte de Caja.')
+    error.status = response.status
+    error.code = typeof detail === 'object' ? detail.code : undefined
+    throw error
+  }
+  return response.blob()
+}
+
 export const obtenerContextoCaja = async (token) => procesarRespuesta(
   await fetch(`${API_URL}/cash/my-context`, { headers: headers(token) }),
 )
@@ -59,6 +72,16 @@ export const cerrarDia = async (closingNotes, token) => procesarRespuesta(await 
     headers: headers(token, true),
     body: JSON.stringify({ closing_notes: closingNotes || null }),
   },
+))
+
+export const descargarReporteDia = async (dayId, format, token) => procesarArchivo(await fetch(
+  `${API_URL}/cash/days/${encodeURIComponent(dayId)}/report/${encodeURIComponent(format)}`,
+  { headers: headers(token) },
+))
+
+export const descargarReporteDiaActual = async (format, token) => procesarArchivo(await fetch(
+  `${API_URL}/cash/days/current/report/${encodeURIComponent(format)}`,
+  { headers: headers(token) },
 ))
 
 export const obtenerCajaActual = async (token) => {
