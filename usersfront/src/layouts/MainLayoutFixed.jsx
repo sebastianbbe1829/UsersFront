@@ -27,6 +27,7 @@ function MainLayoutFixed() {
   const [seccionAbierta, setSeccionAbierta] = useState(seccionPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const primaryColor = config?.primary_color || '#0d6efd'
+  const secondaryColor = config?.secondary_color || '#6f42c1'
   const appTitle = config?.app_title || 'Fenix SaS'
   const rutaTenant = tenant ? `/${tenant}` : ''
 
