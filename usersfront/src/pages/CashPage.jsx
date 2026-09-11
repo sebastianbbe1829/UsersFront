@@ -70,7 +70,10 @@ export default function CashPage() {
   // El access token cambia durante un refresh, pero la sesión lógica no cambia.
   // Cargar nuevamente toda la página por cada renovación provocaba el efecto visual de un F5.
   const tokenRef = useRef(token)
-  tokenRef.current = token
+
+  useEffect(() => {
+    tokenRef.current = token
+  }, [token])
   const tokenPayload = obtenerPayloadToken(token)
   const sessionKey = tokenPayload?.session_id
     || tokenPayload?.user_tenant_id
