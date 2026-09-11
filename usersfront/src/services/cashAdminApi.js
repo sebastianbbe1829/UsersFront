@@ -50,6 +50,8 @@ export const actualizarCajaFisica = (id, datos, token) => request(`/cash/config/
   body: JSON.stringify(datos),
 })
 
+export const obtenerUsuariosAsignablesCaja = (token) => request('/cash/config/assignable-users', token)
+
 export const obtenerAsignacionesCaja = (token) => request('/cash/config/assignments', token)
 
 export const crearAsignacionCaja = (datos, token) => request('/cash/config/assignments', token, {
