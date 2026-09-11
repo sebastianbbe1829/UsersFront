@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import LoginPage from '../pages/LoginPage'
 import PasswordRecoveryPage from '../pages/PasswordRecoveryPage'
@@ -27,6 +27,8 @@ import SalesHistoryPage from '../pages/SalesHistoryPage'
 import PortfolioPage from '../pages/PortfolioPage'
 import PortfolioObligationsPage from '../pages/PortfolioObligationsPage'
 import PortfolioPaymentsPage from '../pages/PortfolioPaymentsPage'
+import CashPageGuard from '../pages/CashPageGuard'
+import CashManagementPage from '../pages/CashManagementPage'
 import TenantAdminPage from '../pages/TenantAdminPage'
 import GlobalSuperAdminPage from '../pages/GlobalSuperAdminPage'
 import TenantConfigPage from '../pages/TenantConfigPage'
@@ -35,38 +37,38 @@ import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
 import PermissionRoute from '../components/PermissionRoute'
+import CashOperationalGuard from '../components/CashOperationalGuard'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
 import { obtenerPayloadToken } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 
 const MainLayout = lazy(() => import('../layouts/MainLayoutFixed'))
-
-function RutasProtegidas() {
-  const { logueado, cargando } = useAuth()
-  if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary" role="status" /><div className="text-muted">Validando sesión...</div></div></div>
-  if (!logueado) return <Navigate to="login" replace />
-  return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense>
-}
+function RutasProtegidas() { const { logueado, cargando } = useAuth(); if (cargando) return <div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary" role="status" /><div className="text-muted">Validando sesión...</div></div></div>; if (!logueado) return <Navigate to="login" replace />; return <Suspense fallback={<div className="min-vh-100 d-flex align-items-center justify-content-center"><div className="text-center"><div className="spinner-border text-primary mb-3" role="status" /><div className="text-muted">Cargando aplicación...</div></div></div>}><MainLayout /></Suspense> }
 function RutaConPermiso({ permission, children }) { return <PermissionRoute permission={permission}>{children}</PermissionRoute> }
+function CashManagementRoute() {
+  useEffect(() => {
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    const previousBodyOverflow = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = previousHtmlOverflow
+      document.body.style.overflow = previousBodyOverflow
+    }
+  }, [])
+  return <CashManagementPage />
+}
 
 function AppRoutes() {
   const location = useLocation()
   const { usuarioLogueado, token } = useAuth()
   const rutaActual = location.pathname
-
-  // /welcome fue una ruta antigua sin tenant. Nunca debe tratarse como si
-  // "welcome" fuera el slug de una empresa: recuperamos el tenant real del JWT.
   const payload = obtenerPayloadToken(token)
   const tenantDelToken = payload?.tenant_slug || usuarioLogueado?.tenant_slug || null
   const tenantDesdeUrl = obtenerTenantDesdeUrl()
   const esRutaLegacyWelcome = rutaActual === '/welcome'
   const tenant = esRutaLegacyWelcome ? tenantDelToken : (tenantDesdeUrl || tenantDelToken)
-
-  if (esRutaLegacyWelcome) {
-    if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />
-    return <TenantRequired />
-  }
-
+  if (esRutaLegacyWelcome) { if (tenantDelToken) return <Navigate to={`/${tenantDelToken}`} replace />; return <TenantRequired /> }
   if (rutaActual === '/bootstrap/tenant') return <Routes><Route path="/bootstrap/tenant" element={<TenantBootstrapPage />} /></Routes>
   if (rutaActual === '/bootstrap/super') return <Routes><Route path="/bootstrap/super" element={<SuperBootstrapPage />} /></Routes>
   if (!tenant) return <TenantRequired />
@@ -88,6 +90,11 @@ function AppRoutes() {
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
       <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
+      <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPageGuard /></RutaConPermiso>} />
+      <Route path="caja/administracion" element={<RutaConPermiso permission="CASH_READ"><Navigate to="sucursales" replace /></RutaConPermiso>} />
+      <Route path="caja/administracion/sucursales" element={<RutaConPermiso permission="CASH_READ"><CashManagementRoute /></RutaConPermiso>} />
+      <Route path="caja/administracion/cajas" element={<RutaConPermiso permission="CASH_READ"><CashManagementRoute /></RutaConPermiso>} />
+      <Route path="caja/administracion/asignaciones" element={<RutaConPermiso permission="CASH_READ"><CashManagementRoute /></RutaConPermiso>} />
       <Route path="roles" element={<RutaConPermiso permission="ROLE_READ"><RolesPage /></RutaConPermiso>} />
       <Route path="permisos" element={<RutaConPermiso permission="PERMISSION_READ"><PermisosPage /></RutaConPermiso>} />
       <Route path="extintores" element={<RutaConPermiso permission="EXTINGUISHER_READ"><ExtinguishersPage /></RutaConPermiso>} />
@@ -98,7 +105,7 @@ function AppRoutes() {
       <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
       <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
       <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
-      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><SalesPOSPage /></RutaConPermiso>} />
+      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><CashOperationalGuard><SalesPOSPage /></CashOperationalGuard></RutaConPermiso>} />
       <Route path="ventas/consulta" element={<RutaConPermiso permission="SALES_READ"><SalesHistoryPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />

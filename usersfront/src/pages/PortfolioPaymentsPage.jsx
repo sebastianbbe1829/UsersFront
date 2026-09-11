@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
 import { obtenerClientes } from '../services/clientsApi'
+import { obtenerContextoCaja } from '../services/cashApi'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
 const money = (value) => new Intl.NumberFormat('es-CO', {
@@ -12,9 +13,9 @@ const money = (value) => new Intl.NumberFormat('es-CO', {
 }).format(Number(value || 0))
 
 const fechaHoy = () => new Date().toISOString().slice(0, 10)
-const nuevoFormulario = () => ({
+const nuevoFormulario = (businessDate = fechaHoy()) => ({
   client_id: '',
-  payment_date: fechaHoy(),
+  payment_date: businessDate,
   payment_method: 'TRANSFERENCIA',
   reference: '',
   notes: '',
@@ -31,6 +32,12 @@ const formatDate = (value) => {
   if (!value) return '—'
   const fecha = new Date(typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value)
   return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
+}
+
+const formatBusinessDate = (value) => {
+  if (!value) return '—'
+  const [year, month, day] = String(value).slice(0, 10).split('-')
+  return year && month && day ? `${day}/${month}/${year}` : '—'
 }
 
 const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
@@ -61,6 +68,7 @@ export default function PortfolioPaymentsPage() {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [pagina, setPagina] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [cashContext, setCashContext] = useState(null)
 
   const cargarPagos = useCallback(async () => {
     const resultado = await obtenerPagosCartera(token)
@@ -84,7 +92,10 @@ export default function PortfolioPaymentsPage() {
   useEffect(() => {
     if (!token || cargaInicialRef.current) return undefined
     cargaInicialRef.current = true
-    Promise.all([cargarPagos(), cargarClientes()]).catch((error) => {
+    Promise.all([cargarPagos(), cargarClientes(), obtenerContextoCaja(token)]).then(([, , context]) => {
+      setCashContext(context)
+      setFormulario((actual) => ({ ...actual, payment_date: context?.business_date || actual.payment_date }))
+    }).catch((error) => {
       if (error.status === 401) manejarSesionExpirada()
       else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los pagos.' })
     }).finally(() => setCargando(false))
@@ -208,7 +219,7 @@ export default function PortfolioPaymentsPage() {
         notes: formulario.notes || undefined,
         allocations,
       }, token)
-      setFormulario(nuevoFormulario())
+      setFormulario(nuevoFormulario(cashContext?.business_date))
       setBusquedaCliente('')
       setClienteSeleccionado(null)
       setAsignaciones([])
@@ -247,11 +258,17 @@ export default function PortfolioPaymentsPage() {
 
   const cancelarRegistro = () => {
     setMostrarFormulario(false)
-    setFormulario(nuevoFormulario())
+    setFormulario(nuevoFormulario(cashContext?.business_date))
     setBusquedaCliente('')
     setClienteSeleccionado(null)
     setObligaciones([])
     setAsignaciones([])
+    setMensaje(null)
+  }
+
+  const abrirFormulario = () => {
+    setFormulario((actual) => ({ ...actual, payment_date: cashContext?.business_date || actual.payment_date }))
+    setMostrarFormulario(true)
     setMensaje(null)
   }
 
@@ -300,6 +317,11 @@ export default function PortfolioPaymentsPage() {
     navigate(tenant ? `/${encodeURIComponent(tenant)}/welcome` : '/welcome')
   }
 
+  const businessDateLabel = cashContext?.business_date
+    ? new Date(`${cashContext.business_date}T00:00:00`).toLocaleDateString('es-CO')
+    : 'No disponible'
+  const cashBoxLabel = cashContext?.cash_box_name || 'No asignada'
+
   return (
     <div>
       <div className="d-flex justify-content-between align-items-start mb-4">
@@ -309,9 +331,10 @@ export default function PortfolioPaymentsPage() {
             <h2 className="fw-bold mb-1">Pagos</h2>
           </div>
           <p className="text-muted mb-0">Consulta los pagos registrados y registra nuevos abonos.</p>
+          <div className="small text-primary mt-1"><strong>Fecha operativa:</strong> {businessDateLabel} <span className="mx-1">·</span> <strong>Caja actual:</strong> {cashBoxLabel}</div>
         </div>
         {!mostrarFormulario && (
-          <button type="button" className="btn btn-primary" onClick={() => { setMostrarFormulario(true); setMensaje(null) }}>
+          <button type="button" className="btn btn-primary" onClick={abrirFormulario} disabled={!cashContext?.business_date}>
             + Registrar pago
           </button>
         )}
@@ -463,7 +486,8 @@ export default function PortfolioPaymentsPage() {
                       <div className="row g-3">
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Fecha del pago</label>
-                          <input className="form-control" type="date" value={formulario.payment_date} onChange={(event) => setFormulario((actual) => ({ ...actual, payment_date: event.target.value }))} disabled={guardando} />
+                          <input className="form-control" type="date" value={formulario.payment_date} readOnly disabled={guardando} />
+                          <div className="form-text text-primary">Fecha operativa de Caja: {businessDateLabel}</div>
                         </div>
                         <div className="col-md-4">
                           <label className="form-label fw-semibold">Medio de pago</label>
@@ -531,7 +555,7 @@ export default function PortfolioPaymentsPage() {
             <table className="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Fecha</th>
+                  <th>Fecha de operación</th>
                   <th>Cliente</th>
                   <th>Referencia</th>
                   <th>Obligaciones</th>
@@ -546,7 +570,10 @@ export default function PortfolioPaymentsPage() {
                 {!cargando && !pagosFiltrados.length && <tr><td colSpan="8" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
                 {!cargando && pagosPaginados.map((pago) => (
                   <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
-                    <td>{formatDate(pago.created_at || pago.payment_date)}</td>
+                    <td>
+                      <div>{formatBusinessDate(pago.business_date || pago.payment_date)}</div>
+                      <div className="small text-muted">Registrado: {formatDate(pago.created_at)}</div>
+                    </td>
                     <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
                     <td>{pago.reference || '—'}</td>
                     <td>

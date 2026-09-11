@@ -22,7 +22,8 @@ function MainLayoutFixed() {
   const carteraPorRuta = location.pathname.includes('/cartera')
   const inventariosPorRuta = location.pathname.includes('/inventarios')
   const ventasPorRuta = location.pathname.includes('/ventas')
-  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : carteraPorRuta ? 'cartera' : inventariosPorRuta ? 'inventarios' : ventasPorRuta ? 'ventas' : administracionPorRuta ? 'administracion' : null
+  const cajaPorRuta = location.pathname.includes('/caja')
+  const seccionPorRuta = clientesPorRuta ? 'clientes' : extintoresPorRuta ? 'extintores' : carteraPorRuta ? 'cartera' : inventariosPorRuta ? 'inventarios' : ventasPorRuta ? 'ventas' : cajaPorRuta ? 'caja' : administracionPorRuta ? 'administracion' : null
   const [seccionAbierta, setSeccionAbierta] = useState(seccionPorRuta)
   const [modoOscuro, setModoOscuro] = useState(() => localStorage.getItem('modo_oscuro') === 'true')
   const primaryColor = config?.primary_color || '#0d6efd'
@@ -86,6 +87,8 @@ function MainLayoutFixed() {
     if (ruta.includes('/cartera/pagos')) return { icono: '💳', titulo: 'Pagos de cartera' }
     if (ruta.includes('/cartera/obligaciones')) return { icono: '📋', titulo: 'Cartera' }
     if (ruta.includes('/cartera')) return { icono: '💰', titulo: 'Resumen de cartera' }
+    if (ruta.includes('/caja/administracion')) return { icono: '⚙️', titulo: 'Administración de Caja' }
+    if (ruta.includes('/caja')) return { icono: '🧾', titulo: 'Caja' }
     if (ruta.includes('/inventarios/movimientos')) return { icono: '📋', titulo: 'Movimientos de inventario' }
     if (ruta.includes('/inventarios/productos')) return { icono: '🛒', titulo: 'Productos de inventario' }
     if (ruta.includes('/inventarios/tipos')) return { icono: '🏷️', titulo: 'Tipos de inventario' }
@@ -133,6 +136,14 @@ function MainLayoutFixed() {
               <Can permission="PORTFOLIO_READ"><NavLink to={`${rutaTenant}/cartera`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Resumen de cartera"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>💰</span><span className="ms-3">Resumen de cartera</span></NavLink></Can>
               <Can permission="PORTFOLIO_READ"><NavLink to={`${rutaTenant}/cartera/obligaciones`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Cartera"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Cartera</span></NavLink></Can>
               <Can permission="PORTFOLIO_PAYMENT_CREATE"><NavLink to={`${rutaTenant}/cartera/pagos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Pagos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>💳</span><span className="ms-3">Pagos</span></NavLink></Can>
+            </div>}
+          </Can>
+
+          <Can permission="CASH_READ">
+            <button type="button" className={obtenerClaseMenu(cajaPorRuta)} onClick={() => alternarSeccion('caja')} title="Caja" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>🧾</span><span className="ms-3 flex-grow-1 text-start">Caja</span><span>{seccionAbierta === 'caja' ? '▾' : '▸'}</span></button>
+            {seccionAbierta === 'caja' && <div className="ps-3">
+              <Can permission="CASH_READ"><NavLink to={`${rutaTenant}/caja`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Operación"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🧾</span><span className="ms-3">Operación</span></NavLink></Can>
+              <Can permission="CASH_READ"><NavLink to={`${rutaTenant}/caja/administracion`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Administración de Caja"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>⚙️</span><span className="ms-3">Administración</span></NavLink></Can>
             </div>}
           </Can>
 

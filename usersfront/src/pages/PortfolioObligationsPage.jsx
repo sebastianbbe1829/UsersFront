@@ -25,6 +25,12 @@ const formatDate = (value) => {
   }).format(fecha)
 }
 
+const formatBusinessDate = (value) => {
+  if (!value) return '—'
+  const [year, month, day] = String(value).slice(0, 10).split('-')
+  return year && month && day ? `${day}/${month}/${year}` : '—'
+}
+
 const statusLabel = {
   ACTIVE: 'Activa',
   SETTLED: 'Saldada',
@@ -297,7 +303,7 @@ export default function PortfolioObligationsPage() {
               </button>
             </div>
           </div>
-          <div className="small text-muted mt-3">La consulta se actualiza automáticamente al cambiar cliente o fechas.</div>
+          <div className="small text-muted mt-3">Las fechas de esta consulta corresponden a la fecha de negocio de Caja.</div>
         </div>
       </div>
 
@@ -328,7 +334,7 @@ export default function PortfolioObligationsPage() {
               <tr>
                 <th>Cliente</th>
                 <th>Venta</th>
-                <th>Fecha</th>
+                <th>Fecha de operación</th>
                 <th className="text-end">Valor inicial</th>
                 <th className="text-end">Saldo</th>
                 <th>Estado</th>
@@ -370,7 +376,10 @@ export default function PortfolioObligationsPage() {
                         </button>
                       ) : '—'}
                     </td>
-                    <td>{formatDate(item.created_at)}</td>
+                    <td>
+                      <div>{formatBusinessDate(item.business_date)}</div>
+                      <div className="small text-muted">Registrado: {formatDate(item.created_at)}</div>
+                    </td>
                     <td className="text-end">{money(item.initial_amount)}</td>
                     <td className="text-end fw-bold">{money(item.balance)}</td>
                     <td><span className={`badge ${statusClass[item.status] || 'text-bg-secondary'}`}>{statusLabel[item.status] || item.status}</span></td>

@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { obtenerClientes } from '../services/clientsApi'
 import { obtenerCupoCliente } from '../services/portfolioApi'
 import { obtenerInventario, obtenerProductosInventario, obtenerProductosTopVenta } from '../services/inventoryApi'
+import { obtenerContextoCaja } from '../services/cashApi'
 import { abrirFactura } from '../utils/salesInvoice'
 import {
   crearVenta,
@@ -70,6 +71,7 @@ export default function SalesPOSPage() {
   const [lastSale, setLastSale] = useState(null)
   const [validationModal, setValidationModal] = useState(null)
   const [saleSuccessModal, setSaleSuccessModal] = useState(null)
+  const [cashContext, setCashContext] = useState(null)
 
   const openValidation = (title, text) => setValidationModal({ title, text })
   const closeValidation = () => setValidationModal(null)
@@ -101,12 +103,13 @@ export default function SalesPOSPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const [p, top, i, c, d] = await Promise.all([
+        const [p, top, i, c, d, context] = await Promise.all([
           obtenerProductosInventario(token, true),
           obtenerProductosTopVenta(token, 6),
           obtenerInventario(token),
           obtenerClientes(token, { page: 1, pageSize: 100 }),
           obtenerVentasCongeladas(token),
+          obtenerContextoCaja(token),
         ])
         if (cancelled) return
         setProducts(Array.isArray(p) ? p : [])
@@ -114,6 +117,7 @@ export default function SalesPOSPage() {
         setInventory(Array.isArray(i) ? i : [])
         setClients(Array.isArray(c?.items) ? c.items : Array.isArray(c) ? c : [])
         setFrozen(Array.isArray(d) ? d : [])
+        setCashContext(context)
       } catch (e) {
         if (!cancelled) {
           if (e.status === 401) return manejarSesionExpirada()
@@ -161,9 +165,9 @@ export default function SalesPOSPage() {
   const totalPesos = Math.round(total)
   const effectivePayments = useMemo(() => payments.map((p) => {
     if (p.method === 'CREDITO' && mode === 'client') return { ...p, amount: String(totalPesos) }
-    if (!p.amount && payments.length === 1) return { ...p, amount: String(totalPesos) }
+    if (!p.amount && payments.length === 1 && cart.length) return { ...p, amount: String(totalPesos) }
     return p
-  }), [payments, mode, totalPesos])
+  }), [cart.length, payments, mode, totalPesos])
   const totalCents = totalPesos
   const paidCents = effectivePayments.reduce((s, p) => s + toCents(p.amount), 0)
   const differenceCents = totalCents - paidCents
@@ -340,10 +344,13 @@ export default function SalesPOSPage() {
 
   if (loading) return <div className="d-flex justify-content-center py-5"><div className="spinner-border" role="status"></div></div>
 
+  const businessDateLabel = cashContext?.business_date ? new Date(`${cashContext.business_date}T00:00:00`).toLocaleDateString('es-CO') : 'No disponible'
+  const cashBoxLabel = cashContext?.cash_box_name || 'No asignada'
+
   return <>
     <style>{STYLE}</style>
     <div className="container-fluid pt-0 pb-2">
-      <div className="d-flex justify-content-between align-items-center mb-1"><div><div className="d-flex align-items-center gap-2"><button className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button><h4 className="mb-0">Punto de venta</h4></div><div className="small text-muted">Registra ventas, pagos y facturación.</div></div><div className="d-flex gap-2"><button className="btn btn-sm btn-outline-danger" onClick={() => reset()}>Limpiar</button></div></div>
+      <div className="d-flex justify-content-between align-items-start mb-1"><div><div className="d-flex align-items-center gap-2"><button className="btn btn-sm btn-link text-decoration-none p-0" onClick={() => navigate('/welcome')}>← Volver</button><h4 className="mb-0">Punto de venta</h4></div><div className="small text-muted">Registra ventas, pagos y facturación.</div><div className="small text-primary mt-1"><strong>Fecha operativa:</strong> {businessDateLabel} <span className="mx-1">·</span> <strong>Caja actual:</strong> {cashBoxLabel}</div></div><div className="d-flex gap-2"><button className="btn btn-sm btn-outline-danger" onClick={() => reset()}>Limpiar</button></div></div>
       {message && <div className={`alert alert-${message.type} py-2`}>{message.text}</div>}
       <div className="sales-tabs"><button className={`btn btn-sm flex-fill ${tab === 'products' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('products')}>Productos</button><button className={`btn btn-sm flex-fill ${tab === 'sale' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('sale')}>Venta</button><button className={`btn btn-sm flex-fill ${tab === 'payment' ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => setTab('payment')}>Pago</button></div>
       <div className="row g-2 sales-pos">
@@ -356,10 +363,11 @@ export default function SalesPOSPage() {
           <div className="card border-0 shadow-sm mt-2"><div className="card-header bg-body"><strong>Descuento y opciones</strong></div><div className="card-body"><div className="row g-2 align-items-end"><div className="col-6"><label className="form-label small mb-1">Descuento %</label><input type="number" min="0" max="100" step="0.01" className="form-control form-control-sm" value={discount} disabled={autoconsumption} onChange={(e) => setDiscount(e.target.value)} /></div><div className="col-6 form-check form-switch pt-4"><input className="form-check-input" type="checkbox" id="autoconsumo" checked={autoconsumption} onChange={(e) => toggleAutoconsumption(e.target.checked)} /><label className="form-check-label small" htmlFor="autoconsumo">Autoconsumo</label></div></div></div></div>
         </div>
         <div className={`col-lg-3 sales-pos-col sales-panel ${tab === 'payment' || tab === 'sale' ? 'active' : ''}`}>
-          <div className="card border-0 shadow-sm h-100 d-flex flex-column"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>Resumen y pago</strong><div className="sales-payment-actions"><button type="button" className="btn btn-primary sales-payment-action" title="Registrar venta" aria-label="Registrar venta" disabled={saving || !cart.length || !paidOk || freezing} onClick={() => void submit()}>{saving ? '⏳' : '✓'}</button><button type="button" className="btn btn-outline-warning sales-payment-action" title="Congelar venta" aria-label="Congelar venta" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? '⏳' : '⏸'}</button></div></div><div className="card-body d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr /><div className="d-flex justify-content-between"><span>Total</span><strong className="fs-4">{money(totalPesos)}</strong></div><div className="mt-2">{payments.map((p, i) => <div key={i} className="d-flex gap-1 mb-1"><select className="form-select form-select-sm" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((method) => <option key={method} value={method}>{method}</option>)}</select><input className="form-control form-control-sm" type="number" min="0" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} disabled={p.method === 'CREDITO' && mode === 'client'} />{payments.length > 1 && <button className="btn btn-sm btn-outline-danger" onClick={() => removePayment(i)}>×</button>}</div>)}</div><div className="mt-1 d-flex justify-content-between small"><span>{differenceCents === 0 ? 'Pago completo' : differenceCents > 0 ? 'Falta' : 'Exceso'}</span><strong className={differenceCents === 0 ? 'text-success' : 'text-danger'}>{money(Math.abs(difference))}</strong></div><button className="btn btn-sm btn-outline-secondary mt-2" onClick={addPayment}>+ Forma de pago</button><div className="mt-auto pt-2"><div className="d-flex justify-content-between small"><span>Venta congelada</span><strong>{frozen.length}</strong></div>{frozen.length ? <div className="mt-1 d-grid gap-1">{frozen.slice(0, 3).map((draft) => <button key={draft.id} className="btn btn-sm btn-outline-warning text-start" onClick={() => resume(draft)}>Retomar {draft.alias || draft.id}</button>)}</div> : null}</div></div></div>
+          <div className="card border-0 shadow-sm h-100 d-flex flex-column"><div className="card-header bg-body d-flex justify-content-between align-items-center"><strong>Resumen y pago</strong><div className="sales-payment-actions"><button type="button" className="btn btn-primary sales-payment-action" title="Registrar venta" aria-label="Registrar venta" disabled={saving || !cart.length || !paidOk || freezing} onClick={() => void submit()}>{saving ? '⏳' : '✓'}</button><button type="button" className="btn btn-outline-warning sales-payment-action" title="Congelar venta" aria-label="Congelar venta" disabled={!cart.length || freezing || saving} onClick={() => void freeze()}>{freezing ? '⏳' : '⏸'}</button></div></div><div className="card-body d-flex flex-column"><div className="d-flex justify-content-between small"><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div className="d-flex justify-content-between small"><span>Descuento</span><strong>{money(discountAmount)}</strong></div><hr /><div className="d-flex justify-content-between"><span>Total</span><strong className="fs-4">{money(totalPesos)}</strong></div><div className="mt-2">{effectivePayments.map((p, i) => <div key={i} className="d-flex gap-1 mb-1"><select className="form-select form-select-sm" value={p.method} onChange={(e) => changePaymentMethod(i, e.target.value)}>{METHODS.map((method) => <option key={method} value={method}>{method}</option>)}</select><input className="form-control form-control-sm" type="number" min="0" value={p.amount} onChange={(e) => changePayment(i, 'amount', e.target.value)} disabled={p.method === 'CREDITO' && mode === 'client'} />{payments.length > 1 && <button className="btn btn-sm btn-outline-danger" onClick={() => removePayment(i)}>×</button>}</div>)}</div><div className="mt-1 d-flex justify-content-between small"><span>{differenceCents === 0 ? 'Pago completo' : differenceCents > 0 ? 'Falta' : 'Exceso'}</span><strong className={differenceCents === 0 ? 'text-success' : 'text-danger'}>{money(Math.abs(difference))}</strong></div><button className="btn btn-sm btn-outline-secondary mt-2" onClick={addPayment}>+ Forma de pago</button><div className="mt-auto pt-2"><div className="d-flex justify-content-between small"><span>Venta congelada</span><strong>{frozen.length}</strong></div>{frozen.length ? <div className="mt-1 d-grid gap-1">{frozen.slice(0, 3).map((draft) => <button key={draft.id} className="btn btn-sm btn-outline-warning text-start" onClick={() => resume(draft)}>Retomar {draft.alias || draft.id}</button>)}</div> : null}</div></div></div>
         </div>
       </div>
     </div>
+    {(saving || freezing) && <div className="sales-processing" role="status" aria-live="polite"><div className="sales-processing-card"><div className="spinner-border mb-3" role="status" aria-hidden="true"></div><div className="fw-semibold">{saving ? 'Registrando venta...' : 'Congelando venta...'}</div><div className="small text-muted mt-1">Por favor espera.</div></div></div>}
     {validationModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>{validationModal.title}</strong><button className="btn btn-sm btn-link" onClick={closeValidation}>×</button></div><div className="sales-modal-body">{validationModal.text}</div><div className="sales-modal-footer"><button className="btn btn-primary btn-sm" onClick={closeValidation}>Aceptar</button></div></div></div>}
     {saleSuccessModal && <div className="sales-modal-backdrop" role="presentation"><div className="sales-modal" role="dialog" aria-modal="true"><div className="sales-modal-header"><strong>Venta registrada</strong><button className="btn btn-sm btn-link" onClick={closeSaleSuccess}>×</button></div><div className="sales-modal-body"><div className="mb-2">La venta fue registrada correctamente.</div>{saleEmailMessage && <div className={`alert alert-${saleEmailMessage.type} py-2`}>{saleEmailMessage.text}</div>}</div><div className="sales-modal-footer d-flex gap-2"><button className="btn btn-outline-secondary btn-sm" onClick={print}>Imprimir factura</button>{saleCanEmail && <button className="btn btn-primary btn-sm" disabled={sendingEmail} onClick={() => void email()}>{sendingEmail ? 'Enviando...' : 'Enviar por correo'}</button>}<button className="btn btn-secondary btn-sm" onClick={closeSaleSuccess}>Cerrar</button></div></div></div>}
   </>
