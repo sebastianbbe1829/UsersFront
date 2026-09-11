@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { obtenerContextoCaja } from '../services/cashApi'
+import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
 export default function CashOperationalGuard({ children }) {
   const { token, manejarSesionExpirada } = useAuth()
+  const navigate = useNavigate()
   const [context, setContext] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -52,10 +55,22 @@ export default function CashOperationalGuard({ children }) {
           ? 'La caja asignada no tiene una sesión abierta. No es posible realizar ventas ni pagos.'
           : 'La operación de Caja no está habilitada. No es posible realizar ventas ni pagos.'
 
+    const volverWelcome = () => {
+      const tenant = obtenerTenantDesdeUrl()
+      navigate(tenant ? `/${encodeURIComponent(tenant)}/welcome` : '/welcome')
+    }
+
     return (
       <div className="alert alert-warning shadow-sm" role="alert">
         <div className="fw-bold mb-1">Caja no disponible</div>
         <div>{message}</div>
+        <button
+          type="button"
+          className="btn btn-link text-decoration-none px-0 mt-2"
+          onClick={volverWelcome}
+        >
+          ← Regresar
+        </button>
       </div>
     )
   }
