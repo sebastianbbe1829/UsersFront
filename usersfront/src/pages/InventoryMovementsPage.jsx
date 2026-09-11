@@ -16,21 +16,9 @@ const OPERATION_MOVEMENT_TYPES = { PURCHASE: 'ENTRY', SALE: 'EXIT', SALES_RETURN
 const formatFechaColombia = (value) => {
   if (!value) return '-'
   const normalized = typeof value === 'string' && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(value) ? `${value}Z` : value
-  return new Intl.DateTimeFormat('es-CO', {
-    timeZone: 'America/Bogota',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(new Date(normalized))
+  return new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(normalized))
 }
-const formatFechaNegocio = (value) => {
-  if (!value) return '-'
-  const [year, month, day] = String(value).slice(0, 10).split('-')
-  return year && month && day ? `${day}/${month}/${year}` : '-'
-}
+const formatFechaNegocio = (value) => { if (!value) return '-'; const [year, month, day] = String(value).slice(0, 10).split('-'); return year && month && day ? `${day}/${month}/${year}` : '-' }
 function descargarArchivo(blob, filename) { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename; document.body.appendChild(anchor); anchor.click(); anchor.remove(); URL.revokeObjectURL(url) }
 function precioVentaMovimiento(item) { if (item.unit_purchase_price == null || item.profit_percentage == null) return null; return Number(item.unit_purchase_price) * (1 + Number(item.profit_percentage)) }
 
@@ -41,7 +29,7 @@ function InventoryMovementsPage() {
   const [productos, setProductos] = useState([]); const [productoId, setProductoId] = useState(''); const [fromDate, setFromDate] = useState(''); const [toDate, setToDate] = useState(''); const [movimientos, setMovimientos] = useState([]); const [page, setPage] = useState(1); const [pageSize, setPageSize] = useState(PAGE_SIZE); const [hasNext, setHasNext] = useState(false); const [cargando, setCargando] = useState(false); const [cargandoProductos, setCargandoProductos] = useState(true); const [guardando, setGuardando] = useState(false); const [devolviendo, setDevolviendo] = useState(null); const [exportando, setExportando] = useState(false); const [modal, setModal] = useState(false); const [movimientoAReversar, setMovimientoAReversar] = useState(null); const [form, setForm] = useState(emptyMovement); const [mensaje, setMensaje] = useState(null)
   useEffect(() => { tokenRef.current = token }, [token])
   const cargarProductos = useCallback(async () => { const tokenActual = tokenRef.current; if (!tokenActual) return; try { setCargandoProductos(true); const result = await (canCreateMovement ? obtenerProductosParaCrearMovimiento(tokenActual) : obtenerProductosParaMovimientos(tokenActual)); setProductos(Array.isArray(result) ? result : []) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar los productos.' }) } finally { setCargandoProductos(false) } }, [manejarSesionExpirada, canCreateMovement])
-  const cargarMovimientos = useCallback(async (requestedPage = 1, requestedPageSize = pageSize) => { try { setCargando(true); const result = await obtenerMovimientosInventario(productoId, tokenRef.current, { limit: requestedPageSize + 1, offset: (requestedPage - 1) * requestedPageSize, fromDate, toDate }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, requestedPageSize)); setHasNext(rows.length > requestedPageSize); setPage(requestedPage); setMensaje(null) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el Kardex.' }) } finally { setCargando(false) } }, [productoId, fromDate, toDate, pageSize, manejarSesionExpirada])
+  const cargarMovimientos = useCallback(async (requestedPage = 1, requestedPageSize = pageSize) => { if (!canReadMovements) return; try { setCargando(true); const result = await obtenerMovimientosInventario(productoId, tokenRef.current, { limit: requestedPageSize + 1, offset: (requestedPage - 1) * requestedPageSize, fromDate, toDate }); const rows = Array.isArray(result) ? result : []; setMovimientos(rows.slice(0, requestedPageSize)); setHasNext(rows.length > requestedPageSize); setPage(requestedPage); setMensaje(null) } catch (error) { if (error.status === 401) manejarSesionExpirada(); else setMensaje({ tipo: 'danger', texto: error.message || 'No fue posible cargar el Kardex.' }) } finally { setCargando(false) } }, [productoId, fromDate, toDate, pageSize, manejarSesionExpirada, canReadMovements])
   useEffect(() => { if (token && !cargaInicialRef.current) { cargaInicialRef.current = true; void cargarProductos() } }, [token, cargarProductos])
   useEffect(() => { if (token && !cargandoProductos && canReadMovements) void cargarMovimientos(1, pageSize) }, [token, cargandoProductos, productoId, fromDate, toDate, pageSize, cargarMovimientos, canReadMovements])
   const productoPorId = useMemo(() => new Map(productos.map((item) => [item.id, item])), [productos])
