@@ -65,11 +65,20 @@ export default function CashPage() {
   const dayIsOpen = day?.status === 'OPEN'
   const dayIsClosed = day?.status === 'CLOSED'
 
-  const load = useCallback(async () => {
+  // El access token cambia durante un refresh, pero la sesión lógica no cambia.
+  // Cargar nuevamente toda la página por cada renovación provocaba el efecto visual de un F5.
+  const tokenPayload = obtenerPayloadToken(token)
+  const sessionKey = tokenPayload?.session_id
+    || tokenPayload?.user_tenant_id
+    || tokenPayload?.global_user_id
+    || tokenPayload?.sub
+    || ''
+
+  const load = useCallback(async (tokenActual) => {
     setLoading(true)
     setError('')
     try {
-      const currentDay = await obtenerDiaActual(token)
+      const currentDay = await obtenerDiaActual(tokenActual)
       setDay(currentDay)
       if (currentDay?.status === 'OPEN') setBusinessDate(currentDay.business_date)
     } catch (err) {
@@ -77,12 +86,14 @@ export default function CashPage() {
     } finally {
       setLoading(false)
     }
-  }, [token])
+  }, [])
 
   useEffect(() => {
-    const timeoutId = setTimeout(load, 0)
+    if (!token || !sessionKey) return undefined
+
+    const timeoutId = setTimeout(() => load(token), 0)
     return () => clearTimeout(timeoutId)
-  }, [load])
+  }, [sessionKey, load, token])
 
   const registersByBranch = useMemo(() => {
     const result = new Map()
@@ -106,7 +117,7 @@ export default function CashPage() {
       setSelectedRegister(null)
       setCountedCash('')
       setClosingNotes('')
-      await load()
+      await load(token)
     } catch (err) {
       setError(errorMessage(err))
     } finally {
