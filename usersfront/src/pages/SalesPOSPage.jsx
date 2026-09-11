@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { obtenerClientes } from '../services/clientsApi'
-import { obtenerCupoCliente } from '../services/portfolioApi'
-import { obtenerInventario, obtenerProductosInventario, obtenerProductosTopVenta } from '../services/inventoryApi'
+import { obtenerCatalogoPOS, buscarClientesPOS, obtenerCupoClientePOS } from '../services/salesPosApi'
 import { obtenerContextoCaja } from '../services/cashApi'
 import { abrirFactura } from '../utils/salesInvoice'
 import {
@@ -83,14 +81,10 @@ export default function SalesPOSPage() {
   }, [validationModal, saleSuccessModal, saving, freezing])
 
   const loadCatalog = async () => {
-    const [p, top, i] = await Promise.all([
-      obtenerProductosInventario(token, true),
-      obtenerProductosTopVenta(token, 6),
-      obtenerInventario(token),
-    ])
-    setProducts(Array.isArray(p) ? p : [])
-    setTopProducts(Array.isArray(top) ? top : [])
-    setInventory(Array.isArray(i) ? i : [])
+    const catalog = await obtenerCatalogoPOS(token)
+    setProducts(Array.isArray(catalog?.products) ? catalog.products : [])
+    setTopProducts(Array.isArray(catalog?.top_products) ? catalog.top_products : [])
+    setInventory(Array.isArray(catalog?.inventory) ? catalog.inventory : [])
   }
 
   const loadFrozen = async () => {
@@ -103,19 +97,17 @@ export default function SalesPOSPage() {
     let cancelled = false
     const load = async () => {
       try {
-        const [p, top, i, c, d, context] = await Promise.all([
-          obtenerProductosInventario(token, true),
-          obtenerProductosTopVenta(token, 6),
-          obtenerInventario(token),
-          obtenerClientes(token, { page: 1, pageSize: 100 }),
+        const [catalog, c, d, context] = await Promise.all([
+          obtenerCatalogoPOS(token),
+          buscarClientesPOS(token, { limit: 100, offset: 0 }),
           obtenerVentasCongeladas(token),
           obtenerContextoCaja(token),
         ])
         if (cancelled) return
-        setProducts(Array.isArray(p) ? p : [])
-        setTopProducts(Array.isArray(top) ? top : [])
-        setInventory(Array.isArray(i) ? i : [])
-        setClients(Array.isArray(c?.items) ? c.items : Array.isArray(c) ? c : [])
+        setProducts(Array.isArray(catalog?.products) ? catalog.products : [])
+        setTopProducts(Array.isArray(catalog?.top_products) ? catalog.top_products : [])
+        setInventory(Array.isArray(catalog?.inventory) ? catalog.inventory : [])
+        setClients(Array.isArray(c) ? c : [])
         setFrozen(Array.isArray(d) ? d : [])
         setCashContext(context)
       } catch (e) {
@@ -138,7 +130,7 @@ export default function SalesPOSPage() {
     const loadCredits = async () => {
       const entries = await Promise.all(participants.map(async (participant) => {
         try {
-          const credit = await obtenerCupoCliente(participant.id, token)
+          const credit = await obtenerCupoClientePOS(participant.id, token)
           return [participant.id, credit]
         } catch (e) {
           if (e.status === 401) manejarSesionExpirada()

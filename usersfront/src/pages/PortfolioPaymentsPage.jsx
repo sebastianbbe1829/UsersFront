@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { obtenerObligacionesCliente, obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
-import { obtenerClientes } from '../services/clientsApi'
+import { obtenerPagosCartera, registrarPagoCartera, revertirPagoCartera } from '../services/portfolioApi'
+import { buscarClientesParaPago, obtenerObligacionesParaPago } from '../services/portfolioPaymentApi'
 import { obtenerContextoCaja } from '../services/cashApi'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
 
@@ -71,22 +71,25 @@ export default function PortfolioPaymentsPage() {
   const [cashContext, setCashContext] = useState(null)
 
   const cargarPagos = useCallback(async () => {
-    const resultado = await obtenerPagosCartera(token)
-    setPagos(Array.isArray(resultado) ? resultado : [])
-  }, [token])
+    try {
+      const resultado = await obtenerPagosCartera(token)
+      setPagos(Array.isArray(resultado) ? resultado : [])
+    } catch (error) {
+      if (error.status === 401) {
+        manejarSesionExpirada()
+        throw error
+      }
+      if (error.status === 403) {
+        setPagos([])
+        return
+      }
+      throw error
+    }
+  }, [token, manejarSesionExpirada])
 
   const cargarClientes = useCallback(async () => {
-    const acumulados = []
-    const pageSize = 100
-    let page = 1
-    while (true) {
-      const resultado = await obtenerClientes(token, { page, pageSize, search: '' })
-      const items = Array.isArray(resultado) ? resultado : Array.isArray(resultado?.items) ? resultado.items : []
-      acumulados.push(...items)
-      if (items.length < pageSize) break
-      page += 1
-    }
-    setClientes(acumulados)
+    const resultado = await buscarClientesParaPago(token, { limit: 100, offset: 0 })
+    setClientes(Array.isArray(resultado) ? resultado : [])
   }, [token])
 
   useEffect(() => {
@@ -118,7 +121,7 @@ export default function PortfolioPaymentsPage() {
     }
     try {
       setCargandoObligaciones(true)
-      const resultado = await obtenerObligacionesCliente(clientId, token)
+      const resultado = await obtenerObligacionesParaPago(clientId, token)
       const activas = (Array.isArray(resultado) ? resultado : [])
         .filter((item) => item.status === 'ACTIVE' && Number(item.balance) > 0)
       setObligaciones(activas)

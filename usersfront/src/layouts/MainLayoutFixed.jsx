@@ -147,13 +147,13 @@ function MainLayoutFixed() {
             </div>}
           </Can>
 
-          <Can permission="INVENTORY_READ">
+          <Can permissions={['INVENTORY_READ', 'INVENTORY_MOVEMENT_READ', 'INVENTORY_MOVEMENT_CREATE']}>
             <button type="button" className={obtenerClaseMenu(inventariosPorRuta)} onClick={() => alternarSeccion('inventarios')} title="Inventarios" style={{ background: 'transparent' }}><span style={{ fontSize: '21px', minWidth: '24px', textAlign: 'center' }}>📦</span><span className="ms-3 flex-grow-1 text-start">Inventarios</span><span>{seccionAbierta === 'inventarios' ? '▾' : '▸'}</span></button>
             {seccionAbierta === 'inventarios' && <div className="ps-3">
-              <NavLink to={`${rutaTenant}/inventarios`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📦</span><span className="ms-3">Inventario</span></NavLink>
-              <NavLink to={`${rutaTenant}/inventarios/tipos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span><span className="ms-3">Tipos</span></NavLink>
-              <NavLink to={`${rutaTenant}/inventarios/productos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Productos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span><span className="ms-3">Productos</span></NavLink>
-              <NavLink to={`${rutaTenant}/inventarios/movimientos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Movimientos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Movimientos</span></NavLink>
+              <Can permission="INVENTORY_READ"><NavLink to={`${rutaTenant}/inventarios`} end className={({ isActive }) => obtenerClaseMenu(isActive)} title="Inventario"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📦</span><span className="ms-3">Inventario</span></NavLink></Can>
+              <Can permission="INVENTORY_READ"><NavLink to={`${rutaTenant}/inventarios/tipos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Tipos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🏷️</span><span className="ms-3">Tipos</span></NavLink></Can>
+              <Can permission="INVENTORY_READ"><NavLink to={`${rutaTenant}/inventarios/productos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Productos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>🛒</span><span className="ms-3">Productos</span></NavLink></Can>
+              <Can permissions={['INVENTORY_MOVEMENT_READ', 'INVENTORY_MOVEMENT_CREATE']}><NavLink to={`${rutaTenant}/inventarios/movimientos`} className={({ isActive }) => obtenerClaseMenu(isActive)} title="Movimientos"><span style={{ fontSize: '19px', minWidth: '24px', textAlign: 'center' }}>📋</span><span className="ms-3">Movimientos</span></NavLink></Can>
             </div>}
           </Can>
 

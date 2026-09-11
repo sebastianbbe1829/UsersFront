@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { obtenerUsuarios } from '../services/api'
 import {
   actualizarCajaFisica,
   actualizarSucursalCaja,
@@ -12,6 +11,7 @@ import {
   obtenerAsignacionesCaja,
   obtenerCajasFisicas,
   obtenerSucursalesCaja,
+  obtenerUsuariosAsignablesCaja,
 } from '../services/cashAdminApi'
 
 const emptyBranch = { code: '', name: '', address: '', phone: '' }
@@ -21,9 +21,10 @@ const emptyAssignment = { user_tenant_id: '', branch_id: '', cash_box_id: '' }
 const active = (value) => Number(value) === 1
 
 export default function CashManagementPage() {
-  const { token } = useAuth()
+  const { token, hasPermission } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const canCreate = hasPermission('CASH_CREATE')
   const [branches, setBranches] = useState([])
   const [boxes, setBoxes] = useState([])
   const [assignments, setAssignments] = useState([])
@@ -115,12 +116,14 @@ export default function CashManagementPage() {
     if (showLoading) setLoading(true)
     setError('')
     try {
-      const [branchData, boxData, assignmentData, userData] = await Promise.all([
+      const requests = [
         obtenerSucursalesCaja(token),
         obtenerCajasFisicas(token),
         obtenerAsignacionesCaja(token),
-        obtenerUsuarios(token),
-      ])
+      ]
+      if (canCreate) requests.push(obtenerUsuariosAsignablesCaja(token))
+
+      const [branchData, boxData, assignmentData, userData] = await Promise.all(requests)
       const branchList = Array.isArray(branchData) ? branchData : []
       const boxList = Array.isArray(boxData) ? boxData : []
       const assignmentList = Array.isArray(assignmentData) ? assignmentData : []
@@ -135,13 +138,13 @@ export default function CashManagementPage() {
       setBoxes(boxList)
       setBaseDrafts(Object.fromEntries(boxList.map((box) => [box.id, String(box.base_amount ?? 0)])))
       setAssignments(visibleAssignments)
-      setUsers((Array.isArray(userData) ? userData : []).filter((user) => active(user.status)))
+      setUsers(canCreate && Array.isArray(userData) ? userData : [])
     } catch (err) {
       setError(err.message || 'No fue posible cargar la administración de Caja.')
     } finally {
       if (showLoading) setLoading(false)
     }
-  }, [token])
+  }, [token, canCreate])
 
   useEffect(() => {
     const timeoutId = setTimeout(() => load({ showLoading: true }), 0)
@@ -292,7 +295,7 @@ export default function CashManagementPage() {
 
       {tab === 'branches' && (
         <>
-          <div className="card shadow-sm border-0 mb-4">
+          {canCreate && <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
               <h5 className="mb-3">Nueva sucursal</h5>
               <form className="row g-3 align-items-end" onSubmit={submitBranch}>
@@ -303,12 +306,12 @@ export default function CashManagementPage() {
                 <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Crear sucursal'}</button></div>
               </form>
             </div>
-          </div>
+          </div>}
           <div className="card shadow-sm border-0">
             <div className="card-body">
               <h5 className="mb-3">Sucursales registradas</h5>
-              <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Código</th><th>Nombre</th><th>Dirección</th><th>Cajas</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {branches.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay sucursales registradas.</td></tr> : branches.map((branch) => <tr key={branch.id}><td className="fw-semibold">{branch.code}</td><td>{branch.name}</td><td>{branch.address || '—'}</td><td>{branch.cash_boxes_count}</td><td><span className={`badge ${active(branch.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(branch.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><button type="button" className={`btn btn-sm ${active(branch.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBranch(branch)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(branch.status) ? 'Desactivar' : 'Activar'}</button></td></tr>)}
+              <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Código</th><th>Nombre</th><th>Dirección</th><th>Cajas</th><th>Estado</th>{canCreate && <th className="text-end">Acción</th>}</tr></thead><tbody>
+                {branches.length === 0 ? <tr><td colSpan={canCreate ? '6' : '5'} className="text-center text-muted py-4">No hay sucursales registradas.</td></tr> : branches.map((branch) => <tr key={branch.id}><td className="fw-semibold">{branch.code}</td><td>{branch.name}</td><td>{branch.address || '—'}</td><td>{branch.cash_boxes_count}</td><td><span className={`badge ${active(branch.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(branch.status) ? 'Activa' : 'Inactiva'}</span></td>{canCreate && <td className="text-end"><button type="button" className={`btn btn-sm ${active(branch.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBranch(branch)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(branch.status) ? 'Desactivar' : 'Activar'}</button></td>}</tr>)}
               </tbody></table></div>
             </div>
           </div>
@@ -317,7 +320,7 @@ export default function CashManagementPage() {
 
       {tab === 'boxes' && (
         <>
-          <div className="card shadow-sm border-0 mb-4">
+          {canCreate && <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
               <h5 className="mb-3">Nueva caja física</h5>
               <form className="row g-3 align-items-end" onSubmit={submitBox}>
@@ -328,12 +331,12 @@ export default function CashManagementPage() {
                 <div className="col-12 col-md-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Crear caja'}</button></div>
               </form>
             </div>
-          </div>
+          </div>}
           <div className="card shadow-sm border-0">
             <div className="card-body">
               <h5 className="mb-3">Cajas físicas registradas</h5>
-              <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Sucursal</th><th>Código</th><th>Nombre</th><th>Base diaria</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {boxes.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay cajas físicas registradas.</td></tr> : boxes.map((box) => <tr key={box.id}><td>{box.branch_name}</td><td className="fw-semibold">{box.code}</td><td>{box.name}</td><td><div className="input-group input-group-sm" style={{ maxWidth: '180px' }}><span className="input-group-text">$</span><input className="form-control text-end" type="number" min="0" step="0.01" value={baseDrafts[box.id] ?? '0'} onChange={(e) => setBaseDrafts((current) => ({ ...current, [box.id]: e.target.value }))} disabled={saving} /></div></td><td><span className={`badge ${active(box.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(box.status) ? 'Activa' : 'Inactiva'}</span></td><td className="text-end"><div className="d-flex justify-content-end gap-2"><button type="button" className="btn btn-sm btn-outline-primary" disabled={saving} onClick={() => saveBoxBase(box)}>Guardar base</button><button type="button" className={`btn btn-sm ${active(box.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBox(box)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(box.status) ? 'Desactivar' : 'Activar'}</button></div></td></tr>)}
+              <div className="table-responsive"><table className="table table-hover align-middle mb-0"><thead><tr><th>Sucursal</th><th>Código</th><th>Nombre</th><th>Base diaria</th><th>Estado</th>{canCreate && <th className="text-end">Acción</th>}</tr></thead><tbody>
+                {boxes.length === 0 ? <tr><td colSpan={canCreate ? '6' : '5'} className="text-center text-muted py-4">No hay cajas físicas registradas.</td></tr> : boxes.map((box) => <tr key={box.id}><td>{box.branch_name}</td><td className="fw-semibold">{box.code}</td><td>{box.name}</td><td>{canCreate ? <div className="input-group input-group-sm" style={{ maxWidth: '180px' }}><span className="input-group-text">$</span><input className="form-control text-end" type="number" min="0" step="0.01" value={baseDrafts[box.id] ?? '0'} onChange={(e) => setBaseDrafts((current) => ({ ...current, [box.id]: e.target.value }))} disabled={saving} /></div> : Number(box.base_amount || 0).toLocaleString('es-CO')}</td><td><span className={`badge ${active(box.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(box.status) ? 'Activa' : 'Inactiva'}</span></td>{canCreate && <td className="text-end"><div className="d-flex justify-content-end gap-2"><button type="button" className="btn btn-sm btn-outline-primary" disabled={saving} onClick={() => saveBoxBase(box)}>Guardar base</button><button type="button" className={`btn btn-sm ${active(box.status) ? 'btn-outline-danger' : 'btn-outline-success'}`} disabled={saving} onClick={() => toggleBox(box)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}{active(box.status) ? 'Desactivar' : 'Activar'}</button></div></td>}</tr>)}
               </tbody></table></div>
             </div>
           </div>
@@ -343,7 +346,7 @@ export default function CashManagementPage() {
       {tab === 'assignments' && (
         <>
           <div className="alert alert-info">Cada usuario puede tener una sola asignación activa: <strong>sucursal + caja física</strong>. El usuario no seleccionará estos datos durante una venta o un pago; quedan definidos aquí.</div>
-          <div className="card shadow-sm border-0 mb-4">
+          {canCreate && <div className="card shadow-sm border-0 mb-4">
             <div className="card-body">
               <h5 className="mb-3">Asignar caja a usuario</h5>
               <form className="row g-3 align-items-end" onSubmit={submitAssignment}>
@@ -353,12 +356,12 @@ export default function CashManagementPage() {
                 <div className="col-12 col-lg-2"><button className="btn btn-primary w-100" disabled={saving}>{saving && <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />}{saving ? savingLabel : 'Asignar caja'}</button></div>
               </form>
             </div>
-          </div>
+          </div>}
           <div className="card shadow-sm border-0">
             <div className="card-body">
               <h5 className="mb-3">Asignaciones</h5>
-              <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th>Usuario</th><th>Identificación</th><th>Sucursal</th><th>Caja</th><th>Estado</th><th className="text-end">Acción</th></tr></thead><tbody>
-                {assignments.length === 0 ? <tr><td colSpan="6" className="text-center text-muted py-4">No hay asignaciones registradas.</td></tr> : assignments.map((assignment) => <tr key={assignment.id}><td><div className="fw-semibold">{assignment.user_name}</div><div className="small text-muted">{assignment.user_email}</div></td><td>{assignment.user_dni}</td><td>{assignment.branch_name}</td><td><span className="fw-semibold">{assignment.cash_box_code}</span> — {assignment.cash_box_name}</td><td><span className={`badge ${active(assignment.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(assignment.status) ? 'Activa' : 'Retirada'}</span></td><td className="text-end">{active(assignment.status) && <button type="button" className="btn btn-sm btn-outline-danger" disabled={saving} onClick={() => removeAssignment(assignment)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}Desasignar</button>}</td></tr>)}
+              <div className="table-responsive"><table className="table table-sm align-middle mb-0"><thead><tr><th>Usuario</th><th>Identificación</th><th>Sucursal</th><th>Caja</th><th>Estado</th>{canCreate && <th className="text-end">Acción</th>}</tr></thead><tbody>
+                {assignments.length === 0 ? <tr><td colSpan={canCreate ? '6' : '5'} className="text-center text-muted py-4">No hay asignaciones registradas.</td></tr> : assignments.map((assignment) => <tr key={assignment.id}><td><div className="fw-semibold">{assignment.user_name}</div><div className="small text-muted">{assignment.user_email}</div></td><td>{assignment.user_dni}</td><td>{assignment.branch_name}</td><td><span className="fw-semibold">{assignment.cash_box_code}</span> — {assignment.cash_box_name}</td><td><span className={`badge ${active(assignment.status) ? 'text-bg-success' : 'text-bg-secondary'}`}>{active(assignment.status) ? 'Activa' : 'Retirada'}</span></td>{canCreate && <td className="text-end">{active(assignment.status) && <button type="button" className="btn btn-sm btn-outline-danger" disabled={saving} onClick={() => removeAssignment(assignment)}>{saving && <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />}Desasignar</button>}</td>}</tr>)}
               </tbody></table></div>
             </div>
           </div>
