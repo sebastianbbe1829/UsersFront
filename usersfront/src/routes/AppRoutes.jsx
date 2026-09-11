@@ -37,6 +37,7 @@ import TenantBootstrapPage from '../pages/TenantBootstrapPage'
 import ActivateUser from '../components/ActivateUser'
 import TenantRequired from '../components/TenantRequired'
 import PermissionRoute from '../components/PermissionRoute'
+import CashOperationalGuard from '../components/CashOperationalGuard'
 import { obtenerTenantDesdeUrl } from '../utils/tenant'
 import { obtenerPayloadToken } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
@@ -88,7 +89,7 @@ function AppRoutes() {
       <Route path="clientes/ejecuciones-listas-restrictivas" element={<RutaConPermiso permission="CLIENT_READ"><ClientRestrictedListsSyncExecutionsPage /></RutaConPermiso>} />
       <Route path="cartera" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioPage /></RutaConPermiso>} />
       <Route path="cartera/obligaciones" element={<RutaConPermiso permission="PORTFOLIO_READ"><PortfolioObligationsPage /></RutaConPermiso>} />
-      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><PortfolioPaymentsPage /></RutaConPermiso>} />
+      <Route path="cartera/pagos" element={<RutaConPermiso permission="PORTFOLIO_PAYMENT_CREATE"><CashOperationalGuard><PortfolioPaymentsPage /></CashOperationalGuard></RutaConPermiso>} />
       <Route path="caja" element={<RutaConPermiso permission="CASH_READ"><CashPageGuard /></RutaConPermiso>} />
       <Route path="caja/administracion" element={<RutaConPermiso permission="CASH_READ"><Navigate to="sucursales" replace /></RutaConPermiso>} />
       <Route path="caja/administracion/sucursales" element={<RutaConPermiso permission="CASH_READ"><CashManagementRoute /></RutaConPermiso>} />
@@ -104,7 +105,7 @@ function AppRoutes() {
       <Route path="inventarios/tipos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryTypesPage /></RutaConPermiso>} />
       <Route path="inventarios/productos" element={<RutaConPermiso permission="INVENTORY_READ"><InventoryProductsPage /></RutaConPermiso>} />
       <Route path="inventarios/movimientos" element={<RutaConPermiso permission="INVENTORY_MOVEMENT_READ"><InventoryMovementsPage /></RutaConPermiso>} />
-      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><SalesPOSPage /></RutaConPermiso>} />
+      <Route path="ventas" element={<RutaConPermiso permission="SALES_CREATE"><CashOperationalGuard><SalesPOSPage /></CashOperationalGuard></RutaConPermiso>} />
       <Route path="ventas/consulta" element={<RutaConPermiso permission="SALES_READ"><SalesHistoryPage /></RutaConPermiso>} />
       <Route path="configuracion-ui" element={<TenantConfigPage />} />
       <Route path="administracion-tenant" element={<TenantAdminPage />} />
