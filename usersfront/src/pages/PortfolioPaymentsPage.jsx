@@ -34,6 +34,12 @@ const formatDate = (value) => {
   return Number.isNaN(fecha.getTime()) ? '—' : new Intl.DateTimeFormat('es-CO', { dateStyle: 'short', timeStyle: 'short' }).format(fecha)
 }
 
+const formatBusinessDate = (value) => {
+  if (!value) return '—'
+  const [year, month, day] = String(value).slice(0, 10).split('-')
+  return year && month && day ? `${day}/${month}/${year}` : '—'
+}
+
 const estadoPagoLabel = (status) => status === 'APLICADO' ? 'Aplicado' : status === 'ANULADO' ? 'Anulado' : status || '—'
 const PAYMENT_METHODS = ['TRANSFERENCIA', 'EFECTIVO', 'TARJETA', 'PSE', 'OTRO', 'CARTERA']
 const PAGE_SIZES = [5, 10, 20, 50]
@@ -549,7 +555,7 @@ export default function PortfolioPaymentsPage() {
             <table className="table table-hover align-middle mb-0">
               <thead>
                 <tr>
-                  <th>Fecha</th>
+                  <th>Fecha de operación</th>
                   <th>Cliente</th>
                   <th>Referencia</th>
                   <th>Obligaciones</th>
@@ -564,7 +570,10 @@ export default function PortfolioPaymentsPage() {
                 {!cargando && !pagosFiltrados.length && <tr><td colSpan="8" className="text-center text-muted py-5">No hay pagos para los filtros seleccionados.</td></tr>}
                 {!cargando && pagosPaginados.map((pago) => (
                   <tr key={pago.id} className={pagoSeleccionado && String(pago.id).toLowerCase() === pagoSeleccionado.toLowerCase() ? 'table-active' : ''}>
-                    <td>{formatDate(pago.created_at || pago.payment_date)}</td>
+                    <td>
+                      <div>{formatBusinessDate(pago.business_date || pago.payment_date)}</div>
+                      <div className="small text-muted">Registrado: {formatDate(pago.created_at)}</div>
+                    </td>
                     <td><div className="fw-semibold">{clientePorId[String(pago.client_id)] || 'Cliente no disponible'}</div></td>
                     <td>{pago.reference || '—'}</td>
                     <td>
